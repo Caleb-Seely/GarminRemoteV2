@@ -1,0 +1,75 @@
+# Garmin Connect IQ specific
+bin/
+build/
+release/
+*.prg
+*.iq
+*.prg.debug.xml
+*.jungle
+simulator.json
+monkey.jungle
+*.prg.debug.xml.tmp
+
+# Android specific
+*.ap_
+*.aab
+*.dex
+ClearShot_App/app/release/*
+!ClearShot_App/app/release/app-release.apk
+
+# Generated files
+gen/
+out/
+build/
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Local configuration files
+local.properties
+proguard-rules.pro
+*.pro
+
+# Log/OS Files
+*.log
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE specific
+*.iml
+.idea/
+.vscode/
+.classpath
+.project
+.settings/
+
+# Keystore files
+*.jks
+*.keystore
+developer_key
+
+# Google Services
+google-services.json
+google-services/*.json
+
+# Temporary files
+.tmp/
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+*.class
+*~
+
+# Monkey C specific
+.annotations
+.api
+*.ciq
