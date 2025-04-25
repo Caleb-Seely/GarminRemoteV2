@@ -5,7 +5,7 @@
 -->
 <resources>
 
-    <string name="app_name">Comm</string>
+    <string name="app_name">Camera Accessibility</string>
     <string name="load_devices">Reload Devices</string>
     <string name="initialization_error">Failed to initalize the SDK.\n</string>
     <string name="service_unavailable">The ConnectIQ service is unavailabe.</string>
@@ -35,5 +35,7 @@
 
     <string name="missing_store_id">Missing App Store Id</string>
     <string name="missing_store_id_message">Please add a valid store app id for STORE_APP_ID in DeviceActivity.</string>
+
+    <string name="accessibility_service_description">This service helps with camera accessibility features</string>
 
 </resources>
