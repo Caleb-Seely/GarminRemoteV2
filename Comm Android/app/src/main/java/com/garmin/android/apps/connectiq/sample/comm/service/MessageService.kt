@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.garmin.android.apps.connectiq.sample.comm.CameraAccessibilityService
 import com.garmin.android.apps.connectiq.sample.comm.R
 import com.garmin.android.apps.connectiq.sample.comm.activities.DeviceActivity
 import com.garmin.android.connectiq.ConnectIQ
@@ -147,8 +148,13 @@ class MessageService : Service() {
         try {
             connectIQ.registerForAppEvents(device, app) { _, _, message, _ ->
                 Log.d(TAG, "Received message: ${message.joinToString()}")
-                // Here you could broadcast the message to the app or store it
-                // for later processing
+                
+                // Broadcast the message to the CameraAccessibilityService
+                val intent = Intent(CameraAccessibilityService.ACTION_MESSAGE_RECEIVED).apply {
+                    putExtra(CameraAccessibilityService.EXTRA_MESSAGE, message.joinToString())
+                }
+                sendBroadcast(intent)
+                Log.d(TAG, "Broadcasted message to CameraAccessibilityService")
             }
             Log.d(TAG, "Successfully registered for app events")
         } catch (e: InvalidStateException) {
