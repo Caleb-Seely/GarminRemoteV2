@@ -11,6 +11,11 @@ import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
+import com.garmin.android.connectiq.ConnectIQ
+import com.garmin.android.connectiq.IQDevice
+import com.garmin.android.connectiq.IQApp
+import com.garmin.android.connectiq.exception.InvalidStateException
+import com.garmin.android.connectiq.exception.ServiceUnavailableException
 
 /**
  * CameraAccessibilityService is an Android Accessibility Service that:
@@ -51,6 +56,13 @@ class CameraAccessibilityService : AccessibilityService() {
         // Intent action and extra key for receiving messages
         const val ACTION_MESSAGE_RECEIVED = "com.garmin.android.apps.connectiq.sample.comm.ACTION_MESSAGE_RECEIVED"
         const val EXTRA_MESSAGE = "message"
+
+        // Message types for watch communication
+        private const val MESSAGE_TYPE_SHUTTER_SUCCESS = "SHUTTER_SUCCESS"
+        private const val MESSAGE_TYPE_SHUTTER_FAILED = "SHUTTER_FAILED"
+        
+        // ConnectIQ constants
+        private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
     }
 
     // Handler for posting delayed tasks to the main thread
@@ -68,6 +80,14 @@ class CameraAccessibilityService : AccessibilityService() {
     // Track the last known camera app package name
     private var lastKnownCameraPackage: String? = null
 
+    // ConnectIQ instance for sending messages
+    private val connectIQ: ConnectIQ = ConnectIQ.getInstance()
+    private lateinit var device: IQDevice
+    private lateinit var myApp: IQApp
+
+    // Watch messaging service
+    private val watchMessagingService = WatchMessagingService()
+
     /**
      * Called when the accessibility service is connected.
      * Sets up the message receiver and processes any pending messages.
@@ -79,6 +99,24 @@ class CameraAccessibilityService : AccessibilityService() {
         if (DEBUG) {
             Toast.makeText(this, "Accessibility service connected", Toast.LENGTH_SHORT).show()
         }
+
+        // Initialize ConnectIQ
+        try {
+            device = connectIQ.connectedDevices?.firstOrNull() ?: run {
+                Log.e(TAG, "No connected Garmin device found")
+                return
+            }
+            myApp = IQApp(COMM_WATCH_ID)
+            Log.d(TAG, "ConnectIQ initialized with device: ${device.friendlyName}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing ConnectIQ", e)
+        }
+
+        // Initialize watch messaging service
+        if (!watchMessagingService.initialize()) {
+            Log.e(TAG, "Failed to initialize watch messaging service")
+        }
+
         setupMessageReceiver()
         
         // Process any message that arrived before the service was connected
@@ -136,11 +174,13 @@ class CameraAccessibilityService : AccessibilityService() {
         Log.d(TAG, "handleCameraTrigger called")
         if (!isCameraAppActive()) {
             Log.d(TAG, "No camera app is currently active")
+            watchMessagingService.sendMessage(
+                WatchMessagingService.MESSAGE_TYPE_SHUTTER_FAILED,
+                "No open camera app"
+            )
             return
         }
-
-        // Add a small delay to ensure the camera app is fully ready
-        mainHandler.postDelayed({
+        
             val shutterButton = findShutterButton()
             if (shutterButton != null) {
                 Log.d(TAG, "Found shutter button, attempting to trigger")
@@ -148,7 +188,7 @@ class CameraAccessibilityService : AccessibilityService() {
             } else {
                 Log.d(TAG, "Could not find shutter button in active camera app")
             }
-        }, 500) // 500ms delay
+
     }
 
     /**
@@ -270,8 +310,16 @@ class CameraAccessibilityService : AccessibilityService() {
             if (DEBUG) {
                 Toast.makeText(this, "Photo taken!", Toast.LENGTH_SHORT).show()
             }
+            watchMessagingService.sendMessage(
+                WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
+                "Captured!"
+            )
         } else {
             Log.e(TAG, "Failed to click shutter button")
+            watchMessagingService.sendMessage(
+                WatchMessagingService.MESSAGE_TYPE_SHUTTER_FAILED,
+                "Error tapping shutter"
+            )
         }
     }
 
@@ -352,4 +400,6 @@ class CameraAccessibilityService : AccessibilityService() {
             else -> "UNKNOWN_TYPE($eventType)"
         }
     }
+
+
 } 
