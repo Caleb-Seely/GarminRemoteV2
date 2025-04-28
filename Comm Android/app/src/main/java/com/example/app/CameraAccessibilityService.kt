@@ -16,6 +16,7 @@ import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
+import com.garmin.android.apps.connectiq.sample.comm.util.AccessibilityUtils
 
 /**
  * CameraAccessibilityService is an Android Accessibility Service that:
@@ -222,8 +223,7 @@ class CameraAccessibilityService : AccessibilityService() {
 
     /**
      * Attempts to find the shutter button in the active camera app by:
-     * 1. First trying to find it by content description
-     * 2. If not found, looking for a clickable button in the center of the screen
+     * 1. Finding the largest clickable node on the screen
      * 
      * @return The AccessibilityNodeInfo of the shutter button if found, null otherwise
      */
@@ -234,67 +234,14 @@ class CameraAccessibilityService : AccessibilityService() {
             Log.d(TAG, "rootInActiveWindow is null in findShutterButton")
             return null
         }
-        
-        // First try to find by content description
-        for (description in SHUTTER_BUTTON_DESCRIPTIONS) {
-            Log.d(TAG, "Searching for button with description: $description")
-            val nodes = root.findAccessibilityNodeInfosByText(description)
-            if (nodes.isNotEmpty()) {
-                Log.d(TAG, "Found ${nodes.size} nodes with description: $description")
-                val button = nodes.firstOrNull { it.isClickable }
-                if (button != null) {
-                    Log.d(TAG, "Found clickable shutter button with description: $description")
-                    return button
-                }
-            }
+
+        val shutterButton = AccessibilityUtils.largestClickableNode(root, TAG)
+        if (shutterButton != null) {
+            Log.d(TAG, "Found largest clickable node as shutter button")
+            return shutterButton
         }
 
-        // If not found by description, try to find any clickable button in the center of the screen
-        val screenWidth = resources.displayMetrics.widthPixels
-        val screenHeight = resources.displayMetrics.heightPixels
-        val centerX = screenWidth / 2
-        val centerY = screenHeight / 2
-
-        Log.d(TAG, "Falling back to center position search at ($centerX, $centerY)")
-        return findClickableButtonAtPosition(root, centerX, centerY)
-    }
-
-    /**
-     * Searches for a clickable button at a specific screen position by:
-     * 1. First checking for a focused node
-     * 2. If not found, searching through all content nodes
-     * 
-     * @param root The root AccessibilityNodeInfo to search from
-     * @param x The x-coordinate to search at
-     * @param y The y-coordinate to search at
-     * @return The AccessibilityNodeInfo of a clickable button if found, null otherwise
-     */
-    private fun findClickableButtonAtPosition(
-        root: AccessibilityNodeInfo,
-        x: Int,
-        y: Int
-    ): AccessibilityNodeInfo? {
-        Log.d(TAG, "Searching for clickable button at position ($x, $y)")
-        val node = root.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY)
-        if (node != null && node.isClickable) {
-            Log.d(TAG, "Found focused clickable node")
-            return node
-        }
-
-        // If no focused node found, try to find any clickable node at the position
-        val nodes = root.findAccessibilityNodeInfosByViewId("android:id/content")
-        Log.d(TAG, "Found ${nodes.size} content nodes")
-        for (node in nodes) {
-            if (node.isClickable) {
-                val bounds = android.graphics.Rect()
-                node.getBoundsInScreen(bounds)
-                if (bounds.contains(x, y)) {
-                    Log.d(TAG, "Found clickable node at position")
-                    return node
-                }
-            }
-        }
-        Log.d(TAG, "No clickable button found at position")
+        Log.d(TAG, "No clickable nodes found on screen")
         return null
     }
 
@@ -400,6 +347,5 @@ class CameraAccessibilityService : AccessibilityService() {
             else -> "UNKNOWN_TYPE($eventType)"
         }
     }
-
 
 } 
