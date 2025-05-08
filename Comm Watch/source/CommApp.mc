@@ -9,12 +9,8 @@ using Toybox.Communications;
 using Toybox.WatchUi;
 using Toybox.System;
 
-var page = 0;
-var strings = ["","","","",""];
-var stringsSize = 5;
 var mailMethod;
 var phoneMethod;
-var crashOnMessage = false;
 var hasDirectMessagingSupport = true;
 
 class CommExample extends Application.AppBase {
@@ -47,38 +43,19 @@ class CommExample extends Application.AppBase {
     }
 
     function onMail(mailIter) {
-        var mail;
-
-        mail = mailIter.next();
+        var mail = mailIter.next();
 
         while(mail != null) {
-            var i;
-            for(i = (stringsSize - 1); i > 0; i -= 1) {
-                strings[i] = strings[i-1];
-            }
-            strings[0] = mail.toString();
-            page = 1;
+            // Show message in MessageView
+            WatchUi.pushView(new MessageView(mail.toString()), null, WatchUi.SLIDE_IMMEDIATE);
             mail = mailIter.next();
         }
 
         Communications.emptyMailbox();
-        WatchUi.requestUpdate();
     }
 
     function onPhone(msg) {
-        var i;
-
-        if((crashOnMessage == true) && msg.data.equals("Hi")) {
-            msg.length(); // Generates a symbol not found error in the VM
-        }
-
-        for(i = (stringsSize - 1); i > 0; i -= 1) {
-            strings[i] = strings[i-1];
-        }
-        strings[0] = msg.data.toString();
-        page = 1;
-
-        WatchUi.requestUpdate();
+        // Show message in MessageView
+        WatchUi.pushView(new MessageView(msg.data.toString()), null, WatchUi.SLIDE_IMMEDIATE);
     }
-
 }

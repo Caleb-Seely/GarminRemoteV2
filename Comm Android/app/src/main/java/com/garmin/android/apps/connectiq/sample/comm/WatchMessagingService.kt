@@ -59,12 +59,10 @@ class WatchMessagingService {
         }
 
         return try {
-            val message = mapOf(
-                "type" to messageType,
-                "details" to details
-            )
-            
-            connectIQ.sendMessage(device, myApp, message) { _, _, status ->
+            // Send only the details to the watch instead of the full message map
+            connectIQ.sendMessage(device, myApp, details) { _, _, status ->
+                Log.d(TAG, "Message type: $messageType")
+                Log.d(TAG, "Message content: $details")
                 Log.d(TAG, "Message send status: ${status.name}")
             }
             true

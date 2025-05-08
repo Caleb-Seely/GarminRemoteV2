@@ -177,7 +177,7 @@ class CameraAccessibilityService : AccessibilityService() {
             Log.d(TAG, "No camera app is currently active")
             watchMessagingService.sendMessage(
                 WatchMessagingService.MESSAGE_TYPE_SHUTTER_FAILED,
-                "No open camera app"
+                "Open camera app"
             )
             return
         }
@@ -259,7 +259,7 @@ class CameraAccessibilityService : AccessibilityService() {
             }
             watchMessagingService.sendMessage(
                 WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
-                "Captured!"
+                "Success!"
             )
         } else {
             Log.e(TAG, "Failed to click shutter button")

@@ -7,6 +7,8 @@
 using Toybox.WatchUi;
 using Toybox.System;
 using Toybox.Communications;
+using Toybox.Timer;
+using Toybox.Graphics as Gfx;
 
 // Simple connection listener to handle message transmission results
 class CommListener extends Communications.ConnectionListener {
@@ -23,6 +25,19 @@ class CommListener extends Communications.ConnectionListener {
     }
 }
 
+// View to show sending message
+class SendingView extends WatchUi.View {
+    function initialize() {
+        View.initialize();
+    }
+
+    function onUpdate(dc) {
+        dc.setColor(Gfx.COLOR_WHITE, Gfx.COLOR_BLACK);
+        dc.clear();
+        dc.drawText(dc.getWidth() / 2, dc.getHeight() / 2, Gfx.FONT_MEDIUM, "Sending...", Gfx.TEXT_JUSTIFY_CENTER | Gfx.TEXT_JUSTIFY_VCENTER);
+    }
+}
+
 // Main delegate to handle button presses
 class CommInputDelegate extends WatchUi.BehaviorDelegate {
     function initialize() {
@@ -33,11 +48,23 @@ class CommInputDelegate extends WatchUi.BehaviorDelegate {
     function onKey(keyEvent) {
         if (keyEvent.getKey() == WatchUi.KEY_ENTER) {
             System.println("Action button pressed - sending message");
-            var listener = new CommListener();
-            Communications.transmit("Hello", null, listener);
+            
+            // Show sending message
+            WatchUi.pushView(new SendingView(), new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_IMMEDIATE);
+            
+            // Schedule the message sending and view pop after 1 second
+            var timer = new Timer.Timer();
+            timer.start(method(:sendMessage), 1000, false);
+            
             return true;
         }
         return false;
+    }
+    
+    function sendMessage() as Void {
+        var listener = new CommListener();
+        Communications.transmit("Hello Phone, please hit that big capture btn for me", null, listener);
+        WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
     }
 }
 
