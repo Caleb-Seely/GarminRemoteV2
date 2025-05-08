@@ -16,7 +16,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.garmin.android.apps.connectiq.sample.comm.MessageFactory
 import com.garmin.android.apps.connectiq.sample.comm.R
 import com.garmin.android.apps.connectiq.sample.comm.adapter.MessagesAdapter
 import com.garmin.android.apps.connectiq.sample.comm.service.MessageService
@@ -97,12 +96,15 @@ class DeviceActivity : Activity() {
         val deviceNameView = findViewById<TextView>(R.id.devicename)
         deviceStatusView = findViewById(R.id.devicestatus)
         openAppButtonView = findViewById(R.id.openapp)
-        val openAppStoreView = findViewById<View>(R.id.openstore)
 
         deviceNameView?.text = device.friendlyName
         deviceStatusView?.text = device.status?.name
         openAppButtonView?.setOnClickListener { openMyApp() }
-        openAppStoreView?.setOnClickListener { openStore() }
+
+        // Add click listener for the tap to send button
+        findViewById<TextView>(R.id.taptosend)?.setOnClickListener {
+            onItemClick("Test")
+        }
     }
 
     /**
@@ -154,29 +156,6 @@ class DeviceActivity : Activity() {
     }
 
     /**
-     * Opens the ConnectIQ store to install or update apps.
-     */
-    private fun openStore() {
-        Log.d(TAG, "Opening ConnectIQ Store")
-        Toast.makeText(this, "Opening ConnectIQ Store...", Toast.LENGTH_SHORT).show()
-
-        try {
-            if (STORE_APP_ID.isBlank()) {
-                AlertDialog.Builder(this@DeviceActivity)
-                    .setTitle(R.string.missing_store_id)
-                    .setMessage(R.string.missing_store_id_message)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .create()
-                    .show()
-            } else {
-                connectIQ.openStore(STORE_APP_ID)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error opening store", e)
-        }
-    }
-
-    /**
      * Registers for device status updates and updates the UI accordingly.
      */
     private fun listenByDeviceEvents() {
@@ -203,7 +182,6 @@ class DeviceActivity : Activity() {
                     Log.d(TAG, "App is installed, starting message service")
                     // Start the message service when the app is confirmed to be installed
                     startService(MessageService.createIntent(this@DeviceActivity, device, COMM_WATCH_ID))
-                    buildMessageList()
                 }
 
                 override fun onApplicationNotInstalled(applicationId: String) {
@@ -223,18 +201,7 @@ class DeviceActivity : Activity() {
         }
     }
 
-    /**
-     * Builds and displays the list of available messages that can be sent to the device.
-     */
-    private fun buildMessageList() {
-        Log.d(TAG, "Building message list")
-        val adapter = MessagesAdapter { onItemClick(it) }
-        adapter.submitList(MessageFactory.getMessages(this@DeviceActivity))
-        findViewById<RecyclerView>(android.R.id.list).apply {
-            layoutManager = LinearLayoutManager(this@DeviceActivity)
-            this.adapter = adapter
-        }
-    }
+
 
     /**
      * Handles message selection and sends the selected message to the device.

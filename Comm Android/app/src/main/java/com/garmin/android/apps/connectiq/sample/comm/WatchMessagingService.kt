@@ -7,6 +7,14 @@ import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
 
+
+/**
+ * Data class representing a message that can be sent to a Garmin device.
+ * @property text The display text for the message
+ * @property payload The actual data to be sent to the device
+ */
+data class Message(val text: String, val payload: Any)
+
 /**
  * Service class that handles communication with a connected Garmin watch.
  * This class manages the ConnectIQ connection and provides methods for sending messages to the watch.
