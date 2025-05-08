@@ -45,27 +45,59 @@ class CommInputDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle action button press
-    function onKey(keyEvent) {
-        if (keyEvent.getKey() == WatchUi.KEY_ENTER) {
-            System.println("Action button pressed - sending message");
-            
-            // Show sending message
-            WatchUi.pushView(new SendingView(), new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_IMMEDIATE);
-            
-            // Schedule the message sending and view pop after 1 second
-            var timer = new Timer.Timer();
-            timer.start(method(:sendMessage), 1000, false);
-            
-            return true;
-        }
-        return false;
-    }
-    
-    function sendMessage() as Void {
-        var listener = new CommListener();
-        Communications.transmit("Hello Phone, please hit that big capture btn for me", null, listener);
-        WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
-    }
-}
+   function onKey(keyEvent) {
+      var keyCode = keyEvent.getKey();
+      
+      System.println("Code: " + keyCode + ") " );
+      
+      if (keyCode == WatchUi.KEY_ENTER) {
+         System.println("Action button pressed - sending message");
+         
+         // Show sending message
+         WatchUi.pushView(new SendingView(), new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_IMMEDIATE);
+         
+         // Schedule the message sending and view pop after 1 second
+         var timer = new Timer.Timer();
+         timer.start(method(:sendMessage), 1000, false);
+         
+         return true;
+      }
+      return false;
+   }
+
+   function onTap(clickEvent) {
+      var coords = clickEvent.getCoordinates();
+      System.println("TAP EVENT: x=" + coords[0] + ", y=" + coords[1] );
+              // Show sending message
+        WatchUi.pushView(new SendingView(), new WatchUi.BehaviorDelegate(), WatchUi.SLIDE_IMMEDIATE);
+        
+        // Schedule the message sending and view pop after 1 second
+        var timer = new Timer.Timer();
+        timer.start(method(:sendMessage), 1000, false);
+        
+        return true;
+   }
+
+   function onSwipe(swipeEvent) {
+      System.println("SWIPE EVENT: " + swipeEvent.getDirection );
+      return false;
+   }
+
+   function onPush(pushEvent) {
+      System.println("PUSH EVENT: " );
+      return false;
+   }
+
+   function onRelease(releaseEvent) {
+      System.println("RELEASE EVENT: " );
+      return false;
+   }
+      
+      function sendMessage() as Void {
+         var listener = new CommListener();
+         Communications.transmit("Hello Phone, please hit that big capture btn for me", null, listener);
+         WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
+      }
+   }
 
 

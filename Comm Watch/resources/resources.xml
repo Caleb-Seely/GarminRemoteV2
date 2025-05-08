@@ -1,5 +1,5 @@
 <resources>
     <bitmaps>
-        <bitmap id="id_monkey" filename="images/monkey.png" />
+        <bitmap id="CameraIcon" filename="images/camera_connect.svg" />C
     </bitmaps>
 </resources>
