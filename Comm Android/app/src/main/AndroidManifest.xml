@@ -18,6 +18,23 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
+    <queries>
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.STILL_IMAGE_CAMERA" />
+        </intent>
+        <package android:name="com.google.android.GoogleCamera" />
+        <package android:name="com.android.camera" />
+        <package android:name="com.google.android.apps.camera" />
+    </queries>
+
+    <uses-permission android:name="android.hardware.camera" android:required="false" />
+
 
     <application
         android:allowBackup="true"

@@ -86,12 +86,37 @@ Individual device information and tests screen
         app:layout_constraintTop_toBottomOf="@id/taptosend" />
 
     <TextView
+        android:id="@+id/camera_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="5dp"
+        android:background="?android:attr/selectableItemBackground"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:minHeight="43dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:text="Open Camera"
+        app:layout_constraintTop_toBottomOf="@id/dividerC" />
+
+    <View
+        android:id="@+id/dividerD"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="5dp"
+        android:background="#cdcdcd"
+        app:layout_constraintTop_toBottomOf="@id/camera_button" />
+
+    <TextView
         android:id="@android:id/empty"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/dividerC" />
+        app:layout_constraintTop_toTopOf="@id/dividerD" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
