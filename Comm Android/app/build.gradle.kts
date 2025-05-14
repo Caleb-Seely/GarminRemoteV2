@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
     kotlin("android")
 }
 
@@ -50,4 +51,6 @@ dependencies {
     implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")
 
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
+    implementation("com.google.firebase:firebase-common-ktx:21.0.0")
+    implementation("com.google.firebase:firebase-crashlytics-ktx:19.4.3")
 }

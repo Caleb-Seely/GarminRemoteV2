@@ -4,28 +4,36 @@
  */
 package com.garmin.android.apps.camera.click.comm.activities
 
+import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.garmin.android.apps.camera.click.comm.R
 import com.garmin.android.apps.camera.click.comm.adapter.MessagesAdapter
 import com.garmin.android.apps.camera.click.comm.service.MessageService
+import com.garmin.android.apps.camera.click.comm.utils.NotificationUtils
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
 import com.garmin.android.apps.camera.click.comm.utils.CameraUtils
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
 private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
+private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
 
 // TODO Add a valid store app id.
 private const val STORE_APP_ID = ""
@@ -55,6 +63,8 @@ class DeviceActivity : Activity() {
 
     private var deviceStatusView: TextView? = null
     private var openAppButtonView: TextView? = null
+    private var serviceToggleView: TextView? = null
+    private var isServiceRunning = false
 
     private val connectIQ: ConnectIQ = ConnectIQ.getInstance()
     private lateinit var device: IQDevice
@@ -93,6 +103,7 @@ class DeviceActivity : Activity() {
         val deviceNameView = findViewById<TextView>(R.id.devicename)
         deviceStatusView = findViewById(R.id.devicestatus)
         openAppButtonView = findViewById(R.id.openapp)
+        serviceToggleView = findViewById(R.id.service_toggle)
 
         deviceNameView?.text = device.friendlyName
         deviceStatusView?.text = device.status?.name
@@ -105,7 +116,84 @@ class DeviceActivity : Activity() {
 
         // Add click listener for the camera button
         findViewById<TextView>(R.id.camera_button)?.setOnClickListener {
+            FirebaseCrashlytics.getInstance().log("Camera launch button clicked")
             CameraUtils.launchCamera(this)
+        }
+
+        // Add click listener for the service toggle
+        serviceToggleView?.setOnClickListener {
+            toggleService()
+        }
+
+        // Check and request notification permission if needed
+        checkAndRequestNotificationPermission()
+    }
+
+    private fun checkAndRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    Log.d(TAG, "Notification permission already granted")
+                }
+                ActivityCompat.shouldShowRequestPermissionRationale(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) -> {
+                    // Show an explanation to the user
+                    AlertDialog.Builder(this)
+                        .setTitle("Notification Permission Required")
+                        .setMessage("To keep the app running in the background and maintain connection with your Garmin device, we need permission to show notifications.")
+                        .setPositiveButton("Grant Permission") { _, _ ->
+                            requestNotificationPermission()
+                        }
+                        .setNegativeButton("Cancel") { dialog, _ ->
+                            dialog.dismiss()
+                        }
+                        .create()
+                        .show()
+                }
+                else -> {
+                    // No explanation needed, request the permission
+                    requestNotificationPermission()
+                }
+            }
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                NOTIFICATION_PERMISSION_REQUEST_CODE
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            NOTIFICATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.d(TAG, "Notification permission granted")
+                    // Restart the service to create the notification
+                    getMyAppStatus()
+                } else {
+                    Log.d(TAG, "Notification permission denied")
+                    Toast.makeText(
+                        this,
+                        "The app needs notification permission to run in the background",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
         }
     }
 
@@ -117,6 +205,8 @@ class DeviceActivity : Activity() {
         Log.d(TAG, "Activity onResume")
         listenByDeviceEvents()
         getMyAppStatus()
+        // Update toggle button text based on service state
+        updateServiceToggleState()
     }
 
     /**
@@ -173,7 +263,9 @@ class DeviceActivity : Activity() {
     }
 
     /**
-     * Checks if the companion app is installed on the device and updates the UI accordingly.
+     * Checks if the companion app is installed on the device and starts the message service.
+     * This method queries the ConnectIQ SDK to verify if the companion app is installed
+     * on the connected Garmin device. If installed, it starts the MessageService.
      */
     private fun getMyAppStatus() {
         Log.d(TAG, "Checking app status")
@@ -207,7 +299,7 @@ class DeviceActivity : Activity() {
      * Handles message selection and sends the selected message to the device.
      * @param message The message payload to send
      */
-    private fun onItemClick(message: Any) {
+    private fun onItemClick(message: String) {
         Log.d(TAG, "Sending message: $message")
         try {
             connectIQ.sendMessage(device, myApp, message) { _, _, status ->
@@ -224,6 +316,29 @@ class DeviceActivity : Activity() {
                 "ConnectIQ service is unavailable. Is Garmin Connect Mobile installed and running?",
                 Toast.LENGTH_LONG
             ).show()
+        }
+    }
+
+    private fun toggleService() {
+        if (isServiceRunning) {
+            NotificationUtils.stopService(this, device, COMM_WATCH_ID)
+            serviceToggleView?.text = getString(R.string.start_background_service)
+            isServiceRunning = false
+        } else {
+            NotificationUtils.startService(this, device, COMM_WATCH_ID)
+            serviceToggleView?.text = getString(R.string.stop_background_service)
+            isServiceRunning = true
+        }
+    }
+
+    private fun updateServiceToggleState() {
+        // Check if service is running
+        val serviceIntent = MessageService.createIntent(this, device, COMM_WATCH_ID)
+        isServiceRunning = serviceIntent.filterEquals(Intent().setClass(this, MessageService::class.java))
+        serviceToggleView?.text = if (isServiceRunning) {
+            getString(R.string.stop_background_service)
+        } else {
+            getString(R.string.start_background_service)
         }
     }
 }

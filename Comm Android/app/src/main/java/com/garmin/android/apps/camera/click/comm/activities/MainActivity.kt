@@ -17,6 +17,8 @@ import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
+import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 /**
  * Main activity of the application that handles device discovery and management.
@@ -28,6 +30,8 @@ class MainActivity : Activity() {
     private lateinit var adapter: IQDeviceAdapter
 
     private var isSdkReady = false
+
+
 
     /**
      * Listener for ConnectIQ SDK events that handles initialization status and device updates.
@@ -66,6 +70,9 @@ class MainActivity : Activity() {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
+        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+
         setContentView(R.layout.activity_main)
 
         setupUi()

@@ -24,4 +24,7 @@
 
     <string name="accessibility_service_description">This service helps with camera accessibility features</string>
 
+    <string name="start_background_service">Start Background Service</string>
+    <string name="stop_background_service">Stop Background Service</string>
+
 </resources>
