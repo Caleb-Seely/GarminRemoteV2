@@ -4,7 +4,7 @@
 -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.garmin.android.apps.connectiq.sample.comm.activities.MainActivity" >
+    tools:context="com.garmin.android.apps.camera.click.comm.activities.MainActivity" >
 
     <item
         android:id="@+id/load_devices"

@@ -1,4 +1,4 @@
-package com.garmin.android.apps.connectiq.sample.comm.util
+package com.garmin.android.apps.camera.click.comm.utils
 
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo

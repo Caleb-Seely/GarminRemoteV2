@@ -1,4 +1,4 @@
-package com.garmin.android.apps.connectiq.sample.comm.utils
+package com.garmin.android.apps.camera.click.comm.utils
 
 import android.content.Context
 import android.content.Intent
@@ -93,14 +93,5 @@ class CameraUtils {
             }
         }
 
-        /**
-         * Checks if the app has camera permission.
-         *
-         * @param context The context to check permissions for
-         * @return true if camera permission is granted, false otherwise
-         */
-        fun hasCameraPermission(context: Context): Boolean {
-            return context.checkSelfPermission(android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
-        }
     }
 } 

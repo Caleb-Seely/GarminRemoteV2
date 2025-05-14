@@ -2,7 +2,7 @@
  * Copyright (C) 2015 Garmin International Ltd.
  * Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
  */
-package com.garmin.android.apps.connectiq.sample.comm.adapter
+package com.garmin.android.apps.camera.click.comm.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -11,7 +11,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.garmin.android.apps.connectiq.sample.comm.Message
+import com.garmin.android.apps.camera.click.comm.Message
 
 /**
  * Adapter class for displaying messages in a RecyclerView.

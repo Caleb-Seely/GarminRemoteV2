@@ -2,7 +2,7 @@
  * Copyright (C) 2015 Garmin International Ltd.
  * Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
  */
-package com.garmin.android.apps.connectiq.sample.comm.activities
+package com.garmin.android.apps.camera.click.comm.activities
 
 import android.app.Activity
 import android.os.Bundle
@@ -11,8 +11,8 @@ import android.view.MenuItem
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.garmin.android.apps.connectiq.sample.comm.R
-import com.garmin.android.apps.connectiq.sample.comm.adapter.IQDeviceAdapter
+import com.garmin.android.apps.camera.click.comm.R
+import com.garmin.android.apps.camera.click.comm.adapter.IQDeviceAdapter
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.exception.InvalidStateException

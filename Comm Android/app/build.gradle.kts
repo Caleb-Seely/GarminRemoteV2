@@ -1,12 +1,13 @@
 plugins {
     id("com.android.application")
+    id("com.google.gms.google-services")
     kotlin("android")
 }
 
 val compileSdkVersion: String by project
 val minSdkVersion: String by project
 val targetSdkVersion: String by project
-val packageName = "com.garmin.android.apps.connectiq.sample.comm"
+val packageName = "com.garmin.android.apps.camera.click.comm"
 val versionCode: String by project
 val versionName: String by project
 
@@ -47,4 +48,6 @@ dependencies {
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
 
     implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")
+
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
 }

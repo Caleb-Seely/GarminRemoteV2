@@ -2,32 +2,26 @@
  * Copyright (C) 2015 Garmin International Ltd.
  * Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
  */
-package com.garmin.android.apps.connectiq.sample.comm.activities
+package com.garmin.android.apps.camera.click.comm.activities
 
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Parcelable
-import android.provider.MediaStore
 import android.util.Log
-import android.view.View
 import android.widget.TextView
 import android.widget.Toast
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.garmin.android.apps.connectiq.sample.comm.R
-import com.garmin.android.apps.connectiq.sample.comm.adapter.MessagesAdapter
-import com.garmin.android.apps.connectiq.sample.comm.service.MessageService
+import com.garmin.android.apps.camera.click.comm.R
+import com.garmin.android.apps.camera.click.comm.adapter.MessagesAdapter
+import com.garmin.android.apps.camera.click.comm.service.MessageService
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
-import com.garmin.android.apps.connectiq.sample.comm.utils.CameraUtils
-
+import com.garmin.android.apps.camera.click.comm.utils.CameraUtils
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -46,8 +40,6 @@ class DeviceActivity : Activity() {
      * Companion object containing static utility methods for the activity.
      */
     companion object {
-        private const val CAMERA_PERMISSION_REQUEST = 100
-
         /**
          * Creates an intent to start the DeviceActivity with a specific device.
          * @param context The context to create the intent
@@ -113,9 +105,7 @@ class DeviceActivity : Activity() {
 
         // Add click listener for the camera button
         findViewById<TextView>(R.id.camera_button)?.setOnClickListener {
-            if (checkCameraPermission()) {
-                CameraUtils.launchCamera(this)
-            }
+            CameraUtils.launchCamera(this)
         }
     }
 
@@ -234,32 +224,6 @@ class DeviceActivity : Activity() {
                 "ConnectIQ service is unavailable. Is Garmin Connect Mobile installed and running?",
                 Toast.LENGTH_LONG
             ).show()
-        }
-    }
-
-    private fun checkCameraPermission(): Boolean {
-        return if (CameraUtils.hasCameraPermission(this)) {
-            true
-        } else {
-            Log.d(TAG, "Requesting camera permission")
-            requestPermissions(arrayOf(android.Manifest.permission.CAMERA), CAMERA_PERMISSION_REQUEST)
-            false
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == CAMERA_PERMISSION_REQUEST) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                CameraUtils.launchCamera(this)
-            } else {
-                Toast.makeText(this, "Camera permission is required to use the camera", Toast.LENGTH_LONG).show()
-                CameraUtils.launchCamera(this)
-            }
         }
     }
 }

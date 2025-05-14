@@ -1,4 +1,4 @@
-package com.garmin.android.apps.connectiq.sample.comm.service
+package com.garmin.android.apps.camera.click.comm.service
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -11,9 +11,9 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.garmin.android.apps.connectiq.sample.comm.CameraAccessibilityService
-import com.garmin.android.apps.connectiq.sample.comm.R
-import com.garmin.android.apps.connectiq.sample.comm.activities.DeviceActivity
+import com.garmin.android.apps.camera.click.comm.CameraAccessibilityService
+import com.garmin.android.apps.camera.click.comm.R
+import com.garmin.android.apps.camera.click.comm.activities.DeviceActivity
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp

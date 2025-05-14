@@ -1,4 +1,4 @@
-package com.garmin.android.apps.connectiq.sample.comm
+package com.garmin.android.apps.camera.click.comm
 
 import android.accessibilityservice.AccessibilityService
 import android.content.BroadcastReceiver
@@ -14,9 +14,7 @@ import android.widget.Toast
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp
-import com.garmin.android.connectiq.exception.InvalidStateException
-import com.garmin.android.connectiq.exception.ServiceUnavailableException
-import com.garmin.android.apps.connectiq.sample.comm.util.AccessibilityUtils
+import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
 
 /**
  * CameraAccessibilityService is an Android Accessibility Service that:
@@ -44,18 +42,10 @@ class CameraAccessibilityService : AccessibilityService() {
             "com.android.camera"                // Common package name for many camera apps
         )
         
-        // Set of possible content descriptions for the shutter button
-        // Used to locate the shutter button in different camera apps
-        private val SHUTTER_BUTTON_DESCRIPTIONS = setOf(
-            "Shutter",
-            "Take photo",
-            "Capture",
-            "Take picture",
-            "Shutter button"
-        )
+
 
         // Intent action and extra key for receiving messages
-        const val ACTION_MESSAGE_RECEIVED = "com.garmin.android.apps.connectiq.sample.comm.ACTION_MESSAGE_RECEIVED"
+        const val ACTION_MESSAGE_RECEIVED = "com.garmin.android.apps.camera.click.comm.ACTION_MESSAGE_RECEIVED"
         const val EXTRA_MESSAGE = "message"
 
         // Message types for watch communication

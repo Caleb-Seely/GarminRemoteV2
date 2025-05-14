@@ -2,7 +2,7 @@
  * Copyright (C) 2015 Garmin International Ltd.
  * Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
  */
-package com.garmin.android.apps.connectiq.sample.comm.adapter
+package com.garmin.android.apps.camera.click.comm.adapter
 
 import android.view.LayoutInflater
 import android.view.View

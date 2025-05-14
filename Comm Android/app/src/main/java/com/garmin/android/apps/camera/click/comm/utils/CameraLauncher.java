@@ -1,4 +1,4 @@
-package com.garmin.android.apps.connectiq.sample.comm.utils;
+package com.garmin.android.apps.camera.click.comm.utils;
 
 import android.content.Intent;
 import android.provider.MediaStore;
