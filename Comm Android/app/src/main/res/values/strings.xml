@@ -5,7 +5,8 @@
 -->
 <resources>
 
-    <string name="app_name">Camera Accessibility</string>
+    <string name="app_name">CameraClick</string>
+
     <string name="load_devices">Reload Devices</string>
     <string name="initialization_error">Failed to initalize the SDK.\n</string>
     <string name="service_unavailable">The ConnectIQ service is unavailabe.</string>
@@ -22,7 +23,7 @@
     <string name="missing_widget_message">The Garmin app used with this application is not installed on your ConnectIQ device.   Please install the app and try again.</string>
 
 
-    <string name="accessibility_service_description">This service helps with camera accessibility features</string>
+    <string name="accessibility_service_description">This service turns your Garmin watch into a remote camera trigger</string>
 
     <string name="start_background_service">Start Background Service</string>
     <string name="stop_background_service">Stop Background Service</string>

@@ -34,14 +34,17 @@ object NotificationUtils {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 "Garmin Message Service",
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "Keeps connection to Garmin device active"
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-                setShowBadge(true)
+                setShowBadge(false)
+                enableLights(false)
+                enableVibration(false)
+                setSound(null, null)
             }
             
-            val notificationManager = NotificationManagerCompat.from(context)
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
             Log.d(TAG, "Notification channel created with ID: $NOTIFICATION_CHANNEL_ID")
             
@@ -69,30 +72,23 @@ object NotificationUtils {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Garmin Camera Remote Active")
+        return NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("Garmin CameraClick is Active")
             .setContentText("Connected to ${device.friendlyName}")
-            .setSmallIcon(R.drawable.ic_launcher)
-            .setColor(Color.BLUE)
-            .setColorized(true)
+            .setSmallIcon(R.drawable.baseline_linked_camera_24)
             .setOngoing(true)
             .setAutoCancel(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(pendingActivityIntent)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setOnlyAlertOnce(true)
             .build()
-
-        // Make the notification non-dismissible
-        notification.flags = notification.flags or (
-            Notification.FLAG_NO_CLEAR or 
-            Notification.FLAG_ONGOING_EVENT or 
-            Notification.FLAG_FOREGROUND_SERVICE
-        )
-
-        return notification
+            .apply {
+                flags = flags or Notification.FLAG_NO_CLEAR or 
+                        Notification.FLAG_ONGOING_EVENT or 
+                        Notification.FLAG_FOREGROUND_SERVICE
+            }
     }
 
     /**

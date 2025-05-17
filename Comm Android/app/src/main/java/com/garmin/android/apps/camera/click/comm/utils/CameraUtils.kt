@@ -8,6 +8,7 @@ import android.util.Log
 import android.widget.Toast
 
 /**
+ * CameraUtils.kt
  * Utility class for handling camera-related operations.
  * Provides methods to launch the device's camera app using various approaches.
  */
@@ -77,14 +78,7 @@ class CameraUtils {
                 // Only open settings if nothing else works
                 Log.e(TAG, "No camera app found with any method")
                 Toast.makeText(context, "No camera app found. Please check your device settings.", Toast.LENGTH_SHORT).show()
-                
-                // Open camera app settings as last resort
-                val settingsIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                settingsIntent.data = android.net.Uri.parse("package:com.google.android.GoogleCamera")
-                if (settingsIntent.resolveActivity(context.packageManager) != null) {
-                    Log.d(TAG, "Opening camera app settings")
-                    context.startActivity(settingsIntent)
-                }
+
                 return false
             } catch (e: Exception) {
                 Log.e(TAG, "Error launching camera app", e)

@@ -1,10 +1,11 @@
-package com.garmin.android.apps.camera.click.comm
+package com.garmin.android.apps.camera.click.comm.service
 
 import android.accessibilityservice.AccessibilityService
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -15,43 +16,25 @@ import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
+import com.garmin.android.apps.camera.click.comm.utils.CameraGestureHandler
+import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
+import com.garmin.android.apps.camera.click.comm.WatchMessagingService
 
+private const val TAG = "CameraAcessabilityService"
 /**
  * CameraAccessibilityService is an Android Accessibility Service that:
  * 1. Listens for messages from a connected device (e.g., smartwatch)
- * 2. Detects when a camera app is active
- * 3. Automatically triggers the camera shutter when a message is received
+ * 2. Automatically triggers the camera shutter when a message is received
  * 
  * This service requires the ACCESSIBILITY_SERVICE permission and must be enabled
  * in the device's accessibility settings.
  */
 class CameraAccessibilityService : AccessibilityService() {
     companion object {
-        // Tag for logging
-        private const val TAG = "CameraAccessibility"
-        
-        // Debug flag to enable/disable additional logging and toasts
-        private const val DEBUG = true
-        
-        // Set of known camera app package names to detect when a camera app is active
-        private val CAMERA_PACKAGES = setOf(
-            "com.google.android.GoogleCamera",  // Google Camera
-            "com.sec.android.camera",           // Samsung Camera
-            "com.android.camera",               // Generic Android Camera
-            "com.android.camera2",              // Android Camera2 API
-            "com.android.camera"                // Common package name for many camera apps
-        )
-        
-
-
         // Intent action and extra key for receiving messages
         const val ACTION_MESSAGE_RECEIVED = "com.garmin.android.apps.camera.click.comm.ACTION_MESSAGE_RECEIVED"
         const val EXTRA_MESSAGE = "message"
 
-        // Message types for watch communication
-        private const val MESSAGE_TYPE_SHUTTER_SUCCESS = "SHUTTER_SUCCESS"
-        private const val MESSAGE_TYPE_SHUTTER_FAILED = "SHUTTER_FAILED"
-        
         // ConnectIQ constants
         private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
     }
@@ -79,6 +62,9 @@ class CameraAccessibilityService : AccessibilityService() {
     // Watch messaging service
     private val watchMessagingService = WatchMessagingService()
 
+    // Gesture handler for camera interactions
+    private lateinit var gestureHandler: CameraGestureHandler
+
     /**
      * Called when the accessibility service is connected.
      * Sets up the message receiver and processes any pending messages.
@@ -87,9 +73,6 @@ class CameraAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         Log.d(TAG, "onServiceConnected called")
         isServiceConnected = true
-        if (DEBUG) {
-            Toast.makeText(this, "Accessibility service connected", Toast.LENGTH_SHORT).show()
-        }
 
         // Initialize ConnectIQ
         try {
@@ -102,6 +85,9 @@ class CameraAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing ConnectIQ", e)
         }
+
+        // Initialize gesture handler
+        gestureHandler = CameraGestureHandler(this)
 
         // Initialize watch messaging service
         if (!watchMessagingService.initialize()) {
@@ -158,28 +144,52 @@ class CameraAccessibilityService : AccessibilityService() {
     /**
      * Handles the camera trigger action:
      * 1. Checks if a camera app is active
-     * 2. If active, waits a short delay for the app to be ready
-     * 3. Attempts to find and click the shutter button
+     * 2. If active, tries to use saved button location or finds the button
+     * 3. Attempts to click the shutter button
      */
     private fun handleCameraTrigger() {
         Log.d(TAG, "handleCameraTrigger called")
-        if (!isCameraAppActive()) {
-            Log.d(TAG, "No camera app is currently active")
+//        if (!isCameraAppActive()) {
+//            Log.d(TAG, "No camera app is currently active")
+//            watchMessagingService.sendMessage(
+//                WatchMessagingService.MESSAGE_TYPE_SHUTTER_FAILED,
+//                "Open camera app"
+//            )
+//            return
+//        }
+
+        // Get the current package name
+        val packageName = rootInActiveWindow?.packageName?.toString() ?: return
+        
+        // Try to get saved button location first
+        val savedButtonInfo = AccessibilityUtils.getLastKnownButtonInfo(packageName)
+        if (savedButtonInfo != null) {
+            Log.d(TAG, "Using saved button location for package: $packageName")
+            // Create a new AccessibilityNodeInfo for the saved location
+            val root = rootInActiveWindow
+            if (root != null) {
+                val node = AccessibilityUtils.findClickableNodeAtLocation(root, savedButtonInfo.bounds)
+                if (node != null) {
+                    triggerShutter(node)
+                    return
+                } else {
+                    Log.d(TAG, "Saved location no longer has clickable node, searching again")
+                }
+            }
+        }
+            
+        // If no saved location or it's no longer valid, find the button again
+        val shutterButton = findShutterButton()
+        if (shutterButton != null) {
+            Log.d(TAG, "Found shutter button, attempting to trigger")
+            triggerShutter(shutterButton)
+        } else {
+            Log.d(TAG, "Could not find shutter button in active camera app")
             watchMessagingService.sendMessage(
                 WatchMessagingService.MESSAGE_TYPE_SHUTTER_FAILED,
-                "Open camera app"
+                "Could not find shutter button"
             )
-            return
         }
-        
-            val shutterButton = findShutterButton()
-            if (shutterButton != null) {
-                Log.d(TAG, "Found shutter button, attempting to trigger")
-                triggerShutter(shutterButton)
-            } else {
-                Log.d(TAG, "Could not find shutter button in active camera app")
-            }
-
     }
 
     /**
@@ -189,27 +199,27 @@ class CameraAccessibilityService : AccessibilityService() {
      * 
      * @return true if a camera app is active, false otherwise
      */
-    private fun isCameraAppActive(): Boolean {
-        Log.d(TAG, "Checking if camera app is active")
-        val root = rootInActiveWindow
-        if (root == null) {
-            Log.d(TAG, "rootInActiveWindow is null")
-            return false
-        }
-        
-        val packageName = root.packageName?.toString()
-        if (packageName == null) {
-            Log.d(TAG, "packageName is null")
-            return false
-        }
-        
-        val isCameraApp = CAMERA_PACKAGES.contains(packageName)
-        if (isCameraApp) {
-            lastKnownCameraPackage = packageName
-        }
-        Log.d(TAG, "Current app: $packageName, is camera app: $isCameraApp")
-        return isCameraApp
-    }
+//    private fun isCameraAppActive(): Boolean {
+//        Log.d(TAG, "Checking if camera app is active")
+//        val root = rootInActiveWindow
+//        if (root == null) {
+//            Log.d(TAG, "rootInActiveWindow is null")
+//            return false
+//        }
+//
+//        val packageName = root.packageName?.toString()
+//        if (packageName == null) {
+//            Log.d(TAG, "packageName is null")
+//            return false
+//        }
+//
+//        val isCameraApp = CAMERA_PACKAGES.contains(packageName)
+//        if (isCameraApp) {
+//            lastKnownCameraPackage = packageName
+//        }
+//        Log.d(TAG, "Current app: $packageName, is camera app: $isCameraApp")
+//        return isCameraApp
+//    }
 
     /**
      * Attempts to find the shutter button in the active camera app by:
@@ -225,7 +235,8 @@ class CameraAccessibilityService : AccessibilityService() {
             return null
         }
 
-        val shutterButton = AccessibilityUtils.largestClickableNode(root, TAG)
+        val packageName = root.packageName?.toString() ?: return null
+        val shutterButton = AccessibilityUtils.largestClickableNode(root, packageName, TAG)
         if (shutterButton != null) {
             Log.d(TAG, "Found largest clickable node as shutter button")
             return shutterButton
@@ -236,28 +247,65 @@ class CameraAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Attempts to trigger the camera shutter by clicking the provided button.
+     * Attempts to trigger the camera shutter by simulating a tap gesture on the provided button.
      * 
-     * @param button The AccessibilityNodeInfo of the shutter button to click
+     * @param button The AccessibilityNodeInfo of the shutter button to tap
      */
     private fun triggerShutter(button: AccessibilityNodeInfo) {
-        Log.d(TAG, "Attempting to trigger shutter button")
-        if (button.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-            Log.d(TAG, "Successfully triggered shutter button")
-            if (DEBUG) {
-                Toast.makeText(this, "Photo taken!", Toast.LENGTH_SHORT).show()
+        Log.d(TAG, "Attempting to trigger shutter button with multiple methods")
+
+        // Get the button's bounds on screen
+        val buttonBounds = Rect()
+        button.getBoundsInScreen(buttonBounds)
+        Log.d(TAG, "Button bounds: $buttonBounds")
+
+        // Calculate the center point of the button
+        val centerX = buttonBounds.centerX().toFloat()
+        val centerY = buttonBounds.centerY().toFloat()
+        Log.d(TAG, "Tap coordinates: ($centerX, $centerY)")
+
+        // Try to perform a direct click first - this is often more reliable for actual buttons
+        try {
+            Log.d(TAG, "Attempting direct performAction CLICK on button")
+            val clickResult = button.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            Log.d(TAG, "Direct button click result: $clickResult")
+
+            if (clickResult) {
+                Log.d(TAG, "Direct button click successful")
+                watchMessagingService.sendMessage(
+                    WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
+                    "Success!"
+                )
+                return
             }
-            watchMessagingService.sendMessage(
-                WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
-                "Success!"
-            )
-        } else {
-            Log.e(TAG, "Failed to click shutter button")
-            watchMessagingService.sendMessage(
-                WatchMessagingService.MESSAGE_TYPE_SHUTTER_FAILED,
-                "Error tapping shutter"
-            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception during direct button click", e)
         }
+
+        // Next try direct child button click if available
+        try {
+            for (i in 0 until button.childCount) {
+                val child = button.getChild(i)
+                if (child != null) {
+                    Log.d(TAG, "Attempting click on child button $i")
+                    val childClickResult = child.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                    Log.d(TAG, "Child button click result: $childClickResult")
+                    if (childClickResult) {
+                        Log.d(TAG, "Child button click successful")
+                        watchMessagingService.sendMessage(
+                            WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
+                            "Success with child button click!"
+                        )
+                        return
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception during child button click", e)
+        }
+
+        // Fall back to using gestures if direct methods fail
+        gestureHandler.attemptCameraGesture(centerX, centerY)
     }
 
     /**
@@ -265,30 +313,24 @@ class CameraAccessibilityService : AccessibilityService() {
      * Logs detailed information about the event for debugging.
      */
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        if (!DEBUG) return
-
-        val packageName = event.packageName?.toString() ?: "unknown"
-        val eventType = getEventTypeString(event.eventType)
-        val className = event.className?.toString() ?: "unknown"
-        val source = event.source?.toString() ?: "unknown"
-
+        // Log click events
         Log.d(TAG, """
-            Package: $packageName
-            Event Type: $eventType
-            Class: $className
-            Source: $source
-            Event Time: ${event.eventTime}
+            ========== ACCESSIBILITY EVENT ==========
+            Event Time: ${System.currentTimeMillis()}
+            Package: ${event.packageName}
+            Event Time Since Boot: ${event.eventTime}
             Window ID: ${event.windowId}
+            Event Source: ${event.source}
+            
+            -- Event Properties --
+            Class Name: ${event.className}
+            Description: ${event.contentDescription}
+            Text: ${event.text}
+            Movement Granularity: ${event.movementGranularity}
+            Action: ${event.action}
+                       
+            =======================================
         """.trimIndent())
-
-        // Log window state changes
-        if (eventType == "TYPE_WINDOW_STATE_CHANGED") {
-            Log.d(TAG, "Window state changed for package: $packageName")
-            if (CAMERA_PACKAGES.contains(packageName)) {
-                lastKnownCameraPackage = packageName
-                Log.d(TAG, "Camera app window state changed: $packageName")
-            }
-        }
     }
 
     /**
@@ -322,20 +364,4 @@ class CameraAccessibilityService : AccessibilityService() {
         }
         mainHandler.removeCallbacksAndMessages(null)
     }
-
-    /**
-     * Converts an accessibility event type integer to a human-readable string.
-     * 
-     * @param eventType The accessibility event type integer
-     * @return A string representation of the event type
-     */
-    private fun getEventTypeString(eventType: Int): String {
-        return when (eventType) {
-            AccessibilityEvent.TYPE_VIEW_CLICKED -> "TYPE_VIEW_CLICKED"
-            AccessibilityEvent.TYPE_VIEW_SELECTED -> "TYPE_VIEW_SELECTED"
-            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> "TYPE_WINDOW_STATE_CHANGED"
-            else -> "UNKNOWN_TYPE($eventType)"
-        }
-    }
-
 } 

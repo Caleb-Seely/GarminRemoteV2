@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.util.Log
-import com.garmin.android.apps.camera.click.comm.CameraAccessibilityService
 import com.garmin.android.apps.camera.click.comm.utils.NotificationUtils
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice

@@ -19,7 +19,6 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.garmin.android.apps.camera.click.comm.R
-import com.garmin.android.apps.camera.click.comm.adapter.MessagesAdapter
 import com.garmin.android.apps.camera.click.comm.service.MessageService
 import com.garmin.android.apps.camera.click.comm.utils.NotificationUtils
 import com.garmin.android.connectiq.ConnectIQ
@@ -34,9 +33,6 @@ private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
 private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
 private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
-
-// TODO Add a valid store app id.
-private const val STORE_APP_ID = ""
 
 /**
  * Activity that handles communication with a specific Garmin device.
@@ -144,8 +140,8 @@ class DeviceActivity : Activity() {
                 ) -> {
                     // Show an explanation to the user
                     AlertDialog.Builder(this)
-                        .setTitle("Notification Permission Required")
-                        .setMessage("To keep the app running in the background and maintain connection with your Garmin device, we need permission to show notifications.")
+                        .setTitle("Notification Permission Suggested")
+                        .setMessage("To keep the app running in the background long term, we need permission to show a notification.")
                         .setPositiveButton("Grant Permission") { _, _ ->
                             requestNotificationPermission()
                         }
