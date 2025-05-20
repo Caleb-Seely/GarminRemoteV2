@@ -29,9 +29,10 @@ class MainActivity : Activity() {
     private lateinit var connectIQ: ConnectIQ
     private lateinit var adapter: IQDeviceAdapter
 
+    private var autoLaunchAttempted = false  // Flag to track if we've already tried auto-launching
+
     private var isSdkReady = false
-
-
+    private var isFirstLaunch = true
 
     /**
      * Listener for ConnectIQ SDK events that handles initialization status and device updates.
@@ -52,8 +53,8 @@ class MainActivity : Activity() {
              * Called when the SDK is ready for use. Triggers device discovery.
              */
             override fun onSdkReady() {
-                loadDevices()
                 isSdkReady = true
+                loadDevices(tryAutoLaunch = true)
             }
 
             /**
@@ -165,7 +166,7 @@ class MainActivity : Activity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.load_devices -> {
-                loadDevices()
+                loadDevices(tryAutoLaunch = false)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -175,17 +176,32 @@ class MainActivity : Activity() {
     /**
      * Loads and displays the list of known Garmin devices.
      * This function retrieves device information and registers for status updates.
+     * If a device is connected and this is the first launch, it will automatically launch the DeviceActivity.
      */
-    fun loadDevices() {
+    fun loadDevices(tryAutoLaunch: Boolean = false) {
         try {
             // Retrieve the list of known devices.
             val devices = connectIQ.knownDevices ?: listOf()
-            // OR You can use getConnectedDevices to retrieve the list of connected devices only.
-            // val devices = connectIQ.connectedDevices ?: listOf()
+            // Get connected devices to check for auto-launch
+            val connectedDevices = connectIQ.connectedDevices ?: listOf()
 
             // Get the connectivity status for each device for initial state.
             devices.forEach {
                 it.status = connectIQ.getDeviceStatus(it)
+            }
+            // Try to find the first connected device and launch its activity if requested
+            if (tryAutoLaunch) {
+                autoLaunchAttempted = true  // Mark that we've attempted auto-launch
+
+                val firstConnectedDevice = devices.find {
+                    it.status == IQDevice.IQDeviceStatus.CONNECTED
+                }
+
+                if (firstConnectedDevice != null) {
+                    // Launch the device activity for the first connected device
+                    startActivity(DeviceActivity.getIntent(this, firstConnectedDevice))
+                    return
+                }
             }
 
             // Update ui list with the devices data
@@ -197,6 +213,7 @@ class MainActivity : Activity() {
                     adapter.updateDeviceStatus(device, status)
                 }
             }
+
         } catch (exception: InvalidStateException) {
             // This generally means you forgot to call initialize(), but since
             // we are in the callback for initialize(), this should never happen
