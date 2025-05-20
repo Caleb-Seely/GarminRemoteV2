@@ -8,10 +8,10 @@
     <string name="app_name">CameraClick</string>
 
     <string name="load_devices">Reload Devices</string>
-    <string name="initialization_error">Failed to initalize the SDK.\n</string>
-    <string name="service_unavailable">The ConnectIQ service is unavailabe.</string>
-    <string name="tap_to_send">Tap to send a test message.</string>
-    <string name="open_app_open">Tap here to open the watch app.</string>
+    <string name="initialization_error">Failed to initialize the SDK.\n</string>
+    <string name="service_unavailable">The ConnectIQ service is unavailable.</string>
+    <string name="tap_to_send">Send a test message.</string>
+    <string name="open_app_open">Open the watch app.</string>
 
     <string name="open_app_already_open">The Garmin app is already open on the device.</string>
     <string name="received_message">Received message from device.</string>
@@ -27,5 +27,9 @@
 
     <string name="start_background_service">Start Background Service</string>
     <string name="stop_background_service">Stop Background Service</string>
+
+    <string name="auto_launch_camera">Auto-launch Camera</string>
+    <string name="no_devices">No devices found</string>
+    <string name="launch_camera">Launch Camera</string>
 
 </resources>

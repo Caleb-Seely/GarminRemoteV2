@@ -9,6 +9,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -16,6 +17,7 @@ import android.os.Parcelable
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.Switch
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.garmin.android.apps.camera.click.comm.R
@@ -33,6 +35,8 @@ private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
 private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
 private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
+private const val PREFS_NAME = "CameraClickPrefs"
+private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
 
 /**
  * Activity that handles communication with a specific Garmin device.
@@ -60,11 +64,13 @@ class DeviceActivity : Activity() {
     private var deviceStatusView: TextView? = null
     private var openAppButtonView: TextView? = null
     private var serviceToggleView: TextView? = null
+    private var autoLaunchSwitch: Switch? = null
     private var isServiceRunning = false
 
     private val connectIQ: ConnectIQ = ConnectIQ.getInstance()
     private lateinit var device: IQDevice
     private lateinit var myApp: IQApp
+    private lateinit var prefs: SharedPreferences
 
     private var appIsOpen = false
 
@@ -92,6 +98,8 @@ class DeviceActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device)
 
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
         device = intent.getParcelableExtra<Parcelable>(EXTRA_IQ_DEVICE) as IQDevice
         myApp = IQApp(COMM_WATCH_ID)
         appIsOpen = false
@@ -99,11 +107,17 @@ class DeviceActivity : Activity() {
         val deviceNameView = findViewById<TextView>(R.id.devicename)
         deviceStatusView = findViewById(R.id.devicestatus)
         openAppButtonView = findViewById(R.id.openapp)
-        serviceToggleView = findViewById(R.id.service_toggle)
+        autoLaunchSwitch = findViewById(R.id.auto_launch_switch)
 
         deviceNameView?.text = device.friendlyName
         deviceStatusView?.text = device.status?.name
         openAppButtonView?.setOnClickListener { openMyApp() }
+
+        // Initialize auto-launch switch state
+        autoLaunchSwitch?.isChecked = prefs.getBoolean(KEY_AUTO_LAUNCH_CAMERA, false)
+        autoLaunchSwitch?.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean(KEY_AUTO_LAUNCH_CAMERA, isChecked).apply()
+        }
 
         // Add click listener for the tap to send button
         findViewById<TextView>(R.id.taptosend)?.setOnClickListener {
@@ -301,6 +315,11 @@ class DeviceActivity : Activity() {
             connectIQ.sendMessage(device, myApp, message) { _, _, status ->
                 Log.d(TAG, "Message send status: ${status.name}")
                 Toast.makeText(this@DeviceActivity, status.name, Toast.LENGTH_SHORT).show()
+                
+                // Auto-launch camera if enabled
+                if (prefs.getBoolean(KEY_AUTO_LAUNCH_CAMERA, false)) {
+                    CameraUtils.launchCamera(this@DeviceActivity)
+                }
             }
         } catch (e: InvalidStateException) {
             Log.e(TAG, "Error sending message", e)

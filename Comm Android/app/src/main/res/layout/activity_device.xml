@@ -75,8 +75,6 @@ Individual device information and tests screen
         android:focusable="true"
         android:gravity="center_vertical"
         android:minHeight="43dp"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
         android:text="@string/tap_to_send"
         app:layout_constraintTop_toBottomOf="@id/dividerB" />
 
@@ -88,43 +86,38 @@ Individual device information and tests screen
         android:background="#cdcdcd"
         app:layout_constraintTop_toBottomOf="@id/taptosend" />
 
+    <!-- Auto Launch Camera Switch -->
+    <TextView
+        android:id="@+id/auto_launch_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/auto_launch_camera"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/dividerC"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Switch
+        android:id="@+id/auto_launch_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="5dp"
+        app:layout_constraintTop_toTopOf="@id/auto_launch_label"
+        app:layout_constraintBottom_toBottomOf="@id/auto_launch_label"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Camera Button Section -->
     <TextView
         android:id="@+id/camera_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Launch Camera"
-        android:padding="16dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        app:layout_constraintTop_toBottomOf="@id/dividerC"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp" />
-
-    <View
-        android:id="@+id/dividerD"
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="16dp"
-        android:background="#cdcdcd"
-        app:layout_constraintTop_toBottomOf="@id/camera_button" />
-
-    <!-- Service Toggle Section -->
-    <TextView
-        android:id="@+id/service_toggle"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Stop Background Service"
+        android:text="@string/launch_camera"
         android:padding="16dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/dividerD"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
     <!-- Empty view for fallback -->
     <TextView
@@ -134,7 +127,7 @@ Individual device information and tests screen
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/service_toggle"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.5" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
