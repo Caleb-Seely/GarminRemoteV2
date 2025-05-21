@@ -38,6 +38,7 @@ private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
 private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
 private const val PREFS_NAME = "CameraClickPrefs"
 private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
+private const val KEY_ACCESSIBILITY_DIALOG_SHOWN = "accessibility_dialog_shown"
 
 /**
  * Activity that handles communication with a specific Garmin device.
@@ -137,8 +138,38 @@ class DeviceActivity : Activity() {
             toggleService()
         }
 
-        // Check and request notification permission if needed
+        // Check permissions and show dialogs if needed
+        checkAndRequestPermissions()
+    }
+
+    private fun checkAndRequestPermissions() {
+        // First check notification permission
         checkAndRequestNotificationPermission()
+        
+        // Then check if we need to show the accessibility dialog
+        if (!prefs.getBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, false)) {
+            showAccessibilityDialog()
+        }
+    }
+
+    private fun showAccessibilityDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.accessibility_dialog_title)
+            .setMessage(R.string.accessibility_dialog_message)
+            .setPositiveButton(R.string.accessibility_dialog_positive) { _, _ ->
+                // Open accessibility settings
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                // Mark dialog as shown
+                prefs.edit().putBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, true).apply()
+            }
+            .setNegativeButton(R.string.accessibility_dialog_negative) { dialog, _ ->
+                dialog.dismiss()
+                // Mark dialog as shown even if user dismisses it
+                prefs.edit().putBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, true).apply()
+            }
+            .setCancelable(false)
+            .create()
+            .show()
     }
 
     private fun checkAndRequestNotificationPermission() {
@@ -157,7 +188,7 @@ class DeviceActivity : Activity() {
                     // Show an explanation to the user
                     AlertDialog.Builder(this)
                         .setTitle("Notification Permission Suggested")
-                        .setMessage("To keep the app running in the background long term, we need permission to show a notification.")
+                        .setMessage("To keep the app running in the background long term, we need permission to show a notification. Also, don't forget to enable Accessibility Service for CameraClick to work properly!")
                         .setPositiveButton("Grant Permission") { _, _ ->
                             requestNotificationPermission()
                         }

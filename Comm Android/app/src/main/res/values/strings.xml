@@ -33,5 +33,11 @@
     <string name="launch_camera">Launch Camera</string>
     <string name="help">Help</string>
 
+    <!-- Accessibility Dialog -->
+    <string name="accessibility_dialog_title">Enable Accessibility Service</string>
+    <string name="accessibility_dialog_message">CameraClick needs accessibility permission to remotely tap your camera\'s shutter button. This allows your Garmin watch to trigger photos from a distance.</string>
+    <string name="accessibility_dialog_positive">Open Settings</string>
+    <string name="accessibility_dialog_negative">Not Now</string>
+    <string name="accessibility_dialog_notification_message">Don\'t forget to enable Accessibility Service for CameraClick to work properly!</string>
 
 </resources>
