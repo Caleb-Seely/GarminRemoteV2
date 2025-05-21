@@ -1,0 +1,147 @@
+package com.garmin.android.apps.camera.click.comm.activities
+
+import android.app.Activity
+import android.os.Bundle
+import android.text.method.LinkMovementMethod
+import android.view.LayoutInflater
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
+import androidx.core.text.HtmlCompat
+import com.garmin.android.apps.camera.click.comm.R
+
+/**
+ * Activity that displays help information about the app in a structured, elegant format.
+ */
+class HelpActivity : Activity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_help)
+
+        setupTitleAndDescription()
+        setupSections()
+    }
+
+    private fun setupTitleAndDescription() {
+//        findViewById<TextView>(R.id.help_title).text = "CameraClick Help & Setup Guide"
+
+        val descriptionText = "<font color='#3fe9a3'><b>CameraClick</b></font> lets you use your <b>Garmin watch as a remote shutter</b> " +
+                "for your phone's camera. Whether you're snapping solo trail shots or setting up for " +
+                "hands-free filming, CameraClick makes it simple."
+
+        findViewById<TextView>(R.id.help_description).apply {
+            text = HtmlCompat.fromHtml(descriptionText, HtmlCompat.FROM_HTML_MODE_COMPACT)
+            movementMethod = LinkMovementMethod.getInstance()
+        }
+    }
+
+    private fun setupSections() {
+        val sectionsContainer = findViewById<LinearLayout>(R.id.sections_container)
+
+        // Getting Started Section
+        createSection(
+            sectionsContainer,
+            "Getting Started",
+            "<ol>" +
+                    "<b>Install Both Apps</b><br>" +
+                    "• <b>Phone App:</b> You're here — already installed!<br>" +
+                    "• <b>Watch App:</b> Install CameraClick on your Garmin via the <b>Garmin Connect IQ Store</b> <br><br>" +
+
+                    "<b>Grant Permissions</b><br>" +
+                    "• <b><font color='#FF0000'>⚠️ Accessibility Permission</font></b> – <b>REQUIRED!</b> This allows the app to tap the shutter button on screen.<br>" +
+                    "• <b>Notification Access</b> – Keeps CameraClick running in the background.<br>" +
+                    "• <b>Camera</b> – Required by your camera app, not CameraClick.<br><br>" +
+
+                    "<b>Enable Accessibility Service:</b><br>" +
+                    "   - Go to <code>Settings > Accessibility</code><br>" +
+                    "   - Find <b>CameraClick</b><br>" +
+                    "   - Toggle it <b>ON</b></li><br>" +
+
+                    "<br><b>Enable Switch Access</b><br>" +
+                    "Optional but required for video on some devices (no need to configure any switches).<br>" +
+                    "<b>To enable:</b><br>" +
+                    "   - Go to <code>Settings > Accessibility > Switch Access</code><br>" +
+                    "   - Toggle it <b>ON</b></li>" +
+                    "</ol>"
+        )
+
+        // How It Works Section
+        createSection(
+            sectionsContainer,
+            "How It Works",
+            "<ul>" +
+                    "<li> Open <b>CameraClick</b> on your phone.</li>" +
+                    "<li> Open your camera app.</li>" +
+                    "<li> When your Garmin sends a command, CameraClick uses Accessibility to tap the largest button on screen (should always be the shutter).</li>" +
+                    "That's it!"
+        )
+
+        // What You Can Use Section
+        createSection(
+            sectionsContainer,
+            "What You Can Use",
+            "Because CameraClick taps your native camera app:<br>" +
+                    "<ul>" +
+                    "<li> All settings (flash, timer, filters) are controlled in your camera app</li>" +
+                    "<li> Works with <b>front and back cameras</b></li>" +
+                    "<li> Supports <b>photo and video mode</b> (if your device allows it)</li>" +
+                    "</ul>"
+        )
+
+        // Common Issues & Fixes Section
+        createSection(
+            sectionsContainer,
+            "⚠️ Common Issues & Fixes",
+            "<b>Watch doesn't trigger shutter</b><br>" +
+                    "→ Check Bluetooth & ensure Garmin app is connected<br><br>" +
+                    
+                    "<b>Nothing happens</b><br>" +
+                    "→ Ensure the <b>camera app is open and visible</b><br><br>" +
+                    
+                    "<b>Shutter not responding</b><br>" +
+                    "→ Make sure <b>Accessibility is enabled</b><br><br>" +
+                    
+                    "<b>Video capture doesn't work</b><br>" +
+                    "→ Try turning <b>Switch Access ON</b> (no configuration needed)<br><br>" +
+                    
+                    "<b>App stops working in background</b><br>" +
+                    "→ Exempt CameraClick from <b>Battery Optimization</b>"
+        )
+
+        // Test Feature Section
+        createSection(
+            sectionsContainer,
+            "🧪 Test Feature",
+            "You can use the <b>\"Send Test\"</b> button in the app to verify communication with your watch."
+        )
+
+        // Quick Links Section
+        createSection(
+            sectionsContainer,
+            "📎 Quick Links",
+            "<ul>" +
+                    "<li>📝 <a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a></li>" +
+                    "<li>⌚ <a href='https://apps.garmin.com'>Garmin Connect IQ – CameraClick App</a></li>" +
+                    "<li>🌐 <a href='https://calebseely.com'>Someone please hire me</a></li>" +
+                    "</ul>"
+        )
+    }
+
+    private fun createSection(container: LinearLayout, title: String, content: String) {
+        val sectionView = LayoutInflater.from(this).inflate(R.layout.help_section, container, false)
+
+        // Set the section title
+        sectionView.findViewById<TextView>(R.id.section_title).text = title
+
+        // Set the section content with HTML formatting
+        sectionView.findViewById<TextView>(R.id.section_content).apply {
+            text = HtmlCompat.fromHtml(content, HtmlCompat.FROM_HTML_MODE_COMPACT)
+            movementMethod = LinkMovementMethod.getInstance() // Makes links clickable
+        }
+
+        // Add the section to the container
+        container.addView(sectionView)
+    }
+}

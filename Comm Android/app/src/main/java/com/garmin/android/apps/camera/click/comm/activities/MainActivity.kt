@@ -6,6 +6,7 @@ package com.garmin.android.apps.camera.click.comm.activities
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
@@ -177,6 +178,10 @@ class MainActivity : Activity() {
      */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.help -> {
+                startActivity(Intent(this, HelpActivity::class.java))
+                true
+            }
             R.id.load_devices -> {
                 loadDevices(tryAutoLaunch = false)
                 true

@@ -53,4 +53,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
     implementation("com.google.firebase:firebase-common-ktx:21.0.0")
     implementation("com.google.firebase:firebase-crashlytics-ktx:19.4.3")
+
+    implementation("androidx.cardview:cardview:1.0.0")
+    implementation("androidx.core:core-ktx:1.16.0")
 }

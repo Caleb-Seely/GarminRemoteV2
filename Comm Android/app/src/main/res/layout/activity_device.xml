@@ -21,7 +21,7 @@ Individual device information and tests screen
         app:layout_constraintEnd_toStartOf="@id/devicestatus"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="Fenix 7" />
+        tools:text="Forerunner 255" />
 
     <TextView
         android:id="@+id/devicestatus"
@@ -50,7 +50,7 @@ Individual device information and tests screen
         android:layout_marginStart="5dp"
         android:layout_marginTop="5dp"
         android:gravity="center_vertical"
-        android:minHeight="43dp"
+        android:minHeight="50dp"
         android:text="@string/open_app_open"
         app:layout_constraintTop_toBottomOf="@id/dividerA" />
 
@@ -112,7 +112,7 @@ Individual device information and tests screen
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/launch_camera"
-        android:padding="16dp"
+        android:padding="24dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:focusable="true"

@@ -31,5 +31,7 @@
     <string name="auto_launch_camera">Auto-launch Camera</string>
     <string name="no_devices">No devices found</string>
     <string name="launch_camera">Launch Camera</string>
+    <string name="help">Help</string>
+
 
 </resources>

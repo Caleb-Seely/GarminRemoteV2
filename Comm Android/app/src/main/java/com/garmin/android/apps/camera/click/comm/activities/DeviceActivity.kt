@@ -30,6 +30,7 @@ import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
 import com.garmin.android.apps.camera.click.comm.utils.CameraUtils
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import android.graphics.Color
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -111,6 +112,7 @@ class DeviceActivity : Activity() {
 
         deviceNameView?.text = device.friendlyName
         deviceStatusView?.text = device.status?.name
+        device.status?.let { updateDeviceStatusColor(it) }
         openAppButtonView?.setOnClickListener { openMyApp() }
 
         // Initialize auto-launch switch state
@@ -266,6 +268,7 @@ class DeviceActivity : Activity() {
             connectIQ.registerForDeviceEvents(device) { _, status ->
                 Log.d(TAG, "Device status changed: ${status.name}")
                 deviceStatusView?.text = status.name
+                updateDeviceStatusColor(status)
             }
         } catch (e: InvalidStateException) {
             Log.e(TAG, "Error registering for device events", e)
@@ -355,5 +358,15 @@ class DeviceActivity : Activity() {
         } else {
             getString(R.string.start_background_service)
         }
+    }
+
+    private fun updateDeviceStatusColor(status: IQDevice.IQDeviceStatus) {
+        deviceStatusView?.setTextColor(
+            when (status) {
+                IQDevice.IQDeviceStatus.CONNECTED -> ContextCompat.getColor(this, R.color.primary_dark)
+                IQDevice.IQDeviceStatus.NOT_CONNECTED -> ContextCompat.getColor(this, R.color.error)
+                else -> ContextCompat.getColor(this, R.color.warning) // For UNKNOWN and other states
+            }
+        )
     }
 }
