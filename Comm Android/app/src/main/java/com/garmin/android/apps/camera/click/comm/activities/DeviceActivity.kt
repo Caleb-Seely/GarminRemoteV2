@@ -31,6 +31,11 @@ import com.garmin.android.connectiq.exception.ServiceUnavailableException
 import com.garmin.android.apps.camera.click.comm.utils.CameraUtils
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import android.graphics.Color
+import android.provider.Settings
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.ktx.Firebase
+import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -73,6 +78,7 @@ class DeviceActivity : Activity() {
     private lateinit var device: IQDevice
     private lateinit var myApp: IQApp
     private lateinit var prefs: SharedPreferences
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     private var appIsOpen = false
 
@@ -100,11 +106,22 @@ class DeviceActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device)
 
+        // Initialize Firebase Analytics
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
         device = intent.getParcelableExtra<Parcelable>(EXTRA_IQ_DEVICE) as IQDevice
         myApp = IQApp(COMM_WATCH_ID)
         appIsOpen = false
+
+        // Log device activity screen view with device details
+        val bundle = Bundle().apply {
+            putString("device_name", device.friendlyName)
+            putString("device_id", device.deviceIdentifier.toString())
+            putString("connection_status", device.status?.name ?: "unknown")
+        }
+        AnalyticsUtils.logScreenView("device_activity", "DeviceActivity", bundle)
 
         val deviceNameView = findViewById<TextView>(R.id.devicename)
         deviceStatusView = findViewById(R.id.devicestatus)
@@ -120,124 +137,106 @@ class DeviceActivity : Activity() {
         autoLaunchSwitch?.isChecked = prefs.getBoolean(KEY_AUTO_LAUNCH_CAMERA, false)
         autoLaunchSwitch?.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean(KEY_AUTO_LAUNCH_CAMERA, isChecked).apply()
+            AnalyticsUtils.logFeatureUsage("auto_launch_camera", "toggle", isChecked)
         }
 
-        // Add click listener for the tap to send button
+        // Add click listener for the tap to send test button
         findViewById<TextView>(R.id.taptosend)?.setOnClickListener {
+            AnalyticsUtils.logFeatureUsage("test_message", "button_click", true)
             onItemClick("Test")
         }
 
         // Add click listener for the camera button
         findViewById<TextView>(R.id.camera_button)?.setOnClickListener {
             FirebaseCrashlytics.getInstance().log("Camera launch button clicked")
+            AnalyticsUtils.logFeatureUsage("camera_launch", "button_click", true)
             CameraUtils.launchCamera(this)
         }
 
         // Add click listener for the service toggle
         serviceToggleView?.setOnClickListener {
+            AnalyticsUtils.logFeatureUsage("background_service", "toggle", !isServiceRunning)
             toggleService()
         }
 
         // Check permissions and show dialogs if needed
         checkAndRequestPermissions()
+
+        FirebaseAnalytics.getInstance(this).setAnalyticsCollectionEnabled(true)
     }
 
     private fun checkAndRequestPermissions() {
-        // First check notification permission
-        checkAndRequestNotificationPermission()
-        
-        // Then check if we need to show the accessibility dialog
-        if (!prefs.getBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, false)) {
-            showAccessibilityDialog()
+        // Check notification permission for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                FirebaseCrashlytics.getInstance().log("Notification permission not granted")
+                AnalyticsUtils.logPermissionState("POST_NOTIFICATIONS", false)
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    NOTIFICATION_PERMISSION_REQUEST_CODE
+                )
+            } else {
+                FirebaseCrashlytics.getInstance().log("Notification permission already granted")
+                AnalyticsUtils.logPermissionState("POST_NOTIFICATIONS", true)
+            }
         }
+
+        // Check accessibility service
+        val accessibilityEnabled = isAccessibilityServiceEnabled()
+        if (!accessibilityEnabled) {
+            FirebaseCrashlytics.getInstance().log("Accessibility service not enabled")
+            AnalyticsUtils.logServiceState("accessibility", "disabled")
+            if (!prefs.getBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, false)) {
+                showAccessibilityDialog()
+            }
+        } else {
+            FirebaseCrashlytics.getInstance().log("Accessibility service enabled")
+            AnalyticsUtils.logServiceState("accessibility", "enabled")
+        }
+    }
+
+    private fun isAccessibilityServiceEnabled(): Boolean {
+        val accessibilityEnabled = try {
+            val accessibilityEnabled = Settings.Secure.getInt(
+                contentResolver,
+                Settings.Secure.ACCESSIBILITY_ENABLED
+            )
+            accessibilityEnabled == 1
+        } catch (e: Settings.SettingNotFoundException) {
+            FirebaseCrashlytics.getInstance().recordException(e)
+            false
+        }
+
+        if (!accessibilityEnabled) {
+            return false
+        }
+
+        val serviceString = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        return serviceString.contains("${packageName}/.service.CameraAccessibilityService")
     }
 
     private fun showAccessibilityDialog() {
         AlertDialog.Builder(this)
-            .setTitle(R.string.accessibility_dialog_title)
-            .setMessage(R.string.accessibility_dialog_message)
-            .setPositiveButton(R.string.accessibility_dialog_positive) { _, _ ->
-                // Open accessibility settings
-                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                // Mark dialog as shown
-                prefs.edit().putBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, true).apply()
+            .setTitle(R.string.accessibility_required)
+            .setMessage(R.string.accessibility_required_message)
+            .setPositiveButton(R.string.open_settings) { _, _ ->
+                FirebaseCrashlytics.getInstance().log("Opening accessibility settings")
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
-            .setNegativeButton(R.string.accessibility_dialog_negative) { dialog, _ ->
-                dialog.dismiss()
-                // Mark dialog as shown even if user dismisses it
-                prefs.edit().putBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, true).apply()
-            }
-            .setCancelable(false)
+            .setNegativeButton(android.R.string.cancel, null)
             .create()
             .show()
-    }
 
-    private fun checkAndRequestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            when {
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED -> {
-                    Log.d(TAG, "Notification permission already granted")
-                }
-                ActivityCompat.shouldShowRequestPermissionRationale(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) -> {
-                    // Show an explanation to the user
-                    AlertDialog.Builder(this)
-                        .setTitle("Notification Permission Suggested")
-                        .setMessage("To keep the app running in the background long term, we need permission to show a notification. Also, don't forget to enable Accessibility Service for CameraClick to work properly!")
-                        .setPositiveButton("Grant Permission") { _, _ ->
-                            requestNotificationPermission()
-                        }
-                        .setNegativeButton("Cancel") { dialog, _ ->
-                            dialog.dismiss()
-                        }
-                        .create()
-                        .show()
-                }
-                else -> {
-                    // No explanation needed, request the permission
-                    requestNotificationPermission()
-                }
-            }
-        }
-    }
-
-    private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                NOTIFICATION_PERMISSION_REQUEST_CODE
-            )
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            NOTIFICATION_PERMISSION_REQUEST_CODE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "Notification permission granted")
-                    // Restart the service to create the notification
-                    getMyAppStatus()
-                } else {
-                    Log.d(TAG, "Notification permission denied")
-                    Toast.makeText(
-                        this,
-                        "The app needs notification permission to run in the background",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
+        prefs.edit().putBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, true).apply()
     }
 
     /**
@@ -283,10 +282,23 @@ class DeviceActivity : Activity() {
         Log.d(TAG, "Opening app on device")
         Toast.makeText(this, "Opening app...", Toast.LENGTH_SHORT).show()
 
+        // Log the app open attempt
+        AnalyticsUtils.logWatchAppOpen(
+            deviceName = device.friendlyName,
+            deviceId = device.deviceIdentifier.toString(),
+            status = device.status?.name ?: "unknown"
+        )
+
         try {
             connectIQ.openApplication(device, myApp, openAppListener)
         } catch (e: Exception) {
             Log.e(TAG, "Error opening app", e)
+            // Log the error
+            AnalyticsUtils.logWatchAppOpen(
+                deviceName = device.friendlyName,
+                deviceId = device.deviceIdentifier.toString(),
+                status = "error: ${e.message}"
+            )
         }
     }
 
@@ -350,10 +362,12 @@ class DeviceActivity : Activity() {
                 Log.d(TAG, "Message send status: ${status.name}")
                 Toast.makeText(this@DeviceActivity, status.name, Toast.LENGTH_SHORT).show()
                 
-                // Auto-launch camera if enabled
-                if (prefs.getBoolean(KEY_AUTO_LAUNCH_CAMERA, false)) {
-                    CameraUtils.launchCamera(this@DeviceActivity)
+                // Log camera command event
+                val params = Bundle().apply {
+                    putString("device_name", device.friendlyName)
+                    putString("message", message)
                 }
+                firebaseAnalytics.logEvent("message_sent_to_watch", params)
             }
         } catch (e: InvalidStateException) {
             Log.e(TAG, "Error sending message", e)
@@ -373,10 +387,12 @@ class DeviceActivity : Activity() {
             NotificationUtils.stopService(this, device, COMM_WATCH_ID)
             serviceToggleView?.text = getString(R.string.start_background_service)
             isServiceRunning = false
+            AnalyticsUtils.logServiceState("message_service", "stopped")
         } else {
             NotificationUtils.startService(this, device, COMM_WATCH_ID)
             serviceToggleView?.text = getString(R.string.stop_background_service)
             isServiceRunning = true
+            AnalyticsUtils.logServiceState("message_service", "started")
         }
     }
 

@@ -4,12 +4,14 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.os.Bundle
 import android.util.Log
 import com.garmin.android.apps.camera.click.comm.utils.NotificationUtils
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.exception.InvalidStateException
+import com.google.firebase.analytics.FirebaseAnalytics
 
 private const val TAG = "MessageService"
 
@@ -18,6 +20,7 @@ class MessageService : Service() {
     private lateinit var device: IQDevice
     private lateinit var app: IQApp
     private var isServiceRunning = false
+    private lateinit var firebaseAnalytics: FirebaseAnalytics
 
     companion object {
         private const val EXTRA_DEVICE = "device"
@@ -36,6 +39,7 @@ class MessageService : Service() {
         Log.d(TAG, "Service onCreate")
         NotificationUtils.createNotificationChannel(this)
         connectIQ = ConnectIQ.getInstance()
+        firebaseAnalytics = FirebaseAnalytics.getInstance(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -101,12 +105,22 @@ class MessageService : Service() {
         try {
             connectIQ.registerForAppEvents(device, app) { _, _, message, _ ->
                 Log.d(TAG, "Received message: ${message.joinToString()}")
+                val messageReceivedTime = System.currentTimeMillis()
+
+                val bundle = Bundle().apply {
+                    putString("device_name", device.friendlyName)
+                    putString("device_id", device.deviceIdentifier.toString())
+                    putString("message", message.joinToString())
+                    putLong("message_received_time", messageReceivedTime)
+                }
+                firebaseAnalytics.logEvent("message_received_from_watch", bundle)
                 
                 val intent = Intent(CameraAccessibilityService.ACTION_MESSAGE_RECEIVED).apply {
                     putExtra(CameraAccessibilityService.EXTRA_MESSAGE, message.joinToString())
+                    putExtra(CameraAccessibilityService.EXTRA_MESSAGE_TIME, messageReceivedTime)
                 }
                 sendBroadcast(intent)
-                Log.d(TAG, "Broadcasted message to CameraAccessibilityService")
+                Log.d(TAG, "Broadcast message to CameraAccessibilityService")
             }
             Log.d(TAG, "Successfully registered for app events")
         } catch (e: InvalidStateException) {

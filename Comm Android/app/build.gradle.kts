@@ -51,9 +51,10 @@ dependencies {
 
     implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")
 
-    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
-    implementation("com.google.firebase:firebase-common-ktx:21.0.0")
-    implementation("com.google.firebase:firebase-crashlytics-ktx:19.4.3")
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
+    implementation("com.google.firebase:firebase-common-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
 
     implementation("androidx.cardview:cardview:1.0.0")
     implementation("androidx.core:core-ktx:1.16.0")

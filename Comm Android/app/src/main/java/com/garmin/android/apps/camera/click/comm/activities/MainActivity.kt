@@ -26,6 +26,11 @@ import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.FirebaseAnalytics.Event
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.ktx.Firebase
+import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 
 private const val TAG = "MainActivity"
 private const val PREFS_NAME = "CameraClickPrefs"
@@ -40,6 +45,7 @@ class MainActivity : Activity() {
     private lateinit var connectIQ: ConnectIQ
     private lateinit var adapter: IQDeviceAdapter
     private lateinit var prefs: SharedPreferences
+    private var sessionStartTime: Long = 0
 
     private var autoLaunchAttempted = false  // Flag to track if we've already tried auto-launching
     private var isSdkReady = false
@@ -58,6 +64,7 @@ class MainActivity : Activity() {
             override fun onInitializeError(errStatus: ConnectIQ.IQSdkErrorStatus) {
                 setEmptyState(getString(R.string.initialization_error) + ": " + errStatus.name)
                 isSdkReady = false
+                FirebaseCrashlytics.getInstance().log("ConnectIQ SDK initialization failed: ${errStatus.name}")
             }
 
             /**
@@ -65,6 +72,7 @@ class MainActivity : Activity() {
              */
             override fun onSdkReady() {
                 isSdkReady = true
+                FirebaseCrashlytics.getInstance().log("ConnectIQ SDK ready")
                 loadDevices(tryAutoLaunch = true)
             }
 
@@ -73,6 +81,7 @@ class MainActivity : Activity() {
              */
             override fun onSdkShutDown() {
                 isSdkReady = false
+                FirebaseCrashlytics.getInstance().log("ConnectIQ SDK shut down")
             }
         }
 
@@ -82,10 +91,42 @@ class MainActivity : Activity() {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sessionStartTime = System.currentTimeMillis()
+        
         FirebaseApp.initializeApp(this)
         FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
+        FirebaseCrashlytics.getInstance().log("App started")
 
+        // Initialize preferences first
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        
+        // Calculate time since last session if available
+        val lastSessionEnd = prefs.getLong("last_session_end", 0)
+        val timeSinceLastSession = if (lastSessionEnd > 0) {
+            System.currentTimeMillis() - lastSessionEnd
+        } else null
+
+        // Initialize Firebase Analytics with detailed logging
+        try {
+            AnalyticsUtils.initialize(this)
+            Log.d(TAG, "Firebase Analytics initialization completed")
+            
+            // Log app open
+            AnalyticsUtils.logAppOpen(this, isFirstLaunch)
+            
+            // Log main screen view
+            val bundle = Bundle().apply {
+                putString("page_type", "device_list")
+            }
+            AnalyticsUtils.logScreenView("main", "MainActivity", bundle)
+            
+            // Log user engagement
+            AnalyticsUtils.logUserEngagement(0, timeSinceLastSession)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing Firebase Analytics", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
 
         setContentView(R.layout.activity_main)
 
@@ -108,6 +149,14 @@ class MainActivity : Activity() {
      */
     public override fun onDestroy() {
         super.onDestroy()
+        
+        // Log session duration
+        val sessionDuration = System.currentTimeMillis() - sessionStartTime
+        AnalyticsUtils.logUserEngagement(sessionDuration)
+        
+        // Save session end time
+        prefs.edit().putLong("last_session_end", System.currentTimeMillis()).apply()
+        
         releaseConnectIQSdk()
     }
 
@@ -156,6 +205,7 @@ class MainActivity : Activity() {
         // for WIRELESS, unless we had previously gotten an instance passing TETHERED
         // as the connection type.
         connectIQ = ConnectIQ.getInstance(this, ConnectIQ.IQConnectType.WIRELESS)
+        FirebaseCrashlytics.getInstance().log("Initializing ConnectIQ SDK")
 
         // Initialize the SDK
         connectIQ.initialize(this, true, connectIQListener)
@@ -179,10 +229,12 @@ class MainActivity : Activity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.help -> {
+                AnalyticsUtils.logFeatureUsage("help", "menu_click", true)
                 startActivity(Intent(this, HelpActivity::class.java))
                 true
             }
             R.id.load_devices -> {
+                AnalyticsUtils.logFeatureUsage("load_devices", "menu_click", true)
                 loadDevices(tryAutoLaunch = false)
                 true
             }
@@ -202,6 +254,7 @@ class MainActivity : Activity() {
             // Get the connectivity status for each device for initial state
             devices.forEach {
                 it.status = connectIQ.getDeviceStatus(it)
+                AnalyticsUtils.logDeviceConnection(it.friendlyName, it.status?.name ?: "unknown")
             }
 
             if (devices.isNotEmpty()) {
@@ -211,6 +264,7 @@ class MainActivity : Activity() {
                 devices.forEach {
                     connectIQ.registerForDeviceEvents(it) { device, status ->
                         adapter.updateDeviceStatus(device, status)
+                        AnalyticsUtils.logDeviceConnection(device.friendlyName, status.name)
                     }
                 }
 

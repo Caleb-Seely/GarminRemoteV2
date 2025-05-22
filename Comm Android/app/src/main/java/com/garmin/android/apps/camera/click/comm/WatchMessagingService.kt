@@ -1,11 +1,14 @@
 package com.garmin.android.apps.camera.click.comm
 
+import android.content.Context
+import android.os.Bundle
 import android.util.Log
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
+import com.google.firebase.analytics.FirebaseAnalytics
 
 
 /**
@@ -33,12 +36,15 @@ class WatchMessagingService {
     private lateinit var device: IQDevice
     private lateinit var myApp: IQApp
     private var isInitialized = false
+    private lateinit var context: Context
 
     /**
      * Initializes the service with a connected Garmin device.
+     * @param context The application context
      * @return true if initialization was successful, false otherwise
      */
-    fun initialize(): Boolean {
+    fun initialize(context: Context): Boolean {
+        this.context = context
         return try {
             device = connectIQ.connectedDevices?.firstOrNull() ?: run {
                 Log.e(TAG, "No connected Garmin device found")
@@ -72,6 +78,14 @@ class WatchMessagingService {
                 Log.d(TAG, "Message type: $messageType")
                 Log.d(TAG, "Message content: $details")
                 Log.d(TAG, "Message send status: ${status.name}")
+
+                // Log the total response time
+                val bundle = Bundle().apply {
+                    putString("message_type", messageType)
+                    putString("message_content", details ?: "")
+                    putString("send_status", status.name)
+                }
+                FirebaseAnalytics.getInstance(context).logEvent("message_sent_to_watch", bundle)
             }
             true
         } catch (e: InvalidStateException) {

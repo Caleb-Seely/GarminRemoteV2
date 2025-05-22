@@ -40,4 +40,10 @@
     <string name="accessibility_dialog_negative">Not Now</string>
     <string name="accessibility_dialog_notification_message">Don\'t forget to enable Accessibility Service for CameraClick to work properly!</string>
 
+    <!-- Accessibility Dialog -->
+    <string name="accessibility_required">Accessibility Required</string>
+    <string name="accessibility_required_message">CameraClick needs accessibility permission to remotely tap your camera\'s shutter button. This allows your Garmin watch to trigger photos from a distance.</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="error_loading_devices">error loading devices\n</string>
+
 </resources>

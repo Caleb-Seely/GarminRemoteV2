@@ -4,10 +4,12 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.accessibilityservice.AccessibilityService.GestureResultCallback
 import android.graphics.Path
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.garmin.android.apps.camera.click.comm.WatchMessagingService
+import com.google.firebase.analytics.FirebaseAnalytics
 
 private const val TAG = "CameraGestureHandler"
 /**
@@ -17,35 +19,34 @@ private const val TAG = "CameraGestureHandler"
 class CameraGestureHandler(private val service: AccessibilityService) {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val watchMessagingService = WatchMessagingService()
+    private val firebaseAnalytics = FirebaseAnalytics.getInstance(service)
+    private val gestureTimeoutHandler = Handler(Looper.getMainLooper())
+    private var gestureCompleted = false
 
     /**
      * Attempts to trigger the camera shutter using a tap gesture.
      * @param centerX The x-coordinate of the center of the button
      * @param centerY The y-coordinate of the center of the button
+     * @param startTime The time when the message was received from the watch
      */
-    fun attemptCameraGesture(centerX: Float, centerY: Float) {
-        val gestureTimeoutHandler = Handler(Looper.getMainLooper())
-        var gestureCompleted = false
+    fun attemptCameraGesture(centerX: Float, centerY: Float, startTime: Long) {
+        Log.d(TAG, "Attempting camera gesture at ($centerX, $centerY)")
+        
+        // Reset gesture state
+        gestureCompleted = false
+        
+        val clickPath = Path()
+        clickPath.moveTo(centerX, centerY)
 
-        // Try a more robust tap-and-hold gesture
-        val path = Path()
-        path.moveTo(centerX - 5, centerY - 5)  // Start slightly offset
-        path.lineTo(centerX, centerY)  // Move to center
-
-        val gestureBuilder = GestureDescription.Builder()
-        val stroke = GestureDescription.StrokeDescription(
-            path,
-            0, // Start time
-            400  // Longer duration for better recognition
-        )
-        gestureBuilder.addStroke(stroke)
-        val gesture = gestureBuilder.build()
+        val clickGesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(clickPath, 0, 100))
+            .build()
 
         // Set up a timeout for the gesture callback
         val timeoutRunnable = Runnable {
             if (!gestureCompleted) {
                 Log.d(TAG, "Gesture timed out, trying second approach")
-                attemptSecondGesture(centerX, centerY)
+                attemptSecondGesture(centerX, centerY, startTime)
             }
         }
 
@@ -56,6 +57,14 @@ class CameraGestureHandler(private val service: AccessibilityService) {
                     Log.d(TAG, "Primary gesture completed successfully")
                     gestureCompleted = true
                     gestureTimeoutHandler.removeCallbacks(timeoutRunnable)
+
+                    // Calculate and log time spent
+                    val timeSpent = System.currentTimeMillis() - startTime
+                    val bundle = Bundle().apply {
+                        putLong("time_spent_ms", timeSpent)
+                        putString("method", "primary_gesture")
+                    }
+                    firebaseAnalytics.logEvent("shutter_response_time", bundle)
 
                     // Wait a bit before confirming success to ensure camera actually captures
                     mainHandler.postDelayed({
@@ -70,25 +79,25 @@ class CameraGestureHandler(private val service: AccessibilityService) {
                     Log.e(TAG, "Primary gesture was cancelled")
                     gestureCompleted = true
                     gestureTimeoutHandler.removeCallbacks(timeoutRunnable)
-                    attemptSecondGesture(centerX, centerY)
+                    attemptSecondGesture(centerX, centerY, startTime)
                 }
             }
 
-            val success = service.dispatchGesture(gesture, callback, null)
+            val success = service.dispatchGesture(clickGesture, callback, null)
 
             if (!success) {
                 Log.e(TAG, "Failed to dispatch primary gesture")
-                attemptSecondGesture(centerX, centerY)
+                attemptSecondGesture(centerX, centerY, startTime)
             } else {
                 gestureTimeoutHandler.postDelayed(timeoutRunnable, 800)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception while dispatching primary gesture", e)
-            attemptSecondGesture(centerX, centerY)
+            attemptSecondGesture(centerX, centerY, startTime)
         }
     }
 
-    private fun attemptSecondGesture(centerX: Float, centerY: Float) {
+    private fun attemptSecondGesture(centerX: Float, centerY: Float, startTime: Long) {
         val clickPath = Path()
         clickPath.moveTo(centerX, centerY)
 
@@ -116,6 +125,15 @@ class CameraGestureHandler(private val service: AccessibilityService) {
             val callback = object : GestureResultCallback() {
                 override fun onCompleted(gestureDescription: GestureDescription) {
                     Log.d(TAG, "Double-tap gesture completed successfully")
+                    
+                    // Calculate and log time spent
+                    val timeSpent = System.currentTimeMillis() - startTime
+                    val bundle = Bundle().apply {
+                        putLong("time_spent_ms", timeSpent)
+                        putString("method", "double_tap")
+                    }
+                    firebaseAnalytics.logEvent("shutter_response_time", bundle)
+                    
                     mainHandler.postDelayed({
                         watchMessagingService.sendMessage(
                             WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
@@ -126,7 +144,7 @@ class CameraGestureHandler(private val service: AccessibilityService) {
 
                 override fun onCancelled(gestureDescription: GestureDescription) {
                     Log.e(TAG, "Double-tap gesture was cancelled")
-                    tryPressAndHoldGesture(centerX, centerY)
+                    tryPressAndHoldGesture(centerX, centerY, startTime)
                 }
             }
 
@@ -134,15 +152,15 @@ class CameraGestureHandler(private val service: AccessibilityService) {
 
             if (!success) {
                 Log.e(TAG, "Failed to dispatch double-tap gesture")
-                tryPressAndHoldGesture(centerX, centerY)
+                tryPressAndHoldGesture(centerX, centerY, startTime)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception while dispatching double-tap gesture", e)
-            tryPressAndHoldGesture(centerX, centerY)
+            tryPressAndHoldGesture(centerX, centerY, startTime)
         }
     }
 
-    private fun tryPressAndHoldGesture(centerX: Float, centerY: Float) {
+    private fun tryPressAndHoldGesture(centerX: Float, centerY: Float, startTime: Long) {
         Log.d(TAG, "Attempting press-and-hold gesture")
 
         val pressPath = Path()
@@ -156,6 +174,15 @@ class CameraGestureHandler(private val service: AccessibilityService) {
             val callback = object : GestureResultCallback() {
                 override fun onCompleted(gestureDescription: GestureDescription) {
                     Log.d(TAG, "Press-and-hold gesture completed")
+                    
+                    // Calculate and log time spent
+                    val timeSpent = System.currentTimeMillis() - startTime
+                    val bundle = Bundle().apply {
+                        putLong("time_spent_ms", timeSpent)
+                        putString("method", "press_and_hold")
+                    }
+                    firebaseAnalytics.logEvent("shutter_response_time", bundle)
+                    
                     mainHandler.postDelayed({
                         watchMessagingService.sendMessage(
                             WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
@@ -166,18 +193,18 @@ class CameraGestureHandler(private val service: AccessibilityService) {
 
                 override fun onCancelled(gestureDescription: GestureDescription) {
                     Log.e(TAG, "Press-and-hold gesture cancelled")
-                    tryMultipleRapidTaps(centerX, centerY)
+                    tryMultipleRapidTaps(centerX, centerY, startTime)
                 }
             }
 
             service.dispatchGesture(pressGesture, callback, null)
         } catch (e: Exception) {
             Log.e(TAG, "Exception in press-and-hold gesture", e)
-            tryMultipleRapidTaps(centerX, centerY)
+            tryMultipleRapidTaps(centerX, centerY, startTime)
         }
     }
 
-    private fun tryMultipleRapidTaps(centerX: Float, centerY: Float) {
+    private fun tryMultipleRapidTaps(centerX: Float, centerY: Float, startTime: Long) {
         Log.d(TAG, "Attempting multiple rapid taps")
         // Implementation for multiple rapid taps
         // This is a fallback method that can be implemented if needed

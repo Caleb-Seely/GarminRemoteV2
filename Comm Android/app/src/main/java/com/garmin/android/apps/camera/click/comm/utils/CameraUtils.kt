@@ -6,6 +6,8 @@ import android.content.pm.PackageManager
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 
 /**
  * CameraUtils.kt
@@ -29,6 +31,7 @@ class CameraUtils {
          */
         fun launchCamera(context: Context): Boolean {
             try {
+                FirebaseCrashlytics.getInstance().log("Attempting to launch camera app")
                 // Try launching specific camera apps first
                 val cameraPackages = listOf(
                     "com.google.android.GoogleCamera",
@@ -41,11 +44,14 @@ class CameraUtils {
                         val launchIntent = context.packageManager.getLaunchIntentForPackage(packageName)
                         if (launchIntent != null) {
                             Log.d(TAG, "Found launch intent for $packageName")
+                            FirebaseCrashlytics.getInstance().log("Launching camera app: $packageName")
                             context.startActivity(launchIntent)
+                            AnalyticsUtils.logCameraLaunch(true, packageName)
                             return true
                         }
                     } catch (e: Exception) {
                         Log.d(TAG, "Could not launch $packageName: ${e.message}")
+                        FirebaseCrashlytics.getInstance().log("Failed to launch $packageName: ${e.message}")
                     }
                 }
 
@@ -61,7 +67,9 @@ class CameraUtils {
                     Log.d(TAG, "Trying camera intent: ${intent.action}")
                     if (intent.resolveActivity(context.packageManager) != null) {
                         Log.d(TAG, "Found camera app with intent: ${intent.action}")
+                        FirebaseCrashlytics.getInstance().log("Launching camera with intent: ${intent.action}")
                         context.startActivity(intent)
+                        AnalyticsUtils.logCameraLaunch(true)
                         return true
                     }
                 }
@@ -71,17 +79,22 @@ class CameraUtils {
                 val chooser = Intent.createChooser(intent, "Select Camera App")
                 if (chooser.resolveActivity(context.packageManager) != null) {
                     Log.d(TAG, "Launching camera through system chooser")
+                    FirebaseCrashlytics.getInstance().log("Launching camera through system chooser")
                     context.startActivity(chooser)
+                    AnalyticsUtils.logCameraLaunch(true)
                     return true
                 }
 
                 // Only open settings if nothing else works
                 Log.e(TAG, "No camera app found with any method")
+                FirebaseCrashlytics.getInstance().log("No camera app found with any method")
                 Toast.makeText(context, "No camera app found. Please check your device settings.", Toast.LENGTH_SHORT).show()
-
+                AnalyticsUtils.logCameraLaunch(false)
                 return false
             } catch (e: Exception) {
-                Log.e(TAG, "Error launching camera app", e)
+                Log.e(TAG, "Error launching camera", e)
+                FirebaseCrashlytics.getInstance().recordException(e)
+                AnalyticsUtils.logCameraLaunch(false)
                 Toast.makeText(context, "Error launching camera app: ${e.message}", Toast.LENGTH_SHORT).show()
                 return false
             }

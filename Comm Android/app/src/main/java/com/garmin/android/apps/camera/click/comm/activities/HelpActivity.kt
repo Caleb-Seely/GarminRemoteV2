@@ -10,18 +10,42 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import com.garmin.android.apps.camera.click.comm.R
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 
 /**
  * Activity that displays help information about the app in a structured, elegant format.
  */
 class HelpActivity : Activity() {
+    private var startTime: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_help)
 
+        // Record start time
+        startTime = System.currentTimeMillis()
+
+        // Log help screen view
+        val bundle = Bundle().apply {
+            putString("page_type", "documentation")
+        }
+        AnalyticsUtils.logScreenView("help", "HelpActivity", bundle)
+
         setupTitleAndDescription()
         setupSections()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        
+        // Calculate time spent and log it
+        val timeSpent = System.currentTimeMillis() - startTime
+        val bundle = Bundle().apply {
+            putString("page_name", "help")
+            putLong("time_spent_ms", timeSpent)
+        }
+        FirebaseAnalytics.getInstance(this).logEvent("time_spent", bundle)
     }
 
     private fun setupTitleAndDescription() {
@@ -121,11 +145,10 @@ class HelpActivity : Activity() {
         createSection(
             sectionsContainer,
             "📎 Quick Links",
-            "<ul>" +
-                    "<li>📝 <a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a></li>" +
-                    "<li>⌚ <a href='https://apps.garmin.com'>Garmin Connect IQ – CameraClick App</a></li>" +
-                    "<li>🌐 <a href='https://calebseely.com'>Someone please hire me</a></li>" +
-                    "</ul>"
+            "📝 <a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a>" +
+                    "⌚ <a href='https://apps.garmin.com'>Garmin Connect IQ – CameraClick App</a>" +
+                    "🌐 <a href='https://calebseely.com'>Someone please hire me</a>"
+
         )
     }
 
