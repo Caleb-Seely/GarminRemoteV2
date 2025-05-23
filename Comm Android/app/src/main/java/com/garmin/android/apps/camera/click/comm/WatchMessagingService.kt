@@ -25,7 +25,6 @@ data class Message(val text: String, val payload: Any)
 class WatchMessagingService {
     companion object {
         private const val TAG = "WatchMessaging"
-        private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
 
         // Message types for watch communication
         const val MESSAGE_TYPE_SHUTTER_SUCCESS = "SHUTTER_SUCCESS"
@@ -50,7 +49,7 @@ class WatchMessagingService {
                 Log.e(TAG, "No connected Garmin device found")
                 return false
             }
-            myApp = IQApp(COMM_WATCH_ID)
+            myApp = IQApp(CommConstants.COMM_WATCH_ID)
             isInitialized = true
             Log.d(TAG, "WatchMessagingService initialized with device: ${device.friendlyName}")
             true

@@ -20,6 +20,7 @@ import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
 import com.garmin.android.apps.camera.click.comm.utils.CameraGestureHandler
 import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
 import com.garmin.android.apps.camera.click.comm.WatchMessagingService
+import com.garmin.android.apps.camera.click.comm.CommConstants
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
@@ -39,9 +40,6 @@ class CameraAccessibilityService : AccessibilityService() {
         const val ACTION_MESSAGE_RECEIVED = "com.garmin.android.apps.camera.click.comm.ACTION_MESSAGE_RECEIVED"
         const val EXTRA_MESSAGE = "message"
         const val EXTRA_MESSAGE_TIME = "message_time"
-
-        // ConnectIQ constants
-        private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
     }
 
     // Handler for posting delayed tasks to the main thread
@@ -90,7 +88,7 @@ class CameraAccessibilityService : AccessibilityService() {
                 FirebaseCrashlytics.getInstance().log("No connected Garmin device found")
                 return
             }
-            myApp = IQApp(COMM_WATCH_ID)
+            myApp = IQApp(CommConstants.COMM_WATCH_ID)
             Log.d(TAG, "ConnectIQ initialized with device: ${device.friendlyName}")
             FirebaseCrashlytics.getInstance().log("ConnectIQ initialized with device: ${device.friendlyName}")
         } catch (e: Exception) {

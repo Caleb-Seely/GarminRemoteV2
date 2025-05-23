@@ -87,7 +87,7 @@ object AnalyticsUtils {
             putLong("session_duration_ms", sessionDuration)
             timeSinceLastSession?.let { putLong("time_since_last_session_ms", it) }
         }
-        logEvent("user_engagement", params)
+        logEvent("app_session_engagement", params)
     }
 
     fun logFeatureUsage(featureName: String, action: String, success: Boolean) {

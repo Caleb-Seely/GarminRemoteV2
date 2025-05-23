@@ -29,6 +29,7 @@ import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
 import com.garmin.android.apps.camera.click.comm.utils.CameraUtils
+import com.garmin.android.apps.camera.click.comm.CommConstants
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import android.graphics.Color
 import android.provider.Settings
@@ -39,7 +40,6 @@ import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
-private const val COMM_WATCH_ID = "a3421feed289106a538cb9547ab12095"
 private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
 private const val PREFS_NAME = "CameraClickPrefs"
 private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
@@ -112,7 +112,7 @@ class DeviceActivity : Activity() {
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
         device = intent.getParcelableExtra<Parcelable>(EXTRA_IQ_DEVICE) as IQDevice
-        myApp = IQApp(COMM_WATCH_ID)
+        myApp = IQApp(CommConstants.COMM_WATCH_ID)
         appIsOpen = false
 
         // Log device activity screen view with device details
@@ -272,7 +272,7 @@ class DeviceActivity : Activity() {
     public override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "Activity onDestroy")
-        stopService(MessageService.createIntent(this, device, COMM_WATCH_ID))
+        stopService(MessageService.createIntent(this, device, CommConstants.COMM_WATCH_ID))
     }
 
     /**
@@ -326,12 +326,12 @@ class DeviceActivity : Activity() {
     private fun getMyAppStatus() {
         Log.d(TAG, "Checking app status")
         try {
-            connectIQ.getApplicationInfo(COMM_WATCH_ID, device, object :
+            connectIQ.getApplicationInfo(CommConstants.COMM_WATCH_ID, device, object :
                 ConnectIQ.IQApplicationInfoListener {
                 override fun onApplicationInfoReceived(app: IQApp) {
                     Log.d(TAG, "App is installed, starting message service")
                     // Start the message service when the app is confirmed to be installed
-                    startService(MessageService.createIntent(this@DeviceActivity, device, COMM_WATCH_ID))
+                    startService(MessageService.createIntent(this@DeviceActivity, device, CommConstants.COMM_WATCH_ID))
                 }
 
                 override fun onApplicationNotInstalled(applicationId: String) {
@@ -384,12 +384,12 @@ class DeviceActivity : Activity() {
 
     private fun toggleService() {
         if (isServiceRunning) {
-            NotificationUtils.stopService(this, device, COMM_WATCH_ID)
+            NotificationUtils.stopService(this, device, CommConstants.COMM_WATCH_ID)
             serviceToggleView?.text = getString(R.string.start_background_service)
             isServiceRunning = false
             AnalyticsUtils.logServiceState("message_service", "stopped")
         } else {
-            NotificationUtils.startService(this, device, COMM_WATCH_ID)
+            NotificationUtils.startService(this, device, CommConstants.COMM_WATCH_ID)
             serviceToggleView?.text = getString(R.string.stop_background_service)
             isServiceRunning = true
             AnalyticsUtils.logServiceState("message_service", "started")
@@ -398,7 +398,7 @@ class DeviceActivity : Activity() {
 
     private fun updateServiceToggleState() {
         // Check if service is running
-        val serviceIntent = MessageService.createIntent(this, device, COMM_WATCH_ID)
+        val serviceIntent = MessageService.createIntent(this, device, CommConstants.COMM_WATCH_ID)
         isServiceRunning = serviceIntent.filterEquals(Intent().setClass(this, MessageService::class.java))
         serviceToggleView?.text = if (isServiceRunning) {
             getString(R.string.stop_background_service)

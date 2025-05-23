@@ -1,0 +1,32 @@
+CameraClick – Remote Shutter for Android
+📸 Turn your Garmin watch into a remote shutter for your Android phone.
+Perfect for creators, runners, group photos, and hands-free video capture, CameraClick gives you full control of your camera—right from your wrist.
+
+🔧 Key Features
+📷 Trigger your phone’s native camera app
+
+⏱️ Use built-in tools: delay timer, flash, video, portrait
+
+🧰 Works with your default camera—this tool just presses the button for you
+
+⚙️ How It Works
+CameraClick sends a command from your Garmin watch to the CameraClick Android companion app, running quietly in the background.
+When your camera app is open, CameraClick finds the shutter button using Android's Accessibility Service—and presses it.
+- No custom camera
+- No cloud services
+- Just fast, reliable remote control
+
+📲 Requirements
+✅ Garmin watch with Connect IQ support
+
+✅ Android phone (not compatible with iOS)
+
+✅ CameraClick companion app from Google Play
+
+✅ Accessibility permissions enabled
+
+✅ Switch Access turned on (no setup needed—just enabled)
+
+🎯 Works with your default camera app
+📱 Android only
+🔗 Companion app required
