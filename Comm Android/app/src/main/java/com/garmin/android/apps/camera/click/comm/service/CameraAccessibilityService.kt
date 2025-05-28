@@ -164,7 +164,7 @@ class CameraAccessibilityService : AccessibilityService() {
 
         // Initialize Firebase Analytics with debug mode
         AnalyticsUtils.initialize(this)
-        Log.d(TAG, "Firebase Analytics initialized with debug mode for camera command")
+        Log.d(TAG, "Firebase Analytics initialized for camera command")
 
         val currentPackage = getCurrentApp()
 
