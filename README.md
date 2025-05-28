@@ -59,7 +59,7 @@ When a message is received:
 ## 🚀 Installation
 
 ### Android App
-1. Download the latest APK from the [Releases](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/raw/main/Comm%20Android/app/release/app-release.apk) page  
+1. Download the latest APK from the [Releases](https://github.com/Caleb-Seely/GarminRemoteV2/raw/main/Comm%20Android/app/release/app-release.apk) page  
 2. Enable “Install from Unknown Sources” in your Android settings  
 3. Install the APK on your device  
 4. Enable restricted settings for the CameraClick app:
@@ -99,7 +99,7 @@ When a message is received:
 
 ## 📥 Download
 
-[**⬇ Download Latest app-release.apk**](https://github.com/YOUR_USERNAME/YOUR_REPO_NAME/raw/main/Comm%20Android/app/release/app-release.apk)
+[**⬇ Download Latest app-release.apk**](https://github.com/Caleb-Seely/GarminRemoteV2/raw/main/Comm%20Android/app/release/app-release.apk)
 
 ---
 
