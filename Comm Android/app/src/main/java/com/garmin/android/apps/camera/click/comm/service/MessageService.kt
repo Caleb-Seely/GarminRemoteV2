@@ -118,8 +118,10 @@ class MessageService : Service() {
                 val intent = Intent(CameraAccessibilityService.ACTION_MESSAGE_RECEIVED).apply {
                     putExtra(CameraAccessibilityService.EXTRA_MESSAGE, message.joinToString())
                     putExtra(CameraAccessibilityService.EXTRA_MESSAGE_TIME, messageReceivedTime)
+                    setPackage(packageName)
+                    addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
                 }
-                sendBroadcast(intent)
+                sendBroadcast(intent, null)
                 Log.d(TAG, "Broadcast message to CameraAccessibilityService")
             }
             Log.d(TAG, "Successfully registered for app events")

@@ -145,7 +145,7 @@ class CameraAccessibilityService : AccessibilityService() {
 
         try {
             val filter = IntentFilter(ACTION_MESSAGE_RECEIVED)
-            registerReceiver(messageReceiver, filter)
+            registerReceiver(messageReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
             Log.d(TAG, "Message receiver registered successfully")
         } catch (e: Exception) {
             Log.e(TAG, "Error registering message receiver", e)

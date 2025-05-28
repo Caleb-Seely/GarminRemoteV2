@@ -14,8 +14,11 @@ monkey.jungle
 *.ap_
 *.aab
 *.dex
-ClearShot_App/app/release/*
-!ClearShot_App/app/release/app-release.apk
+Comm Android/app/release/
+Comm Android/app/release/baselineProfiles
+Comm Android/app/release/output-metadata.json
+!Comm Android/app/release/
+!Comm Android/app/release/app-release.apk
 
 # Generated files
 gen/
