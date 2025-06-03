@@ -1,7 +1,3 @@
-<!--
- Copyright (C) 2015 Garmin International Ltd.
- Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
--->
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.garmin.android.apps.camera.click.comm.activities.MainActivity" >

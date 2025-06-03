@@ -146,8 +146,8 @@ class HelpActivity : Activity() {
             sectionsContainer,
             "📎 Quick Links",
             "📝 <a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a>" +
-                    "⌚ <a href='https://apps.garmin.com'>Garmin Connect IQ – CameraClick App</a>" +
-                    "🌐 <a href='https://calebseely.com'>Someone please hire me</a>"
+                    "<br>⌚ <a href='https://apps.garmin.com'>Garmin Connect IQ – CameraClick App</a>" +
+                    "<br>🌐 <a href='https://calebseely.com'>Someone please hire me</a>"
 
         )
     }

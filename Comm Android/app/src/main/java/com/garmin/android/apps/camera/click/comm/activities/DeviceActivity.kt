@@ -1,7 +1,3 @@
-/**
- * Copyright (C) 2015 Garmin International Ltd.
- * Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
- */
 package com.garmin.android.apps.camera.click.comm.activities
 
 import android.Manifest
@@ -48,6 +44,13 @@ private const val KEY_ACCESSIBILITY_DIALOG_SHOWN = "accessibility_dialog_shown"
 /**
  * Activity that handles communication with a specific Garmin device.
  * This activity allows users to interact with a selected device, send messages, and manage the companion app.
+ * 
+ * Key responsibilities:
+ * - Manages device connection status and UI updates
+ * - Handles opening and monitoring the companion app on the device
+ * - Controls camera trigger functionality
+ * - Manages background service for message handling
+ * - Handles accessibility service requirements
  */
 class DeviceActivity : Activity() {
 
@@ -84,6 +87,7 @@ class DeviceActivity : Activity() {
 
     /**
      * Listener for app open status changes that updates the UI accordingly.
+     * This listener handles the response when attempting to open the companion app on the device.
      */
     private val openAppListener = ConnectIQ.IQOpenApplicationListener { _, _, status ->
         Log.d(TAG, "App status changed: ${status.name}")
@@ -100,6 +104,12 @@ class DeviceActivity : Activity() {
 
     /**
      * Initializes the activity and sets up the UI components.
+     * This method:
+     * - Initializes Firebase Analytics
+     * - Sets up device-specific UI elements
+     * - Configures click listeners for various actions
+     * - Checks and requests necessary permissions
+     * 
      * @param savedInstanceState The saved instance state
      */
     public override fun onCreate(savedInstanceState: Bundle?) {
@@ -200,6 +210,12 @@ class DeviceActivity : Activity() {
         }
     }
 
+    /**
+     * Checks if the accessibility service is enabled for the app.
+     * This is required for the camera trigger functionality to work properly.
+     * 
+     * @return true if the accessibility service is enabled, false otherwise
+     */
     private fun isAccessibilityServiceEnabled(): Boolean {
         val accessibilityEnabled = try {
             val accessibilityEnabled = Settings.Secure.getInt(
@@ -224,6 +240,10 @@ class DeviceActivity : Activity() {
         return serviceString.contains("${packageName}/.service.CameraAccessibilityService")
     }
 
+    /**
+     * Shows a dialog explaining why accessibility service is required and provides
+     * a button to open the accessibility settings.
+     */
     private fun showAccessibilityDialog() {
         AlertDialog.Builder(this)
             .setTitle(R.string.accessibility_required)
@@ -241,6 +261,7 @@ class DeviceActivity : Activity() {
 
     /**
      * Called when the activity resumes. Registers for device and app events.
+     * This method ensures the UI stays in sync with the device state.
      */
     public override fun onResume() {
         super.onResume()
@@ -268,6 +289,7 @@ class DeviceActivity : Activity() {
 
     /**
      * Called when the activity is destroyed. Stops the message service.
+     * This ensures proper cleanup of resources when the activity is closed.
      */
     public override fun onDestroy() {
         super.onDestroy()
@@ -277,6 +299,10 @@ class DeviceActivity : Activity() {
 
     /**
      * Opens the companion app on the connected Garmin device.
+     * This method:
+     * - Attempts to open the app using ConnectIQ SDK
+     * - Logs the attempt for analytics
+     * - Shows appropriate UI feedback
      */
     private fun openMyApp() {
         Log.d(TAG, "Opening app on device")
@@ -304,6 +330,7 @@ class DeviceActivity : Activity() {
 
     /**
      * Registers for device status updates and updates the UI accordingly.
+     * This method ensures the UI reflects the current connection state of the device.
      */
     private fun listenByDeviceEvents() {
         Log.d(TAG, "Registering for device events")
@@ -320,8 +347,10 @@ class DeviceActivity : Activity() {
 
     /**
      * Checks if the companion app is installed on the device and starts the message service.
-     * This method queries the ConnectIQ SDK to verify if the companion app is installed
-     * on the connected Garmin device. If installed, it starts the MessageService.
+     * This method:
+     * - Queries the ConnectIQ SDK for app installation status
+     * - Starts the MessageService if the app is installed
+     * - Shows a dialog if the app is not installed
      */
     private fun getMyAppStatus() {
         Log.d(TAG, "Checking app status")

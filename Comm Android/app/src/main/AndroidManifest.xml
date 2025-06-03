@@ -1,7 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?><!--
- Copyright (C) 2015 Garmin International Ltd.
- Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android Manifest for CameraClick application.
+    This manifest defines:
+    - Application components (activities and services)
+    - Required permissions
+    - Component configurations
+    - Intent filters
 -->
+
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.garmin.android.apps.camera.click.comm"
     android:versionCode="1"
@@ -38,23 +44,26 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
 
+        <!-- Main activity - Entry point of the application -->
         <activity
             android:name=".activities.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
+        <!-- Help activity - Provides setup and usage instructions -->
         <activity 
             android:name=".activities.HelpActivity"
             android:theme="@style/AppTheme"
             android:label="Help &amp; Setup Guide" />
 
+        <!-- Device activity - Handles device-specific interactions -->
         <activity android:name=".activities.DeviceActivity" />
 
+        <!-- Message service - Handles communication with Garmin devices -->
         <service
             android:name=".service.MessageService"
             android:enabled="true"
@@ -62,6 +71,7 @@
             android:foregroundServiceType="dataSync"
             android:permission="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
+        <!-- Accessibility service - Handles camera trigger functionality -->
         <service
             android:name=".service.CameraAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"

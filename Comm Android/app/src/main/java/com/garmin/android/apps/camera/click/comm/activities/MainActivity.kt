@@ -1,7 +1,3 @@
-/**
- * Copyright (C) 2015 Garmin International Ltd.
- * Subject to Garmin SDK License Agreement and Wearables Application Developer Agreement.
- */
 package com.garmin.android.apps.camera.click.comm.activities
 
 import android.app.Activity
@@ -37,8 +33,15 @@ private const val PREFS_NAME = "CameraClickPrefs"
 private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
 
 /**
- * Main activity of the application that handles device discovery and management.
+ * Main activity of the CameraClick application that handles device discovery and management.
  * This activity serves as the entry point for the app and manages the ConnectIQ SDK lifecycle.
+ * 
+ * Key responsibilities:
+ * - Initializes and manages the ConnectIQ SDK for Garmin device communication
+ * - Discovers and displays available Garmin devices
+ * - Handles device selection and navigation to device-specific screens
+ * - Manages app preferences and auto-launch settings
+ * - Integrates with Firebase Analytics for usage tracking
  */
 class MainActivity : Activity() {
 
@@ -87,6 +90,12 @@ class MainActivity : Activity() {
 
     /**
      * Initializes the activity, sets up the UI, and initializes the ConnectIQ SDK.
+     * This method:
+     * - Initializes Firebase Analytics and Crashlytics
+     * - Sets up user preferences
+     * - Configures the UI components
+     * - Initializes the ConnectIQ SDK
+     * 
      * @param savedInstanceState The saved instance state
      */
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -146,6 +155,10 @@ class MainActivity : Activity() {
 
     /**
      * Called when the activity is destroyed. Ensures proper cleanup of SDK resources.
+     * This method:
+     * - Logs session duration
+     * - Saves session end time
+     * - Releases ConnectIQ SDK resources
      */
     public override fun onDestroy() {
         super.onDestroy()
@@ -178,6 +191,7 @@ class MainActivity : Activity() {
 
     /**
      * Sets up the user interface components including the RecyclerView and adapter.
+     * This method initializes the device list UI and configures the adapter for displaying devices.
      */
     private fun setupUi() {
         // Setup UI.
@@ -198,6 +212,7 @@ class MainActivity : Activity() {
 
     /**
      * Initializes the ConnectIQ SDK with wireless connection type.
+     * This method sets up the SDK for wireless communication with Garmin devices.
      */
     private fun setupConnectIQSdk() {
         // Here we are specifying that we want to use a WIRELESS bluetooth connection.
@@ -244,6 +259,12 @@ class MainActivity : Activity() {
 
     /**
      * Loads the list of available devices and optionally attempts to auto-launch the first device.
+     * This method:
+     * - Retrieves the list of known devices
+     * - Updates device status
+     * - Registers for device status updates
+     * - Optionally auto-launches the first device
+     * 
      * @param tryAutoLaunch Whether to attempt auto-launching the first device
      */
     private fun loadDevices(tryAutoLaunch: Boolean = false) {

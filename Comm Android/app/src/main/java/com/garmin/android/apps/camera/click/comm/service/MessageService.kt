@@ -15,6 +15,14 @@ import com.google.firebase.analytics.FirebaseAnalytics
 
 private const val TAG = "MessageService"
 
+/**
+ * Background service that handles communication between the Android app and Garmin device.
+ * This service is responsible for:
+ * - Maintaining a persistent connection with the Garmin device
+ * - Receiving and processing messages from the device
+ * - Forwarding messages to the CameraAccessibilityService
+ * - Managing the service lifecycle and notifications
+ */
 class MessageService : Service() {
     private lateinit var connectIQ: ConnectIQ
     private lateinit var device: IQDevice
@@ -26,6 +34,13 @@ class MessageService : Service() {
         private const val EXTRA_DEVICE = "device"
         private const val EXTRA_APP_ID = "app_id"
 
+        /**
+         * Creates an intent to start the MessageService with the specified device and app.
+         * @param context The context to create the intent
+         * @param device The Garmin device to communicate with
+         * @param appId The ID of the companion app
+         * @return An intent configured to start the MessageService
+         */
         fun createIntent(context: Context, device: IQDevice, appId: String): Intent {
             return Intent(context, MessageService::class.java).apply {
                 putExtra(EXTRA_DEVICE, device)
@@ -34,6 +49,10 @@ class MessageService : Service() {
         }
     }
 
+    /**
+     * Called when the service is created.
+     * Initializes the service components and creates the notification channel.
+     */
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "Service onCreate")
@@ -42,6 +61,15 @@ class MessageService : Service() {
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
     }
 
+    /**
+     * Called when the service is started.
+     * Sets up the connection with the Garmin device and starts listening for messages.
+     * 
+     * @param intent The intent that started the service
+     * @param flags Additional data about this start request
+     * @param startId A unique integer representing this specific request to start
+     * @return The return value indicates what semantics the system should use for the service's current started state
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "Service onStartCommand")
 
@@ -88,8 +116,19 @@ class MessageService : Service() {
         return START_REDELIVER_INTENT
     }
 
+    /**
+     * Called when a client binds to the service.
+     * This service does not support binding, so this method returns null.
+     * 
+     * @param intent The intent that was used to bind to this service
+     * @return null since this service does not support binding
+     */
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /**
+     * Called when the service is destroyed.
+     * Performs cleanup of resources and unregisters message listeners.
+     */
     override fun onDestroy() {
         Log.d(TAG, "Service onDestroy")
         isServiceRunning = false
@@ -101,6 +140,13 @@ class MessageService : Service() {
         super.onDestroy()
     }
 
+    /**
+     * Sets up the message listener for receiving messages from the Garmin device.
+     * This method:
+     * - Registers a listener for messages from the companion app
+     * - Forwards received messages to the CameraAccessibilityService
+     * - Logs message events for analytics
+     */
     private fun registerForMessages() {
         try {
             connectIQ.registerForAppEvents(device, app) { _, _, message, _ ->

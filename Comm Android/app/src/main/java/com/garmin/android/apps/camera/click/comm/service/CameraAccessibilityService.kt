@@ -27,12 +27,12 @@ import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 
 private const val TAG = "CameraAcessabilityService"
 /**
- * CameraAccessibilityService is an Android Accessibility Service that:
- * 1. Listens for messages from a connected device (e.g., smartwatch)
- * 2. Automatically triggers the camera shutter when a message is received
- * 
- * This service requires the ACCESSIBILITY_SERVICE permission and must be enabled
- * in the device's accessibility settings.
+ * Accessibility service that handles camera trigger functionality.
+ * This service is responsible for:
+ * - Receiving messages from the Garmin device
+ * - Detecting and interacting with camera apps
+ * - Triggering camera actions (photo/video capture)
+ * - Managing the accessibility service lifecycle
  */
 class CameraAccessibilityService : AccessibilityService() {
     companion object {
@@ -115,9 +115,11 @@ class CameraAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Sets up the broadcast receiver to listen for incoming messages.
-     * The receiver will either process the message immediately or store it
-     * if the service isn't fully connected yet.
+     * Sets up the broadcast receiver for incoming messages from the Garmin device.
+     * This method:
+     * - Creates a broadcast receiver to handle incoming messages
+     * - Registers the receiver with the appropriate intent filter
+     * - Processes messages either immediately or stores them for later
      */
     private fun setupMessageReceiver() {
         Log.d(TAG, "Setting up message receiver")
@@ -364,7 +366,9 @@ class CameraAccessibilityService : AccessibilityService() {
 
     /**
      * Called when an accessibility event occurs.
-     * Logs detailed information about the event for debugging.
+     * This method is used to detect and interact with camera apps.
+     * 
+     * @param event The accessibility event that occurred
      */
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         // Log click events
@@ -388,8 +392,8 @@ class CameraAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Called when the accessibility service is interrupted.
-     * Cleans up resources and unregisters the message receiver.
+     * Called when the system wants to interrupt the feedback this service is providing.
+     * This is part of the AccessibilityService interface but not used in this implementation.
      */
     override fun onInterrupt() {
         Log.d(TAG, "Service interrupted")
