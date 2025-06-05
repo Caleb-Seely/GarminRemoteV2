@@ -17,15 +17,13 @@ import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
-import com.garmin.android.apps.camera.click.comm.utils.CameraGestureHandler
 import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
-import com.garmin.android.apps.camera.click.comm.WatchMessagingService
 import com.garmin.android.apps.camera.click.comm.CommConstants
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 
-private const val TAG = "CameraAcessabilityService"
+private const val TAG = "CameraAccessibilityService"
 /**
  * Accessibility service that handles camera trigger functionality.
  * This service is responsible for:
@@ -54,64 +52,27 @@ class CameraAccessibilityService : AccessibilityService() {
     // Store messages received before the service is fully connected
     private var pendingMessage: String? = null
     
-    // Track the last known camera app package name
-    private var lastKnownCameraPackage: String? = null
 
     // ConnectIQ instance for sending messages
     private val connectIQ: ConnectIQ = ConnectIQ.getInstance()
     private lateinit var device: IQDevice
     private lateinit var myApp: IQApp
 
-    // Watch messaging service
-    private val watchMessagingService = WatchMessagingService()
-
-    // Gesture handler for camera interactions
-    private lateinit var gestureHandler: CameraGestureHandler
-
     // Track when a message is received
     private var messageReceivedTime: Long = 0
 
     /**
-     * Called when the accessibility service is connected.
-     * Sets up the message receiver and processes any pending messages.
+     * Called when the accessibility service is created.
+     * Initializes necessary components and sets up the message receiver.
      */
-    override fun onServiceConnected() {
-        super.onServiceConnected()
-        Log.d(TAG, "onServiceConnected called")
-        FirebaseCrashlytics.getInstance().log("Accessibility service connected")
-        isServiceConnected = true
-
-        // Initialize ConnectIQ
-        try {
-            device = connectIQ.connectedDevices?.firstOrNull() ?: run {
-                Log.e(TAG, "No connected Garmin device found")
-                FirebaseCrashlytics.getInstance().log("No connected Garmin device found")
-                return
-            }
-            myApp = IQApp(CommConstants.COMM_WATCH_ID)
-            Log.d(TAG, "ConnectIQ initialized with device: ${device.friendlyName}")
-            FirebaseCrashlytics.getInstance().log("ConnectIQ initialized with device: ${device.friendlyName}")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing ConnectIQ", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
-        }
-
-        // Initialize gesture handler
-        gestureHandler = CameraGestureHandler(this)
-
-        // Initialize watch messaging service
-        if (!watchMessagingService.initialize(this)) {
-            Log.e(TAG, "Failed to initialize watch messaging service")
-        }
-
-        setupMessageReceiver()
+    override fun onCreate() {
+        super.onCreate()
+        Log.d(TAG, "Service onCreate")
         
-        // Process any message that arrived before the service was connected
-        pendingMessage?.let { message ->
-            Log.d(TAG, "Processing pending message: $message")
-            handleCameraTrigger()
-            pendingMessage = null
-        }
+        // Initialize AccessibilityUtils
+        AccessibilityUtils.initialize(this)
+        
+        setupMessageReceiver()
     }
 
     /**
@@ -126,11 +87,12 @@ class CameraAccessibilityService : AccessibilityService() {
         messageReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 Log.d(TAG, "Broadcast received with action: ${intent?.action}")
+                Toast.makeText(context, "Camera broadcast received", Toast.LENGTH_SHORT).show()
                 if (intent?.action == ACTION_MESSAGE_RECEIVED) {
                     val message = intent.getStringExtra(EXTRA_MESSAGE)
                     messageReceivedTime = intent.getLongExtra(EXTRA_MESSAGE_TIME, System.currentTimeMillis())
                     Log.d(TAG, "Processing message: $message, received at: $messageReceivedTime")
-                    
+
                     if (isServiceConnected) {
                         // Process the message on the main thread
                         mainHandler.post {
@@ -149,6 +111,7 @@ class CameraAccessibilityService : AccessibilityService() {
             val filter = IntentFilter(ACTION_MESSAGE_RECEIVED)
             registerReceiver(messageReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
             Log.d(TAG, "Message receiver registered successfully")
+
         } catch (e: Exception) {
             Log.e(TAG, "Error registering message receiver", e)
         }
@@ -156,8 +119,7 @@ class CameraAccessibilityService : AccessibilityService() {
 
     /**
      * Handles the camera trigger action:
-     * 1. Checks if a camera app is active
-     * 2. If active, tries to use saved button location or finds the button
+     * 2. Tries to use saved button location or finds the button
      * 3. Attempts to click the shutter button
      */
     private fun handleCameraTrigger() {
@@ -170,13 +132,12 @@ class CameraAccessibilityService : AccessibilityService() {
 
         val currentPackage = getCurrentApp()
 
-        // Log camera command event with enhanced parameters
+        // Log camera command event
         AnalyticsUtils.logCameraCommand(
             deviceName = device.friendlyName,
             cameraPackage = currentPackage ?: "unknown",
             serviceState = if (isServiceConnected) "connected" else "disconnected"
         )
-        Log.d(TAG, "Camera command event logged with params: $params")
 
         // Get the current package name
         val packageName = rootInActiveWindow?.packageName?.toString() ?: run {
@@ -185,10 +146,10 @@ class CameraAccessibilityService : AccessibilityService() {
         }
         
         // Try to get saved button location first
-        val savedButtonInfo = AccessibilityUtils.getLastKnownButtonInfo(packageName)
+        val savedButtonInfo = AccessibilityUtils.getLastKnownButtonInfo()
         if (savedButtonInfo != null) {
-            Log.d(TAG, "Using saved button location for package: $packageName")
-            FirebaseCrashlytics.getInstance().log("Using saved button location for package: $packageName")
+            Log.d(TAG, "Using saved button location")
+            FirebaseCrashlytics.getInstance().log("Using saved button location")
             // Create a new AccessibilityNodeInfo for the saved location
             val root = rootInActiveWindow
             if (root != null) {
@@ -206,49 +167,19 @@ class CameraAccessibilityService : AccessibilityService() {
         // If no saved location or it's no longer valid, find the button again
         val shutterButton = findShutterButton()
         if (shutterButton != null) {
-            Log.d(TAG, "Found shutter button, attempting to trigger")
+            Log.d(TAG, "Found button, attempting to trigger")
+            Toast.makeText(this, "Found largest button", Toast.LENGTH_SHORT).show()
             FirebaseCrashlytics.getInstance().log("Found shutter button in package: $packageName")
             triggerShutter(shutterButton)
         } else {
-            Log.d(TAG, "Could not find shutter button in active camera app")
-            FirebaseCrashlytics.getInstance().log("No shutter button found in package: $packageName")
-            watchMessagingService.sendMessage(
-                WatchMessagingService.MESSAGE_TYPE_SHUTTER_FAILED,
-                "Could not find shutter button"
-            )
+            Log.d(TAG, "Could not find button in active app")
+            Toast.makeText(this, "No button found", Toast.LENGTH_SHORT).show()
+            FirebaseCrashlytics.getInstance().log("No button found in package: $packageName")
+            sendMessageToWatch(MessageService.MESSAGE_TYPE_SHUTTER_FAILED, "No shutter found")
         }
     }
 
-    /**
-     * Checks if a camera app is currently active by:
-     * 1. Getting the root window of the active app
-     * 2. Checking if its package name matches known camera apps
-     * 
-     * @return true if a camera app is active, false otherwise
-     */
-//    private fun isCameraAppActive(): Boolean {
-//        Log.d(TAG, "Checking if camera app is active")
-//        val root = rootInActiveWindow
-//        if (root == null) {
-//            Log.d(TAG, "rootInActiveWindow is null")
-//            return false
-//        }
-//
-//        val packageName = root.packageName?.toString()
-//        if (packageName == null) {
-//            Log.d(TAG, "packageName is null")
-//            return false
-//        }
-//
-//        val isCameraApp = CAMERA_PACKAGES.contains(packageName)
-//        if (isCameraApp) {
-//            lastKnownCameraPackage = packageName
-//        }
-//        Log.d(TAG, "Current app: $packageName, is camera app: $isCameraApp")
-//        return isCameraApp
-//    }
-
-    fun getCurrentApp(): String? {
+    private fun getCurrentApp(): String? {
         val root = rootInActiveWindow
         val packageName = root?.packageName?.toString()
         return packageName
@@ -261,7 +192,7 @@ class CameraAccessibilityService : AccessibilityService() {
      * @return The AccessibilityNodeInfo of the shutter button if found, null otherwise
      */
     private fun findShutterButton(): AccessibilityNodeInfo? {
-        Log.d(TAG, "Attempting to find shutter button")
+        Log.d(TAG, "Attempting to largest node")
         val root = rootInActiveWindow
         if (root == null) {
             Log.d(TAG, "rootInActiveWindow is null in findShutterButton")
@@ -271,7 +202,7 @@ class CameraAccessibilityService : AccessibilityService() {
         val packageName = root.packageName?.toString() ?: return null
         val shutterButton = AccessibilityUtils.largestClickableNode(root, packageName, TAG)
         if (shutterButton != null) {
-            Log.d(TAG, "Found largest clickable node as shutter button")
+            Log.d(TAG, "Found largest clickable node")
             return shutterButton
         }
 
@@ -285,7 +216,7 @@ class CameraAccessibilityService : AccessibilityService() {
      * @param button The AccessibilityNodeInfo of the shutter button to tap
      */
     private fun triggerShutter(button: AccessibilityNodeInfo) {
-        Log.d(TAG, "Attempting to trigger shutter button with multiple methods")
+        Log.d(TAG, "Attempting to trigger shutter button")
         FirebaseCrashlytics.getInstance().log("Attempting to trigger shutter button")
 
         // Get the button's bounds on screen
@@ -317,15 +248,11 @@ class CameraAccessibilityService : AccessibilityService() {
                 }
                 FirebaseAnalytics.getInstance(this).logEvent("shutter_response_time", bundle)
                 
-                watchMessagingService.sendMessage(
-                    WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
-                    "Success!"
-                )
+                sendMessageToWatch(MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, "Success!")
                 return
             }
         } catch (e: Exception) {
             Log.e(TAG, "Exception during direct button click", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
         }
 
         // Next try direct child button click if available
@@ -348,10 +275,7 @@ class CameraAccessibilityService : AccessibilityService() {
                         }
                         FirebaseAnalytics.getInstance(this).logEvent("shutter_response_time", bundle)
                         
-                        watchMessagingService.sendMessage(
-                            WatchMessagingService.MESSAGE_TYPE_SHUTTER_SUCCESS,
-                            "Success with child button click!"
-                        )
+                        sendMessageToWatch(MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, "Success with child button click!")
                         return
                     }
                 }
@@ -359,9 +283,6 @@ class CameraAccessibilityService : AccessibilityService() {
         } catch (e: Exception) {
             Log.e(TAG, "Exception during child button click", e)
         }
-
-        // Fall back to using gestures if direct methods fail
-        gestureHandler.attemptCameraGesture(centerX, centerY, messageReceivedTime)
     }
 
     /**
@@ -423,9 +344,55 @@ class CameraAccessibilityService : AccessibilityService() {
         mainHandler.removeCallbacksAndMessages(null)
     }
 
-    override fun onCreate() {
-        super.onCreate()
-        // Initialize Firebase Analytics
-        AnalyticsUtils.initialize(this)
+    /**
+     * Sends a message to the watch using the MessageService.
+     * @param messageType The type of message to send
+     * @param details Optional details about the message
+     */
+    private fun sendMessageToWatch(messageType: String, details: String? = null) {
+        try {
+            val intent = Intent(this, MessageService::class.java).apply {
+                action = "SEND_MESSAGE"
+                putExtra("message_type", messageType)
+                putExtra("message_details", details)
+            }
+            startService(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error sending message to watch", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+    }
+
+    /**
+     * Called when the accessibility service is connected.
+     * Sets up the message receiver and processes any pending messages.
+     */
+    override fun onServiceConnected() {
+        super.onServiceConnected()
+        Log.d(TAG, "onServiceConnected called")
+        FirebaseCrashlytics.getInstance().log("Accessibility service connected")
+        isServiceConnected = true
+
+        // Initialize ConnectIQ
+        try {
+            device = connectIQ.connectedDevices?.firstOrNull() ?: run {
+                Log.e(TAG, "No connected Garmin device found")
+                FirebaseCrashlytics.getInstance().log("No connected Garmin device found")
+                return
+            }
+            myApp = IQApp(CommConstants.COMM_WATCH_ID)
+            Log.d(TAG, "ConnectIQ initialized with device: ${device.friendlyName}")
+            FirebaseCrashlytics.getInstance().log("ConnectIQ initialized with device: ${device.friendlyName}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing ConnectIQ", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+        
+        // Process any message that arrived before the service was connected
+        pendingMessage?.let { message ->
+            Log.d(TAG, "Processing pending message: $message")
+            handleCameraTrigger()
+            pendingMessage = null
+        }
     }
 } 

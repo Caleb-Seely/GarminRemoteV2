@@ -1,45 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">CameraClick</string>
 
+    <!-- Menu -->
     <string name="load_devices">Reload Devices</string>
+    <string name="help">Help</string>
+
+    <!-- Device Activity -->
+    <string name="tap_to_send">Send a test message.</string>
+    <string name="prompt_watch_app">Open the watch app.</string>
+    <string name="auto_launch_camera">Auto-launch Camera</string>
+    <string name="launch_camera">Launch Camera</string>
+    <string name="open_app_already_open">The Garmin app is already open on the watch.</string>
+
+    <!-- Errors -->
+    <string name="missing_widget">Missing ConnectIQ app</string>
+    <string name="missing_widget_message">The Garmin app used with this application is not installed on your ConnectIQ device. Please install the app and try again.</string>
     <string name="initialization_error">Failed to initialize the SDK.\n</string>
     <string name="service_unavailable">The ConnectIQ service is unavailable.</string>
-    <string name="tap_to_send">Send a test message.</string>
-    <string name="open_app_open">Open the watch app.</string>
-
-    <string name="open_app_already_open">The Garmin app is already open on the device.</string>
-    <string name="received_message">Received message from device.</string>
-
-    <string name="hello_world_message">Hello World!</string>
-
-
-    <string name="missing_widget">Missing Garmin app</string>
-    <string name="missing_widget_message">The Garmin app used with this application is not installed on your ConnectIQ device.   Please install the app and try again.</string>
-
-
-    <string name="accessibility_service_description">This service turns your Garmin watch into a remote camera trigger</string>
-
-    <string name="start_background_service">Start Background Service</string>
-    <string name="stop_background_service">Stop Background Service</string>
-
-    <string name="auto_launch_camera">Auto-launch Camera</string>
     <string name="no_devices">No devices found</string>
-    <string name="launch_camera">Launch Camera</string>
-    <string name="help">Help</string>
+    <string name="error_loading_devices">error loading devices\n</string>
 
     <!-- Accessibility Dialog -->
     <string name="accessibility_dialog_title">Enable Accessibility Service</string>
-    <string name="accessibility_dialog_message">CameraClick needs accessibility permission to remotely tap your camera\'s shutter button. This allows your Garmin watch to trigger photos from a distance.</string>
-    <string name="accessibility_dialog_positive">Open Settings</string>
-    <string name="accessibility_dialog_negative">Not Now</string>
-    <string name="accessibility_dialog_notification_message">Don\'t forget to enable Accessibility Service for CameraClick to work properly!</string>
-
-    <!-- Accessibility Dialog -->
-    <string name="accessibility_required">Accessibility Required</string>
-    <string name="accessibility_required_message">CameraClick needs accessibility permission to remotely tap your camera\'s shutter button. This allows your Garmin watch to trigger photos from a distance.</string>
+    <string name="accessibility_dialog_message">CameraClick requires Accessibility permissions to function properly. This permission allows the app to remotely and programmatically tap your camera\'s shutter button. No personal data is collected or stored. Accessibility access is strictly used to enable the remote camera control feature.</string>
     <string name="open_settings">Open Settings</string>
-    <string name="error_loading_devices">error loading devices\n</string>
+    <!--    Accessibility Menu Text-->
+    <string name="accessibility_service_description">This service turns your Garmin watch into a remote camera trigger</string>
 
 </resources>

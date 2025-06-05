@@ -70,4 +70,7 @@ dependencies {
     implementation("com.google.firebase:firebase-common-ktx")
     implementation("com.google.firebase:firebase-crashlytics-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
+
+    // JSON serialization
+    implementation("com.google.code.gson:gson:2.10.1")
 }

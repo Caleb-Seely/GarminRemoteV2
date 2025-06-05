@@ -1,9 +1,12 @@
 package com.garmin.android.apps.camera.click.comm.utils
 
+import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.Rect
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
+import com.google.gson.Gson
 
 /**
  * AccessibilityUtils.kt
@@ -12,17 +15,85 @@ import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
  */
 object AccessibilityUtils {
     private const val TAG = "AccessibilityUtils"
+    private const val PREFS_NAME = "AccessibilityPrefs"
+    private const val KEY_BUTTON_INFO = "last_known_button_info"
     
-    // Store the last known shutter button location for each camera app
+    // Store the last known shutter button location
     private var lastKnownButtonInfo: ShutterButtonInfo? = null
+    private var prefs: SharedPreferences? = null
+    private val gson = Gson()
 
     /**
-     * Returns the last known shutter button info for the given package
-     * @param packageName The package name of the camera app
-     * @return ShutterButtonInfo if found for the package, null otherwise
+     * Initialize the SharedPreferences
+     * @param context Application context
      */
-    fun getLastKnownButtonInfo(packageName: String): ShutterButtonInfo? {
-        return lastKnownButtonInfo?.takeIf { it.packageName == packageName }
+    fun initialize(context: Context) {
+        try {
+            prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            loadLastKnownButtonInfo()
+            Log.d(TAG, "Successfully initialized SharedPreferences")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing SharedPreferences", e)
+        }
+    }
+
+    /**
+     * Check if SharedPreferences is initialized
+     * @return true if initialized, false otherwise
+     */
+    private fun isInitialized(): Boolean {
+        return prefs != null
+    }
+
+    /**
+     * Load the last known button info from SharedPreferences
+     */
+    private fun loadLastKnownButtonInfo() {
+        if (!isInitialized()) {
+            Log.w(TAG, "Cannot load button info: SharedPreferences not initialized")
+            return
+        }
+
+        val json = prefs?.getString(KEY_BUTTON_INFO, null)
+        if (json != null) {
+            try {
+                lastKnownButtonInfo = gson.fromJson(json, ShutterButtonInfo::class.java)
+                Log.d(TAG, "Successfully loaded button info from SharedPreferences")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading button info from SharedPreferences", e)
+            }
+        }
+    }
+
+    /**
+     * Save the last known button info to SharedPreferences
+     */
+    private fun saveLastKnownButtonInfo() {
+        if (!isInitialized()) {
+            Log.w(TAG, "Cannot save button info: SharedPreferences not initialized")
+            return
+        }
+
+        lastKnownButtonInfo?.let { info ->
+            try {
+                val json = gson.toJson(info)
+                prefs?.edit()?.putString(KEY_BUTTON_INFO, json)?.apply()
+                Log.d(TAG, "Successfully saved button info to SharedPreferences")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error saving button info to SharedPreferences", e)
+            }
+        }
+    }
+
+    /**
+     * Returns the last known shutter button info
+     * @return ShutterButtonInfo if found, null otherwise
+     */
+    fun getLastKnownButtonInfo(): ShutterButtonInfo? {
+        if (!isInitialized()) {
+            Log.w(TAG, "Cannot get button info: SharedPreferences not initialized")
+        }
+        return lastKnownButtonInfo
     }
 
     /**
@@ -34,8 +105,11 @@ object AccessibilityUtils {
      */
     fun findClickableNodeAtLocation(root: AccessibilityNodeInfo, bounds: Rect): AccessibilityNodeInfo? {
         val result = ArrayList<AccessibilityNodeInfo>()
-        
+
+
         fun traverse(node: AccessibilityNodeInfo) {
+
+
             if (node.isClickable) {
                 val nodeBounds = Rect()
                 node.getBoundsInScreen(nodeBounds)
@@ -106,8 +180,18 @@ object AccessibilityUtils {
             val bounds = Rect()
             largestNode?.getBoundsInScreen(bounds)
             
-            // Save the button location for this package
-            lastKnownButtonInfo = ShutterButtonInfo(bounds, packageName)
+            // Save the button location and information
+            lastKnownButtonInfo = ShutterButtonInfo(
+                bounds = bounds,
+                packageName = packageName,
+                contentDescription = largestNode?.contentDescription?.toString(),
+                resourceId = largestNode?.viewIdResourceName,
+                className = largestNode?.className?.toString(),
+                text = largestNode?.text?.toString()
+            )
+            
+            // Save to SharedPreferences
+            saveLastKnownButtonInfo()
             
             Log.d(tag, """
                 Largest clickable node found:
@@ -117,7 +201,7 @@ object AccessibilityUtils {
                 text: ${largestNode?.text}
                 boundsInScreen: $bounds
                 isClickable: ${largestNode?.isClickable}
-                Saved button location for package: $packageName
+                Saved button location and information
             """.trimIndent())
         } else {
             Log.d(tag, "No clickable nodes found on screen")

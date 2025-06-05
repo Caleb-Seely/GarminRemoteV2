@@ -52,7 +52,7 @@ Individual device information and tests screen
         android:layout_marginTop="5dp"
         android:gravity="center_vertical"
         android:minHeight="50dp"
-        android:text="@string/open_app_open"
+        android:text="@string/prompt_watch_app"
         app:layout_constraintTop_toBottomOf="@id/dividerA" />
 
     <View

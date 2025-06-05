@@ -11,6 +11,7 @@ import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.exception.InvalidStateException
+import com.garmin.android.connectiq.exception.ServiceUnavailableException
 import com.google.firebase.analytics.FirebaseAnalytics
 
 private const val TAG = "MessageService"
@@ -20,6 +21,7 @@ private const val TAG = "MessageService"
  * This service is responsible for:
  * - Maintaining a persistent connection with the Garmin device
  * - Receiving and processing messages from the device
+ * - Sending messages to the device
  * - Forwarding messages to the CameraAccessibilityService
  * - Managing the service lifecycle and notifications
  */
@@ -33,6 +35,13 @@ class MessageService : Service() {
     companion object {
         private const val EXTRA_DEVICE = "device"
         private const val EXTRA_APP_ID = "app_id"
+        private const val ACTION_SEND_MESSAGE = "SEND_MESSAGE"
+        private const val EXTRA_MESSAGE_TYPE = "message_type"
+        private const val EXTRA_MESSAGE_DETAILS = "message_details"
+
+        // Message types for watch communication
+        const val MESSAGE_TYPE_SHUTTER_SUCCESS = "SHUTTER_SUCCESS"
+        const val MESSAGE_TYPE_SHUTTER_FAILED = "SHUTTER_FAILED"
 
         /**
          * Creates an intent to start the MessageService with the specified device and app.
@@ -79,41 +88,57 @@ class MessageService : Service() {
             return START_NOT_STICKY
         }
 
-        device = intent.getParcelableExtra(EXTRA_DEVICE) ?: run {
-            Log.e(TAG, "No device provided in intent")
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        val appId = intent.getStringExtra(EXTRA_APP_ID) ?: run {
-            Log.e(TAG, "No app ID provided in intent")
-            stopSelf()
-            return START_NOT_STICKY
-        }
-
-        if (!isServiceRunning) {
-            Log.d(TAG, "Starting service for device: ${device.friendlyName}")
-            app = IQApp(appId)
-            
-            try {
-                val notification = NotificationUtils.createForegroundNotification(this, device)
-                Log.d(TAG, "Created notification with flags: ${notification.flags}")
-                
-                startForeground(NotificationUtils.NOTIFICATION_ID, notification)
-                Log.d(TAG, "Started foreground service with notification")
-                
-                registerForMessages()
-                isServiceRunning = true
-            } catch (e: Exception) {
-                Log.e(TAG, "Error showing notification", e)
-                stopSelf()
+        when (intent.action) {
+            ACTION_SEND_MESSAGE -> {
+                if (!isServiceRunning) {
+                    Log.e(TAG, "Service not running, cannot send message")
+                    return START_NOT_STICKY
+                }
+                val messageType = intent.getStringExtra(EXTRA_MESSAGE_TYPE)
+                val messageDetails = intent.getStringExtra(EXTRA_MESSAGE_DETAILS)
+                if (messageType != null) {
+                    sendMessage(messageType, messageDetails)
+                }
                 return START_NOT_STICKY
             }
-        } else {
-            Log.d(TAG, "Service already running for device: ${device.friendlyName}")
+            else -> {
+                device = intent.getParcelableExtra(EXTRA_DEVICE) ?: run {
+                    Log.e(TAG, "No device provided in intent")
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+
+                val appId = intent.getStringExtra(EXTRA_APP_ID) ?: run {
+                    Log.e(TAG, "No app ID provided in intent")
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
+
+                if (!isServiceRunning) {
+                    Log.d(TAG, "Starting service for device: ${device.friendlyName}")
+                    app = IQApp(appId)
+                    
+                    try {
+                        val notification = NotificationUtils.createForegroundNotification(this, device)
+                        Log.d(TAG, "Created notification with flags: ${notification.flags}")
+                        
+                        startForeground(NotificationUtils.NOTIFICATION_ID, notification)
+                        Log.d(TAG, "Started foreground service with notification")
+                        
+                        registerForMessages()
+                        isServiceRunning = true
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error showing notification", e)
+                        stopSelf()
+                        return START_NOT_STICKY
+                    }
+                } else {
+                    Log.d(TAG, "Service already running for device: ${device.friendlyName}")
+                }
+                
+                return START_REDELIVER_INTENT
+            }
         }
-        
-        return START_REDELIVER_INTENT
     }
 
     /**
@@ -174,6 +199,43 @@ class MessageService : Service() {
         } catch (e: InvalidStateException) {
             Log.e(TAG, "Failed to register for app events", e)
             stopSelf()
+        }
+    }
+
+    /**
+     * Sends a message to the connected Garmin watch.
+     * @param messageType The type of message to send (e.g., SHUTTER_SUCCESS, SHUTTER_FAILED)
+     * @param details Optional details about the message
+     * @return true if the message was sent successfully, false otherwise
+     */
+    private fun sendMessage(messageType: String, details: String? = null): Boolean {
+        if (!isServiceRunning) {
+            Log.e(TAG, "MessageService not running")
+            return false
+        }
+
+        return try {
+            // Send only the details to the watch instead of the full message map
+            connectIQ.sendMessage(device, app, details) { _, _, status ->
+                Log.d(TAG, "Message type: $messageType")
+                Log.d(TAG, "Message content: $details")
+                Log.d(TAG, "Message send status: ${status.name}")
+
+                // Log the total response time
+                val bundle = Bundle().apply {
+                    putString("message_type", messageType)
+                    putString("message_content", details ?: "")
+                    putString("send_status", status.name)
+                }
+                firebaseAnalytics.logEvent("message_sent_to_watch", bundle)
+            }
+            true
+        } catch (e: InvalidStateException) {
+            Log.e(TAG, "Error sending message: ConnectIQ is not in a valid state", e)
+            false
+        } catch (e: ServiceUnavailableException) {
+            Log.e(TAG, "Error sending message: ConnectIQ service is unavailable", e)
+            false
         }
     }
 } 

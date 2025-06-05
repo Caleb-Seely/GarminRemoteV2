@@ -33,13 +33,14 @@ import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
+import android.view.accessibility.AccessibilityManager
+import android.accessibilityservice.AccessibilityServiceInfo
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
 private const val NOTIFICATION_PERMISSION_REQUEST_CODE = 123
 private const val PREFS_NAME = "CameraClickPrefs"
 private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
-private const val KEY_ACCESSIBILITY_DIALOG_SHOWN = "accessibility_dialog_shown"
 
 /**
  * Activity that handles communication with a specific Garmin device.
@@ -98,7 +99,7 @@ class DeviceActivity : Activity() {
             openAppButtonView?.setText(R.string.open_app_already_open)
         } else {
             appIsOpen = false
-            openAppButtonView?.setText(R.string.open_app_open)
+            openAppButtonView?.setText(R.string.prompt_watch_app)
         }
     }
 
@@ -163,12 +164,6 @@ class DeviceActivity : Activity() {
             CameraUtils.launchCamera(this)
         }
 
-        // Add click listener for the service toggle
-        serviceToggleView?.setOnClickListener {
-            AnalyticsUtils.logFeatureUsage("background_service", "toggle", !isServiceRunning)
-            toggleService()
-        }
-
         // Check permissions and show dialogs if needed
         checkAndRequestPermissions()
 
@@ -197,13 +192,10 @@ class DeviceActivity : Activity() {
         }
 
         // Check accessibility service
-        val accessibilityEnabled = isAccessibilityServiceEnabled()
-        if (!accessibilityEnabled) {
+        if (!isAccessibilityServiceEnabled()) {
             FirebaseCrashlytics.getInstance().log("Accessibility service not enabled")
             AnalyticsUtils.logServiceState("accessibility", "disabled")
-            if (!prefs.getBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, false)) {
-                showAccessibilityDialog()
-            }
+            showAccessibilityDialog()
         } else {
             FirebaseCrashlytics.getInstance().log("Accessibility service enabled")
             AnalyticsUtils.logServiceState("accessibility", "enabled")
@@ -217,27 +209,15 @@ class DeviceActivity : Activity() {
      * @return true if the accessibility service is enabled, false otherwise
      */
     private fun isAccessibilityServiceEnabled(): Boolean {
-        val accessibilityEnabled = try {
-            val accessibilityEnabled = Settings.Secure.getInt(
-                contentResolver,
-                Settings.Secure.ACCESSIBILITY_ENABLED
-            )
-            accessibilityEnabled == 1
-        } catch (e: Settings.SettingNotFoundException) {
-            FirebaseCrashlytics.getInstance().recordException(e)
-            false
+        val accessibilityManager = getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+        val enabledServices = accessibilityManager.getEnabledAccessibilityServiceList(
+            AccessibilityServiceInfo.FEEDBACK_ALL_MASK
+        )
+        
+        return enabledServices.any { service ->
+            service.resolveInfo.serviceInfo.packageName == packageName &&
+            service.resolveInfo.serviceInfo.name == "com.garmin.android.apps.camera.click.comm.service.CameraAccessibilityService"
         }
-
-        if (!accessibilityEnabled) {
-            return false
-        }
-
-        val serviceString = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        return serviceString.contains("${packageName}/.service.CameraAccessibilityService")
     }
 
     /**
@@ -246,17 +226,16 @@ class DeviceActivity : Activity() {
      */
     private fun showAccessibilityDialog() {
         AlertDialog.Builder(this)
-            .setTitle(R.string.accessibility_required)
-            .setMessage(R.string.accessibility_required_message)
+            .setTitle(R.string.accessibility_dialog_title)
+            .setMessage(R.string.accessibility_dialog_message)
             .setPositiveButton(R.string.open_settings) { _, _ ->
                 FirebaseCrashlytics.getInstance().log("Opening accessibility settings")
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
             .setNegativeButton(android.R.string.cancel, null)
+            .setCancelable(false)  // Make dialog non-dismissible
             .create()
             .show()
-
-        prefs.edit().putBoolean(KEY_ACCESSIBILITY_DIALOG_SHOWN, true).apply()
     }
 
     /**
@@ -268,8 +247,7 @@ class DeviceActivity : Activity() {
         Log.d(TAG, "Activity onResume")
         listenByDeviceEvents()
         getMyAppStatus()
-        // Update toggle button text based on service state
-        updateServiceToggleState()
+
     }
 
     /**
@@ -306,7 +284,7 @@ class DeviceActivity : Activity() {
      */
     private fun openMyApp() {
         Log.d(TAG, "Opening app on device")
-        Toast.makeText(this, "Opening app...", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Prompting watch...", Toast.LENGTH_SHORT).show()
 
         // Log the app open attempt
         AnalyticsUtils.logWatchAppOpen(
@@ -364,7 +342,7 @@ class DeviceActivity : Activity() {
                 }
 
                 override fun onApplicationNotInstalled(applicationId: String) {
-                    Log.d(TAG, "App is not installed")
+                    Log.d(TAG, "Garmin ConnectIQ App is not installed")
                     AlertDialog.Builder(this@DeviceActivity)
                         .setTitle(R.string.missing_widget)
                         .setMessage(R.string.missing_widget_message)
@@ -411,30 +389,6 @@ class DeviceActivity : Activity() {
         }
     }
 
-    private fun toggleService() {
-        if (isServiceRunning) {
-            NotificationUtils.stopService(this, device, CommConstants.COMM_WATCH_ID)
-            serviceToggleView?.text = getString(R.string.start_background_service)
-            isServiceRunning = false
-            AnalyticsUtils.logServiceState("message_service", "stopped")
-        } else {
-            NotificationUtils.startService(this, device, CommConstants.COMM_WATCH_ID)
-            serviceToggleView?.text = getString(R.string.stop_background_service)
-            isServiceRunning = true
-            AnalyticsUtils.logServiceState("message_service", "started")
-        }
-    }
-
-    private fun updateServiceToggleState() {
-        // Check if service is running
-        val serviceIntent = MessageService.createIntent(this, device, CommConstants.COMM_WATCH_ID)
-        isServiceRunning = serviceIntent.filterEquals(Intent().setClass(this, MessageService::class.java))
-        serviceToggleView?.text = if (isServiceRunning) {
-            getString(R.string.stop_background_service)
-        } else {
-            getString(R.string.start_background_service)
-        }
-    }
 
     private fun updateDeviceStatusColor(status: IQDevice.IQDeviceStatus) {
         deviceStatusView?.setTextColor(
