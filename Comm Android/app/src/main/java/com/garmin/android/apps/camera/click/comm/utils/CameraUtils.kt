@@ -34,9 +34,12 @@ class CameraUtils {
                 FirebaseCrashlytics.getInstance().log("Attempting to launch camera app")
                 // Try launching specific camera apps first
                 val cameraPackages = listOf(
-//                    "com.google.android.GoogleCamera",
+                    "com.google.android.GoogleCamera",
                     "com.android.camera",
-                    "com.google.android.apps.camera"
+                    "com.google.android.apps.camera",
+                    "com.oplus.camera",                 //OnePlus
+                    "com.sec.android.app.camera",       //Samsung
+                    "com.sony.playmemories.mobile"      //Sony
                 )
 
                 for (packageName in cameraPackages) {
@@ -55,23 +58,6 @@ class CameraUtils {
                     }
                 }
 
-//                // Try standard camera intents
-//                val intents = listOf(
-//
-//                    Intent("android.media.action.STILL_IMAGE_CAMERA"),
-//                )
-//
-//                for (intent in intents) {
-//                    Log.d(TAG, "Trying camera intent: ${intent.action}")
-//                    if (intent.resolveActivity(context.packageManager) != null) {
-//                        Log.d(TAG, "Found camera app with intent: ${intent.action}")
-//                        FirebaseCrashlytics.getInstance().log("Launching camera with intent: ${intent.action}")
-//                        context.startActivity(intent)
-//                        AnalyticsUtils.logCameraLaunch(true)
-//                        return true
-//                    }
-//                }
-
                 // Try launching through system chooser as a fallback
                 Log.d(TAG, "Launching through system chooser")
                 val intent = Intent("android.media.action.STILL_IMAGE_CAMERA")
@@ -80,7 +66,6 @@ class CameraUtils {
                     return true
                 }
 
-                // Only open settings if nothing else works
                 Log.e(TAG, "No camera app found with any method")
                 FirebaseCrashlytics.getInstance().log("No camera app found with any method")
                 Toast.makeText(context, "No camera app found. Please check your device settings.", Toast.LENGTH_SHORT).show()

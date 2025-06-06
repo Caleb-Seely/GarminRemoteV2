@@ -149,6 +149,7 @@ class CameraAccessibilityService : AccessibilityService() {
         val savedButtonInfo = AccessibilityUtils.getLastKnownButtonInfo()
         if (savedButtonInfo != null) {
             Log.d(TAG, "Using saved button location")
+            Toast.makeText(this, "Using saved button location", Toast.LENGTH_SHORT).show()
             FirebaseCrashlytics.getInstance().log("Using saved button location")
             // Create a new AccessibilityNodeInfo for the saved location
             val root = rootInActiveWindow
@@ -275,7 +276,7 @@ class CameraAccessibilityService : AccessibilityService() {
                         }
                         FirebaseAnalytics.getInstance(this).logEvent("shutter_response_time", bundle)
                         
-                        sendMessageToWatch(MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, "Success with child button click!")
+                        sendMessageToWatch(MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, "Success w/ child click!")
                         return
                     }
                 }

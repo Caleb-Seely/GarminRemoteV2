@@ -35,6 +35,8 @@ import com.google.firebase.ktx.Firebase
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 import android.view.accessibility.AccessibilityManager
 import android.accessibilityservice.AccessibilityServiceInfo
+import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
+import com.garmin.android.apps.camera.click.comm.views.ButtonLocationOverlay
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -83,6 +85,7 @@ class DeviceActivity : Activity() {
     private lateinit var myApp: IQApp
     private lateinit var prefs: SharedPreferences
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private lateinit var buttonLocationOverlay: ButtonLocationOverlay
 
     private var appIsOpen = false
 
@@ -125,6 +128,10 @@ class DeviceActivity : Activity() {
         device = intent.getParcelableExtra<Parcelable>(EXTRA_IQ_DEVICE) as IQDevice
         myApp = IQApp(CommConstants.COMM_WATCH_ID)
         appIsOpen = false
+
+        // Initialize button location overlay
+        buttonLocationOverlay = findViewById(R.id.button_location_overlay)
+        updateButtonLocationOverlay()
 
         // Log device activity screen view with device details
         val bundle = Bundle().apply {
@@ -398,5 +405,10 @@ class DeviceActivity : Activity() {
                 else -> ContextCompat.getColor(this, R.color.warning) // For UNKNOWN and other states
             }
         )
+    }
+
+    private fun updateButtonLocationOverlay() {
+        val buttonInfo = AccessibilityUtils.getLastKnownButtonInfo()
+        buttonLocationOverlay.setButtonInfo(buttonInfo)
     }
 }

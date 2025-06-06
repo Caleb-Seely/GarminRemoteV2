@@ -6,14 +6,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import com.garmin.android.apps.camera.click.comm.R
 import com.garmin.android.apps.camera.click.comm.activities.DeviceActivity
-import com.garmin.android.apps.camera.click.comm.service.MessageService
 import com.garmin.android.connectiq.IQDevice
 
 /**
@@ -90,32 +87,4 @@ object NotificationUtils {
                         Notification.FLAG_FOREGROUND_SERVICE
             }
     }
-
-    /**
-     * Starts the message service with a foreground notification.
-     * @param context The context to use for starting the service
-     * @param device The connected Garmin device
-     * @param appId The ID of the app to receive messages from
-     */
-    fun startService(context: Context, device: IQDevice, appId: String) {
-        val intent = MessageService.createIntent(context, device, appId)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        } else {
-            context.startService(intent)
-        }
-        Log.d(TAG, "Started message service")
-    }
-
-    /**
-     * Stops the message service and removes the notification.
-     * @param context The context to use for stopping the service
-     * @param device The connected Garmin device
-     * @param appId The ID of the app
-     */
-    fun stopService(context: Context, device: IQDevice, appId: String) {
-        val intent = MessageService.createIntent(context, device, appId)
-        context.stopService(intent)
-        Log.d(TAG, "Stopped message service")
-    }
-} 
+}
