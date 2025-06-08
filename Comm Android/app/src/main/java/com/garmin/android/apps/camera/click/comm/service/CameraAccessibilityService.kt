@@ -55,7 +55,7 @@ class CameraAccessibilityService : AccessibilityService() {
 
     // ConnectIQ instance for sending messages
     private val connectIQ: ConnectIQ = ConnectIQ.getInstance()
-    private lateinit var device: IQDevice
+    private var device: IQDevice? = null
     private lateinit var myApp: IQApp
 
     // Track when a message is received
@@ -134,7 +134,7 @@ class CameraAccessibilityService : AccessibilityService() {
 
         // Log camera command event
         AnalyticsUtils.logCameraCommand(
-            deviceName = device.friendlyName,
+            deviceName = device?.friendlyName ?: "unknown_device",
             cameraPackage = currentPackage ?: "unknown",
             serviceState = if (isServiceConnected) "connected" else "disconnected"
         )
@@ -242,8 +242,10 @@ class CameraAccessibilityService : AccessibilityService() {
                 
                 // Calculate and log time spent
                 val timeSpent = System.currentTimeMillis() - messageReceivedTime
+                val deviceName = device?.friendlyName ?: "unknown_device" // Safe access
+
                 val bundle = Bundle().apply {
-                    putString("device_name", device.friendlyName)
+                    putString("device_name", deviceName)
                     putLong("time_spent_ms", timeSpent)
                     putString("method", "direct_click")
                 }
@@ -269,8 +271,10 @@ class CameraAccessibilityService : AccessibilityService() {
                         
                         // Calculate and log time spent
                         val timeSpent = System.currentTimeMillis() - messageReceivedTime
+                        val deviceName = device?.friendlyName ?: "unknown_device" // Safe access
+
                         val bundle = Bundle().apply {
-                            putString("device_name", device.friendlyName)
+                            putString("device_name", deviceName)
                             putLong("time_spent_ms", timeSpent)
                             putString("method", "child_click")
                         }
@@ -376,14 +380,16 @@ class CameraAccessibilityService : AccessibilityService() {
 
         // Initialize ConnectIQ
         try {
-            device = connectIQ.connectedDevices?.firstOrNull() ?: run {
+            device = connectIQ.connectedDevices?.firstOrNull()
+            if (device == null) {
                 Log.e(TAG, "No connected Garmin device found")
                 FirebaseCrashlytics.getInstance().log("No connected Garmin device found")
-                return
+                // Don't return early - continue with service initialization
+            } else {
+                myApp = IQApp(CommConstants.COMM_WATCH_ID)
+                Log.d(TAG, "ConnectIQ initialized with device: ${device!!.friendlyName}")
+                FirebaseCrashlytics.getInstance().log("ConnectIQ initialized with device: ${device!!.friendlyName}")
             }
-            myApp = IQApp(CommConstants.COMM_WATCH_ID)
-            Log.d(TAG, "ConnectIQ initialized with device: ${device.friendlyName}")
-            FirebaseCrashlytics.getInstance().log("ConnectIQ initialized with device: ${device.friendlyName}")
         } catch (e: Exception) {
             Log.e(TAG, "Error initializing ConnectIQ", e)
             FirebaseCrashlytics.getInstance().recordException(e)
