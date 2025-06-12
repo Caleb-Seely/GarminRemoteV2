@@ -13,6 +13,7 @@ import com.garmin.android.connectiq.IQApp
 import com.garmin.android.connectiq.exception.InvalidStateException
 import com.garmin.android.connectiq.exception.ServiceUnavailableException
 import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 private const val TAG = "MessageService"
 
@@ -31,6 +32,7 @@ class MessageService : Service() {
     private lateinit var app: IQApp
     private var isServiceRunning = false
     private lateinit var firebaseAnalytics: FirebaseAnalytics
+    private var serviceStartTime: Long = 0
 
     companion object {
         private const val EXTRA_DEVICE = "device"
@@ -68,6 +70,7 @@ class MessageService : Service() {
         NotificationUtils.createNotificationChannel(this)
         connectIQ = ConnectIQ.getInstance()
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
+        serviceStartTime = System.currentTimeMillis()
     }
 
     /**
@@ -157,11 +160,41 @@ class MessageService : Service() {
     override fun onDestroy() {
         Log.d(TAG, "Service onDestroy")
         isServiceRunning = false
-        try {
-            connectIQ.unregisterForApplicationEvents(device, app)
-        } catch (e: InvalidStateException) {
-            Log.e(TAG, "Error unregistering for app events", e)
+        
+        // Log service destruction to Firebase
+        val bundle = Bundle().apply {
+            putString("device_name", device.friendlyName)
+            putString("device_id", device.deviceIdentifier.toString())
+            putLong("service_duration_ms", System.currentTimeMillis() - serviceStartTime)
         }
+        firebaseAnalytics.logEvent("message_service_destroyed", bundle)
+        
+        try {
+            // Check if ConnectIQ is initialized by checking if we have a valid instance
+            if (::connectIQ.isInitialized && connectIQ.connectedDevices?.isNotEmpty() == true) {
+                connectIQ.unregisterForApplicationEvents(device, app)
+                Log.d(TAG, "Successfully unregistered for app events")
+            } else {
+                Log.w(TAG, "ConnectIQ SDK not properly initialized or no devices connected, skipping unregistration")
+                FirebaseCrashlytics.getInstance().log("ConnectIQ SDK not properly initialized during service destruction")
+            }
+        } catch (e: InvalidStateException) {
+            Log.e(TAG, "Error unregistering for app events: SDK not initialized", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            
+            // Log the error to Firebase Analytics
+            val errorBundle = Bundle().apply {
+                putString("error_type", "InvalidStateException")
+                putString("error_message", e.message ?: "Unknown error")
+                putString("device_name", device.friendlyName)
+                putString("device_id", device.deviceIdentifier.toString())
+            }
+            firebaseAnalytics.logEvent("connectiq_sdk_error", errorBundle)
+        } catch (e: Exception) {
+            Log.e(TAG, "Unexpected error during service cleanup", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+        
         super.onDestroy()
     }
 

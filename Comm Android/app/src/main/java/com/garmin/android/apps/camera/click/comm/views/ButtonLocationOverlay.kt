@@ -55,7 +55,7 @@ class ButtonLocationOverlay @JvmOverloads constructor(
             }
             
             val textY = adjustedBounds.top - 20f
-            canvas.drawText("Button Bounds found", adjustedBounds.centerX().toFloat(), textY, textPaint)
+            canvas.drawText("Shutter Location", adjustedBounds.centerX().toFloat(), textY, textPaint)
             canvas.drawRect(adjustedBounds, paint)
         }
     }

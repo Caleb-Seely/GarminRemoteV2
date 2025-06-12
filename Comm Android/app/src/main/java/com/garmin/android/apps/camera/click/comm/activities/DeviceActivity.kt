@@ -171,6 +171,13 @@ class DeviceActivity : Activity() {
             CameraUtils.launchCamera(this)
         }
 
+        // Add click listener for the square camera button
+        findViewById<TextView>(R.id.square_camera_button)?.setOnClickListener {
+            FirebaseCrashlytics.getInstance().log("Square camera launch button clicked")
+            AnalyticsUtils.logFeatureUsage("camera_launch", "square_button_click", true)
+            CameraUtils.launchCamera(this)
+        }
+
         // Check permissions and show dialogs if needed
         checkAndRequestPermissions()
 

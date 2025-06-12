@@ -108,17 +108,32 @@ Individual device information and tests screen
         app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Camera Button Section -->
-    <TextView
-        android:id="@+id/camera_button"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/launch_camera"
-        android:padding="24dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center"
-        app:layout_constraintBottom_toBottomOf="parent" />
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:id="@+id/camera_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/launch_camera"
+            android:padding="24dp"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/square_camera_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center"
+            android:background="?android:attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </FrameLayout>
 
     <!-- Empty view for fallback -->
     <TextView

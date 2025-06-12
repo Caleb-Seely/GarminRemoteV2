@@ -135,13 +135,24 @@ object AccessibilityUtils {
     }
 
     /**
-     * Finds and logs details about the largest clickable node on the screen.
+     * Checks if a node's bounds form a square shape
+     * @param node The AccessibilityNodeInfo to check
+     * @return true if the node is square, false otherwise
+     */
+    private fun isSquareNode(node: AccessibilityNodeInfo): Boolean {
+        val bounds = Rect()
+        node.getBoundsInScreen(bounds)
+        return bounds.width() == bounds.height()
+    }
+
+    /**
+     * Finds and logs details about the largest square clickable node on the screen.
      * This is useful for debugging purposes to understand the current screen state.
      * 
      * @param rootNode The root AccessibilityNodeInfo to start traversal from
      * @param packageName The package name of the current camera app
      * @param tag Optional tag for logging. If not provided, uses the default TAG
-     * @return The largest clickable node found, or null if none exists
+     * @return The largest square clickable node found, or null if none exists
      */
     fun largestClickableNode(rootNode: AccessibilityNodeInfo?, packageName: String, tag: String = TAG): AccessibilityNodeInfo? {
         if (rootNode == null) {
@@ -154,7 +165,7 @@ object AccessibilityUtils {
 
         // Recursive function to traverse the node tree
         fun traverse(node: AccessibilityNodeInfo) {
-            if (node.isClickable) {
+            if (node.isClickable && isSquareNode(node)) {
                 val bounds = Rect()
                 node.getBoundsInScreen(bounds)
                 val area = bounds.width() * bounds.height()
@@ -194,17 +205,18 @@ object AccessibilityUtils {
             saveLastKnownButtonInfo()
             
             Log.d(tag, """
-                Largest clickable node found:
+                Largest square clickable node found:
                 contentDescription: ${largestNode?.contentDescription}
                 resource-id: ${largestNode?.viewIdResourceName}
                 className: ${largestNode?.className}
                 text: ${largestNode?.text}
                 boundsInScreen: $bounds
                 isClickable: ${largestNode?.isClickable}
+                isSquare: true
                 Saved button location and information
             """.trimIndent())
         } else {
-            Log.d(tag, "No clickable nodes found on screen")
+            Log.d(tag, "No square clickable nodes found on screen")
         }
 
         return largestNode
