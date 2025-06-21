@@ -14,6 +14,7 @@ import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import android.widget.Switch
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.garmin.android.apps.camera.click.comm.R
@@ -37,6 +38,11 @@ import android.view.accessibility.AccessibilityManager
 import android.accessibilityservice.AccessibilityServiceInfo
 import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
 import com.garmin.android.apps.camera.click.comm.views.ButtonLocationOverlay
+import com.garmin.android.apps.camera.click.comm.utils.CameraAppCandidateStore
+import android.widget.Button
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.LinearLayout
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -55,7 +61,7 @@ private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
  * - Manages background service for message handling
  * - Handles accessibility service requirements
  */
-class DeviceActivity : Activity() {
+class DeviceActivity : AppCompatActivity() {
 
     /**
      * Companion object containing static utility methods for the activity.
@@ -75,7 +81,8 @@ class DeviceActivity : Activity() {
     }
 
     private var deviceStatusView: TextView? = null
-    private var openAppButtonView: TextView? = null
+    private var openAppButtonView: LinearLayout? = null
+    private var openAppTextView: TextView? = null
     private var serviceToggleView: TextView? = null
     private var autoLaunchSwitch: Switch? = null
     private var isServiceRunning = false
@@ -99,10 +106,10 @@ class DeviceActivity : Activity() {
 
         if (status == ConnectIQ.IQOpenApplicationStatus.APP_IS_ALREADY_RUNNING) {
             appIsOpen = true
-            openAppButtonView?.setText(R.string.open_app_already_open)
+            openAppTextView?.setText(R.string.open_app_already_open)
         } else {
             appIsOpen = false
-            openAppButtonView?.setText(R.string.prompt_watch_app)
+            openAppTextView?.setText(R.string.prompt_watch_app)
         }
     }
 
@@ -119,6 +126,10 @@ class DeviceActivity : Activity() {
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device)
+
+        // Setup toolbar
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
 
         // Initialize Firebase Analytics
         firebaseAnalytics = FirebaseAnalytics.getInstance(this)
@@ -144,6 +155,7 @@ class DeviceActivity : Activity() {
         val deviceNameView = findViewById<TextView>(R.id.devicename)
         deviceStatusView = findViewById(R.id.devicestatus)
         openAppButtonView = findViewById(R.id.openapp)
+        openAppTextView = openAppButtonView?.findViewById(R.id.openapp_text)
         autoLaunchSwitch = findViewById(R.id.auto_launch_switch)
 
         deviceNameView?.text = device.friendlyName
@@ -159,13 +171,26 @@ class DeviceActivity : Activity() {
         }
 
         // Add click listener for the tap to send test button
-        findViewById<TextView>(R.id.taptosend)?.setOnClickListener {
+        findViewById<LinearLayout>(R.id.taptosend)?.setOnClickListener {
             AnalyticsUtils.logFeatureUsage("test_message", "button_click", true)
             onItemClick("Test")
         }
 
         // Add click listener for the camera button
         findViewById<TextView>(R.id.camera_button)?.setOnClickListener {
+            // Add button animation
+            val scaleDown = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.button_scale)
+            val scaleUp = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.button_scale_reverse)
+            
+            it.startAnimation(scaleDown)
+            scaleDown.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                    it.startAnimation(scaleUp)
+                }
+                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+            })
+            
             FirebaseCrashlytics.getInstance().log("Camera launch button clicked")
             AnalyticsUtils.logFeatureUsage("camera_launch", "button_click", true)
             CameraUtils.launchCamera(this)
@@ -176,6 +201,16 @@ class DeviceActivity : Activity() {
             FirebaseCrashlytics.getInstance().log("Square camera launch button clicked")
             AnalyticsUtils.logFeatureUsage("camera_launch", "square_button_click", true)
             CameraUtils.launchCamera(this)
+        }
+
+        // Manual shutter selection button wiring
+        val manualButton = findViewById<LinearLayout>(R.id.manual_shutter_selection_button)
+        manualButton.setOnClickListener {
+            if (CameraAppCandidateStore.candidatesByApp.isEmpty()) {
+                Toast.makeText(this, R.string.no_camera_apps_detected_yet, Toast.LENGTH_LONG).show()
+            } else {
+                startActivity(Intent(this, ManualShutterButtonSelectionActivity::class.java))
+            }
         }
 
         // Check permissions and show dialogs if needed
@@ -239,7 +274,7 @@ class DeviceActivity : Activity() {
      * a button to open the accessibility settings.
      */
     private fun showAccessibilityDialog() {
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.accessibility_dialog_title)
             .setMessage(R.string.accessibility_dialog_message)
             .setPositiveButton(R.string.open_settings) { _, _ ->
@@ -249,7 +284,16 @@ class DeviceActivity : Activity() {
             .setNegativeButton(android.R.string.cancel, null)
             .setCancelable(false)  // Make dialog non-dismissible
             .create()
-            .show()
+        
+        dialog.show()
+        
+        // Apply custom styling to the buttons after the dialog is shown
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+            setTextColor(ContextCompat.getColor(this@DeviceActivity, R.color.primary_color))
+        }
+        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
+            setTextColor(ContextCompat.getColor(this@DeviceActivity, R.color.text_secondary))
+        }
     }
 
     /**
@@ -407,7 +451,7 @@ class DeviceActivity : Activity() {
     private fun updateDeviceStatusColor(status: IQDevice.IQDeviceStatus) {
         deviceStatusView?.setTextColor(
             when (status) {
-                IQDevice.IQDeviceStatus.CONNECTED -> ContextCompat.getColor(this, R.color.primary_dark)
+                IQDevice.IQDeviceStatus.CONNECTED -> ContextCompat.getColor(this, R.color.success)
                 IQDevice.IQDeviceStatus.NOT_CONNECTED -> ContextCompat.getColor(this, R.color.error)
                 else -> ContextCompat.getColor(this, R.color.warning) // For UNKNOWN and other states
             }
@@ -417,5 +461,31 @@ class DeviceActivity : Activity() {
     private fun updateButtonLocationOverlay() {
         val buttonInfo = AccessibilityUtils.getLastKnownButtonInfo()
         buttonLocationOverlay.setButtonInfo(buttonInfo)
+    }
+
+    /**
+     * Creates the options menu for the activity.
+     * @param menu The menu to inflate
+     * @return true to display the menu
+     */
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.device, menu)
+        return true
+    }
+
+    /**
+     * Handles menu item selection.
+     * @param item The selected menu item
+     * @return true if the event was handled
+     */
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.help -> {
+                AnalyticsUtils.logFeatureUsage("help", "menu_click", true)
+                startActivity(Intent(this, HelpActivity::class.java))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 }

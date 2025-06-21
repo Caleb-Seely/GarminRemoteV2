@@ -63,6 +63,11 @@
         <!-- Device activity - Handles device-specific interactions -->
         <activity android:name=".activities.DeviceActivity" />
 
+        <!-- Manual shutter button selection activity -->
+        <activity
+            android:name=".activities.ManualShutterButtonSelectionActivity"
+            android:theme="@style/AppTheme" />
+
         <!-- Message service - Handles communication with Garmin devices -->
         <service
             android:name=".service.MessageService"

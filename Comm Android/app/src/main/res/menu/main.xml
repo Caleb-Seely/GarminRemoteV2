@@ -4,11 +4,11 @@
 
     <item
         android:id="@+id/help"
-        android:title="Help"
+        android:title="@string/help"
         android:icon="@android:drawable/ic_menu_help" />
     <item
         android:id="@+id/load_devices"
-        android:title="Reload Devices"
+        android:title="@string/load_devices"
         android:icon="@android:drawable/ic_menu_rotate" />
 
 </menu>

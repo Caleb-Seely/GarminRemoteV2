@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:background="@drawable/item_selection_background">
+
+    <TextView
+        android:id="@+id/candidate_content_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Content Description"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:id="@+id/candidate_resource_id"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Resource ID"/>
+
+    <TextView
+        android:id="@+id/candidate_class_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Class Name"/>
+
+    <TextView
+        android:id="@+id/candidate_position"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Position"/>
+
+    <TextView
+        android:id="@+id/candidate_confidence_score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Score: 0"/>
+
+</LinearLayout> 

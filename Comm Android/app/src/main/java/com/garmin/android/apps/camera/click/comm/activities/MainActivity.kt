@@ -11,6 +11,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.garmin.android.apps.camera.click.comm.R
@@ -27,6 +28,13 @@ import com.google.firebase.analytics.FirebaseAnalytics.Event
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.ktx.Firebase
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
+import android.widget.Button
+import android.widget.Toast
+import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
+import com.garmin.android.apps.camera.click.comm.activities.ManualShutterButtonSelectionActivity
+import android.view.accessibility.AccessibilityNodeInfo
+import com.garmin.android.apps.camera.click.comm.utils.CameraAppCandidateStore
+import android.view.View
 
 private const val TAG = "MainActivity"
 private const val PREFS_NAME = "CameraClickPrefs"
@@ -43,7 +51,7 @@ private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
  * - Manages app preferences and auto-launch settings
  * - Integrates with Firebase Analytics for usage tracking
  */
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var connectIQ: ConnectIQ
     private lateinit var adapter: IQDeviceAdapter
@@ -139,6 +147,9 @@ class MainActivity : Activity() {
 
         setContentView(R.layout.activity_main)
 
+        // Load all saved candidate lists on app start
+        CameraAppCandidateStore.loadAllFromPrefs(this)
+
         setupUi()
         setupConnectIQSdk()
     }
@@ -194,6 +205,10 @@ class MainActivity : Activity() {
      * This method initializes the device list UI and configures the adapter for displaying devices.
      */
     private fun setupUi() {
+        // Setup toolbar
+        val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        
         // Setup UI.
         adapter = IQDeviceAdapter { onItemClick(it) }
         findViewById<RecyclerView>(android.R.id.list).apply {
@@ -280,6 +295,7 @@ class MainActivity : Activity() {
 
             if (devices.isNotEmpty()) {
                 adapter.submitList(devices)
+                hideEmptyState() // Hide empty state when devices are found
                 
                 // Register for device status updates
                 devices.forEach {
@@ -320,6 +336,18 @@ class MainActivity : Activity() {
      * @param text The text to display in the empty state
      */
     private fun setEmptyState(text: String) {
-        findViewById<TextView>(android.R.id.empty)?.text = text
+        findViewById<TextView>(android.R.id.empty)?.apply {
+            this.text = text
+            visibility = View.VISIBLE
+        }
+        findViewById<RecyclerView>(android.R.id.list)?.visibility = View.GONE
+    }
+
+    /**
+     * Hides the empty state and shows the device list.
+     */
+    private fun hideEmptyState() {
+        findViewById<TextView>(android.R.id.empty)?.visibility = View.GONE
+        findViewById<RecyclerView>(android.R.id.list)?.visibility = View.VISIBLE
     }
 }

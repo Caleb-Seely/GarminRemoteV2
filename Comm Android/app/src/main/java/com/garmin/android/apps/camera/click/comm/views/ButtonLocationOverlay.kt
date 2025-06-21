@@ -49,6 +49,7 @@ class ButtonLocationOverlay @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        /*
         buttonInfo?.bounds?.let { bounds ->
             val adjustedBounds = Rect(bounds).apply {
                 offset(0, -actionBarHeight)
@@ -58,5 +59,6 @@ class ButtonLocationOverlay @JvmOverloads constructor(
             canvas.drawText("Shutter Location", adjustedBounds.centerX().toFloat(), textY, textPaint)
             canvas.drawRect(adjustedBounds, paint)
         }
+        */
     }
 } 

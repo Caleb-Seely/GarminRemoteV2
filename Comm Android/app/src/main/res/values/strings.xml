@@ -27,5 +27,10 @@
     <string name="open_settings">Open Settings</string>
     <!--    Accessibility Menu Text-->
     <string name="accessibility_service_description">This service turns your Garmin watch into a remote camera trigger</string>
+    <string name="manual_selection_title">Select a Different Button</string>
+    <string name="confidence_score_label">Score: %1$d</string>
+    <string name="no_camera_apps_detected_yet">No camera apps have been detected yet. Please open a camera app first, then return here.</string>
+    <string name="help_icon">Help icon</string>
 
+    <string name="select_camera_app">Select Camera App</string>
 </resources>

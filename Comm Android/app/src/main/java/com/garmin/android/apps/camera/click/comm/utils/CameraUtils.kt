@@ -36,6 +36,7 @@ class CameraUtils {
                 val cameraPackages = listOf(
                     "com.google.android.GoogleCamera",
                     "com.android.camera",
+                    "com.motorola.camera3",
                     "com.google.android.apps.camera",
                     "com.oplus.camera",                 //OnePlus
                     "com.sec.android.app.camera",       //Samsung

@@ -4,8 +4,9 @@
 
     <!-- Base colors -->
     <color name="primary_color">#3fe9a3</color>
-    <color name="primary_dark">#A33FE9 </color>
+    <color name="primary_dark">#000000</color>
     <color name="accent_color">#FF4081</color>
+    <color name="white">#FFFFFF</color>
 
     <!-- Background colors -->
     <color name="background_light">#F5F5F5</color>
@@ -17,10 +18,12 @@
     <color name="text_hint">#BDBDBD</color>
 
     <!-- Status colors -->
-    <color name="success">#4CAF50</color>
+    <color name="success">#3fe9a3</color>
     <color name="error">#F44336</color>
     <color name="warning">#FFC107</color>
 
     <!-- UI colors -->
     <color name="divider_color">#EEEEEE</color>
+    <color name="divider">#BDBDBD</color>
+    <color name="button_selected_background">#E0E0E0</color> <!-- A light grey -->
 </resources>

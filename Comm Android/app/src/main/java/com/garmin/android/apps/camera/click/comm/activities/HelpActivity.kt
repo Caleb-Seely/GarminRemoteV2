@@ -1,12 +1,12 @@
 package com.garmin.android.apps.camera.click.comm.activities
 
-import android.app.Activity
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.cardview.widget.CardView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import com.garmin.android.apps.camera.click.comm.R
@@ -16,12 +16,18 @@ import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 /**
  * Activity that displays help information about the app in a structured, elegant format.
  */
-class HelpActivity : Activity() {
+class HelpActivity : AppCompatActivity() {
     private var startTime: Long = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_help)
+
+        // Set up toolbar
+        val toolbar = findViewById<Toolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
 
         // Record start time
         startTime = System.currentTimeMillis()
@@ -34,6 +40,11 @@ class HelpActivity : Activity() {
 
         setupTitleAndDescription()
         setupSections()
+    }
+
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
     }
 
     override fun onDestroy() {
@@ -98,8 +109,8 @@ class HelpActivity : Activity() {
             "<ul>" +
                     "<li> Open <b>CameraClick</b> on your phone.</li>" +
                     "<li> Open your camera app.</li>" +
-                    "<li> When your Garmin sends a command, CameraClick uses Accessibility to tap the largest button on screen (should always be the shutter).</li>" +
-                    "That's it!"
+                    "<li> When your Garmin sends the command, CameraClick uses Accessibility to tap a button on screen.</li>" +
+                    "<br>That's it!"
         )
 
         // What You Can Use Section
@@ -110,8 +121,9 @@ class HelpActivity : Activity() {
                     "<ul>" +
                     "<li> All settings (flash, timer, filters) are controlled in your camera app</li>" +
                     "<li> Works with <b>front and back cameras</b></li>" +
-                    "<li> Supports <b>photo and video mode</b> (if your device allows it)</li>" +
-                    "</ul>"
+                    "<li> Supports <b>photo and video mode</b> <br></li>" +
+                    "</ul>" +
+                    "<br>Set buttons to control other apps from your watch"
         )
 
         // Common Issues & Fixes Section
@@ -131,7 +143,10 @@ class HelpActivity : Activity() {
                     "→ Try turning <b>Switch Access ON</b> (no configuration needed)<br><br>" +
                     
                     "<b>App stops working in background</b><br>" +
-                    "→ Exempt CameraClick from <b>Battery Optimization</b>"
+                    "→ Exempt CameraClick from <b>Battery Optimization</b><br><br>" +
+
+                    "<b>Clicking the wrong button</b><br>" +
+                    "→ Choose a different button from the settings menu "
         )
 
         // Test Feature Section

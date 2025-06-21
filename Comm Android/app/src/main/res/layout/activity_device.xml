@@ -7,133 +7,268 @@ Individual device information and tests screen
     xmlns:material="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:background="@color/background_light"
     tools:context="com.garmin.android.apps.camera.click.comm.activities.MainActivity">
 
-    <!-- Device Information Section -->
-    <TextView
-        android:id="@+id/devicename"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:gravity="center_vertical"
-        android:minHeight="50dp"
-        android:textSize="18sp"
-        app:layout_constraintEnd_toStartOf="@id/devicestatus"
-        app:layout_constraintStart_toStartOf="parent"
+    <!-- App Bar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/primary_color"
+        android:elevation="4dp"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="Forerunner 255" />
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        app:title="Device Control"
+        app:titleTextColor="@color/white" />
 
-    <TextView
-        android:id="@+id/devicestatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginEnd="5dp"
-        app:layout_constraintBottom_toBottomOf="@id/devicename"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/devicename"
-        tools:text="CONNECTED" />
-
-    <View
-        android:id="@+id/dividerA"
+    <!-- Main Content Container -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="5dp"
-        android:background="#cdcdcd"
-        app:layout_constraintTop_toBottomOf="@id/devicename" />
+        android:layout_height="0dp"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-    <!-- Open App Section -->
-    <TextView
-        android:id="@+id/openapp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="5dp"
-        android:gravity="center_vertical"
-        android:minHeight="50dp"
-        android:text="@string/prompt_watch_app"
-        app:layout_constraintTop_toBottomOf="@id/dividerA" />
-
-    <View
-        android:id="@+id/dividerB"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="5dp"
-        android:background="#cdcdcd"
-        app:layout_constraintTop_toBottomOf="@id/openapp" />
-
-    <!-- Tap To Send Section -->
-    <TextView
-        android:id="@+id/taptosend"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="5dp"
-        android:background="?android:attr/selectableItemBackground"
-        android:clickable="true"
-        android:focusable="true"
-        android:gravity="center_vertical"
-        android:minHeight="43dp"
-        android:text="@string/tap_to_send"
-        app:layout_constraintTop_toBottomOf="@id/dividerB" />
-
-    <View
-        android:id="@+id/dividerC"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="5dp"
-        android:background="#cdcdcd"
-        app:layout_constraintTop_toBottomOf="@id/taptosend" />
-
-    <!-- Auto Launch Camera Switch -->
-    <TextView
-        android:id="@+id/auto_launch_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/auto_launch_camera"
-        android:layout_marginStart="5dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/dividerC"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Switch
-        android:id="@+id/auto_launch_switch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="5dp"
-        app:layout_constraintTop_toTopOf="@id/auto_launch_label"
-        app:layout_constraintBottom_toBottomOf="@id/auto_launch_label"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Camera Button Section -->
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent">
-
-        <TextView
-            android:id="@+id/camera_button"
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/launch_camera"
-            android:padding="24dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center" />
+            android:layout_height="match_parent"
+            android:padding="16dp">
 
-        <TextView
-            android:id="@+id/square_camera_button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_gravity="center"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true" />
+            <!-- Device Information Section -->
+            <LinearLayout
+                android:id="@+id/device_info_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:minHeight="50dp"
+                app:layout_constraintTop_toTopOf="parent">
 
-    </FrameLayout>
+                <TextView
+                    android:id="@+id/devicename"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:textSize="18sp"
+                    android:textColor="@color/text_primary"
+                    android:textStyle="bold"
+                    tools:text="Forerunner 255" />
+
+                <TextView
+                    android:id="@+id/devicestatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/success"
+                    android:textStyle="bold"
+                    tools:text="CONNECTED" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/dividerA"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="@color/divider_color"
+                app:layout_constraintTop_toBottomOf="@id/device_info_section" />
+
+            <!-- Open App Section -->
+            <LinearLayout
+                android:id="@+id/openapp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:minHeight="50dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="12dp"
+                app:layout_constraintTop_toBottomOf="@id/dividerA">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/watch_screentime_35dp"
+                    android:contentDescription="Watch icon"
+                    android:layout_marginEnd="16dp"
+                    app:tint="@color/primary_color" />
+
+                <TextView
+                    android:id="@+id/openapp_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/prompt_watch_app"
+                    android:textColor="@color/text_primary" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/dividerB"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/divider_color"
+                app:layout_constraintTop_toBottomOf="@id/openapp" />
+
+            <!-- Tap To Send Section -->
+            <LinearLayout
+                android:id="@+id/taptosend"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:minHeight="50dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="12dp"
+                app:layout_constraintTop_toBottomOf="@id/dividerB">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/baseline_send_24"
+                    android:contentDescription="Send icon"
+                    android:tint="@color/primary_color"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/tap_to_send"
+                    android:textColor="@color/text_primary" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/dividerC"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/divider_color"
+                app:layout_constraintTop_toBottomOf="@id/taptosend" />
+
+            <!-- Shutter Selection Button -->
+            <LinearLayout
+                android:id="@+id/manual_shutter_selection_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:minHeight="50dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="12dp"
+                app:layout_constraintTop_toBottomOf="@id/dividerC">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/baseline_settings_24"
+                    android:contentDescription="Touch app icon"
+                    android:tint="@color/primary_color"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Select Different Button"
+                    android:textColor="@color/text_primary" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/divider_auto_manual"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/divider_color"
+                app:layout_constraintTop_toBottomOf="@id/manual_shutter_selection_button" />
+
+            <!-- Auto Launch Camera Switch -->
+            <LinearLayout
+                android:id="@+id/auto_launch_section"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:minHeight="50dp"
+                app:layout_constraintTop_toBottomOf="@id/divider_auto_manual">
+
+
+
+                <TextView
+                    android:id="@+id/auto_launch_label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/auto_launch_camera"
+                    android:textColor="@color/text_primary"
+                    android:padding="12dp" />
+
+                <Switch
+                    android:id="@+id/auto_launch_switch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="12dp" />
+
+            </LinearLayout>
+
+            <View
+                android:id="@+id/dividerD"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="@color/divider_color"
+                app:layout_constraintTop_toBottomOf="@id/auto_launch_section" />
+
+            <!-- Camera Button Section - At bottom of card -->
+            <FrameLayout
+                android:id="@+id/camera_button_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:layout_constraintBottom_toBottomOf="parent">
+
+                <TextView
+                    android:id="@+id/camera_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/camera_button_background"
+                    android:clickable="true"
+                    android:elevation="4dp"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:padding="24dp"
+                    android:text="@string/launch_camera"
+                    android:textColor="@color/white"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/square_camera_button"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+            </FrameLayout>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.cardview.widget.CardView>
 
     <!-- Empty view for fallback -->
     <TextView

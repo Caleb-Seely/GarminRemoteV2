@@ -4,9 +4,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.garmin.android.apps.camera.click.comm.R
 import com.garmin.android.connectiq.IQDevice
 import com.garmin.android.connectiq.IQDevice.IQDeviceStatus
 
@@ -27,7 +29,7 @@ class IQDeviceAdapter(
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): IQDeviceViewHolder {
         val view = LayoutInflater.from(parent.context)
-            .inflate(android.R.layout.simple_list_item_2, parent, false)
+            .inflate(R.layout.item_device, parent, false)
         return IQDeviceViewHolder(view, onItemClickListener)
     }
 
@@ -101,6 +103,15 @@ class IQDeviceViewHolder(
 
         view.findViewById<TextView>(android.R.id.text1).text = deviceName
         view.findViewById<TextView>(android.R.id.text2).text = device.status?.name
+
+        // Update status indicator color
+        val statusIndicator = view.findViewById<View>(R.id.status_indicator)
+        val statusColor = when (device.status) {
+            IQDeviceStatus.CONNECTED -> R.color.success
+            IQDeviceStatus.NOT_CONNECTED -> R.color.error
+            else -> R.color.warning
+        }
+        statusIndicator.setBackgroundColor(ContextCompat.getColor(view.context, statusColor))
 
         view.setOnClickListener {
             onItemClickListener(device)
