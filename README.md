@@ -54,6 +54,20 @@ When a message is received:
 
 > ⚠️ Because this action requires analyzing and interacting with other apps on the screen, **Accessibility permissions** are essential for CameraClick to function.
 
+### 🔒 Privacy First
+
+CameraClick uses Android’s **AccessibilityService** to perform a very specific task: simulate a tap on your phone’s camera shutter when triggered from your Garmin watch. This is the only reason the service exists — it’s not used for any form of surveillance, keylogging, or data harvesting.
+
+I want to be completely transparent:  
+**I have no interest in collecting personal data.**  
+CameraClick does **not** read or store any app content, camera images, or personal information. The AccessibilityService is only used because it’s the **only available method** on Android to interact with other apps in this way.
+
+The only data I do collect is **non-personal usage statistics** — things like how often the remote shutter is triggered or whether the app has crashed. These help me improve reliability, diagnose bugs, and better support the app.  
+**No app names, no user identifiers, and no camera data is ever collected or stored.**
+
+Apps and their button prefrences are stored locally on device only.
+
+If you ever have questions about what’s being used or why, reach out — I'm happy to explain it. I built CameraClick for myself, and I’m sharing it with others who want the same simple, private functionality.
 ---
 
 ## 🚀 Installation
