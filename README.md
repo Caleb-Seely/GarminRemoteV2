@@ -69,7 +69,8 @@ The only data I do collect is **non-personal usage statistics** — things like 
 
 Apps and their button prefrences are stored locally on device only.
 
-If you ever have questions about what’s being used or why, reach out — I'm happy to explain it. I built CameraClick for myself, and I’m sharing it with others who want the same simple, private functionality.
+**If you ever have questions about what’s being used or why, reach out — I'm happy to explain it. I built CameraClick for myself, and I’m sharing it with others who want the same simple, private functionality.**
+
 ---
 
 ## 🚀 Installation
