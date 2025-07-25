@@ -54,6 +54,8 @@ When a message is received:
 
 > ⚠️ Because this action requires analyzing and interacting with other apps on the screen, **Accessibility permissions** are essential for CameraClick to function.
 
+---
+
 ### 🔒 Privacy First
 
 CameraClick uses Android’s **AccessibilityService** to perform a very specific task: simulate a tap on your phone’s camera shutter when triggered from your Garmin watch. This is the only reason the service exists — it’s not used for any form of surveillance, keylogging, or data harvesting.
