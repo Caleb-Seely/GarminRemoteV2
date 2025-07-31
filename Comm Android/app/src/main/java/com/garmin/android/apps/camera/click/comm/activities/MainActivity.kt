@@ -147,6 +147,11 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
+        // Set status bar color to black
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            window.statusBarColor = android.graphics.Color.BLACK
+        }
+
         // Load all saved candidate lists on app start
         CameraAppCandidateStore.loadAllFromPrefs(this)
 

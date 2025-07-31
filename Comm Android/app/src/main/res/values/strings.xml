@@ -20,6 +20,7 @@
     <string name="service_unavailable">The ConnectIQ service is unavailable.</string>
     <string name="no_devices">No devices found</string>
     <string name="error_loading_devices">error loading devices\n</string>
+    <string name="device_missing_error">Could not retrieve device information. Please return to the device list and try again.</string>
 
     <!-- Accessibility Dialog -->
     <string name="accessibility_dialog_title">Enable Accessibility Service</string>

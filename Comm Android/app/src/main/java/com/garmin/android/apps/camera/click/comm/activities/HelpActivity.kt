@@ -102,6 +102,29 @@ class HelpActivity : AppCompatActivity() {
                     "</ol>"
         )
 
+        // Common Issues & Fixes Section
+        createSection(
+            sectionsContainer,
+            "⚠️ Common Issues & Fixes",
+            "<b>Watch doesn't trigger shutter</b><br>" +
+                    "→ Check Bluetooth & ensure Garmin app is connected<br><br>" +
+
+                    "<b>Nothing happens</b><br>" +
+                    "→ Ensure the <b>camera app is open and visible</b><br><br>" +
+
+                    "<b>Shutter not responding</b><br>" +
+                    "→ Make sure <b>Accessibility is enabled</b><br><br>" +
+
+                    "<b>Video capture doesn't work</b><br>" +
+                    "→ Try turning <b>Switch Access ON</b> (no configuration needed)<br><br>" +
+
+                    "<b>App stops working in background</b><br>" +
+                    "→ Exempt CameraClick from <b>Battery Optimization</b><br><br>" +
+
+                    "<b>Clicking the wrong button</b><br>" +
+                    "→ Choose a different button from the settings menu "
+        )
+
         // How It Works Section
         createSection(
             sectionsContainer,
@@ -124,30 +147,9 @@ class HelpActivity : AppCompatActivity() {
                     "<li> Supports <b>photo and video mode</b> <br></li>" +
                     "</ul>" +
                     "<br>Set buttons to control other apps from your watch"
+
         )
 
-        // Common Issues & Fixes Section
-        createSection(
-            sectionsContainer,
-            "⚠️ Common Issues & Fixes",
-            "<b>Watch doesn't trigger shutter</b><br>" +
-                    "→ Check Bluetooth & ensure Garmin app is connected<br><br>" +
-                    
-                    "<b>Nothing happens</b><br>" +
-                    "→ Ensure the <b>camera app is open and visible</b><br><br>" +
-                    
-                    "<b>Shutter not responding</b><br>" +
-                    "→ Make sure <b>Accessibility is enabled</b><br><br>" +
-                    
-                    "<b>Video capture doesn't work</b><br>" +
-                    "→ Try turning <b>Switch Access ON</b> (no configuration needed)<br><br>" +
-                    
-                    "<b>App stops working in background</b><br>" +
-                    "→ Exempt CameraClick from <b>Battery Optimization</b><br><br>" +
-
-                    "<b>Clicking the wrong button</b><br>" +
-                    "→ Choose a different button from the settings menu "
-        )
 
         // Test Feature Section
         createSection(
@@ -161,8 +163,8 @@ class HelpActivity : AppCompatActivity() {
             sectionsContainer,
             "📎 Quick Links",
             "📝 <a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a>" +
-                    "<br>⌚ <a href='https://apps.garmin.com'>Garmin Connect IQ – CameraClick App</a>" +
-                    "<br>🌐 <a href='https://calebseely.com'>Someone please hire me</a>"
+                    "<br><br>⌚ <a href='https://apps.garmin.com/apps/789012f0-dcb2-46c2-b5b8-ef00a75968fa'>CameraClick Garmin App</a>" +
+                    "<br><br>🌐 <a href='https://calebseely.com'>I'm looking for a job!</a>"
 
         )
     }

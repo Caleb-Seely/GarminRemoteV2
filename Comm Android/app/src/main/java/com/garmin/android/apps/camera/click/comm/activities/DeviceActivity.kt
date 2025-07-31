@@ -88,7 +88,7 @@ class DeviceActivity : AppCompatActivity() {
     private var isServiceRunning = false
 
     private val connectIQ: ConnectIQ = ConnectIQ.getInstance()
-    private lateinit var device: IQDevice
+    private var device: IQDevice? = null
     private lateinit var myApp: IQApp
     private lateinit var prefs: SharedPreferences
     private lateinit var firebaseAnalytics: FirebaseAnalytics
@@ -127,6 +127,11 @@ class DeviceActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_device)
 
+        // Set status bar color to black
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            window.statusBarColor = android.graphics.Color.BLACK
+        }
+
         // Setup toolbar
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -136,7 +141,19 @@ class DeviceActivity : AppCompatActivity() {
 
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        device = intent.getParcelableExtra<Parcelable>(EXTRA_IQ_DEVICE) as IQDevice
+        val deviceExtra = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(EXTRA_IQ_DEVICE, IQDevice::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(EXTRA_IQ_DEVICE) as? IQDevice
+        }
+        if (deviceExtra == null) {
+            Log.e(TAG, "Device extra missing or invalid in intent. Finishing activity.")
+            Toast.makeText(this, R.string.device_missing_error, Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+        device = deviceExtra
         myApp = IQApp(CommConstants.COMM_WATCH_ID)
         appIsOpen = false
 
@@ -146,9 +163,9 @@ class DeviceActivity : AppCompatActivity() {
 
         // Log device activity screen view with device details
         val bundle = Bundle().apply {
-            putString("device_name", device.friendlyName)
-            putString("device_id", device.deviceIdentifier.toString())
-            putString("connection_status", device.status?.name ?: "unknown")
+            putString("device_name", device?.friendlyName ?: "unknown")
+            putString("device_id", device?.deviceIdentifier?.toString() ?: "unknown")
+            putString("connection_status", device?.status?.name ?: "unknown")
         }
         AnalyticsUtils.logScreenView("device_activity", "DeviceActivity", bundle)
 
@@ -158,9 +175,9 @@ class DeviceActivity : AppCompatActivity() {
         openAppTextView = openAppButtonView?.findViewById(R.id.openapp_text)
         autoLaunchSwitch = findViewById(R.id.auto_launch_switch)
 
-        deviceNameView?.text = device.friendlyName
-        deviceStatusView?.text = device.status?.name
-        device.status?.let { updateDeviceStatusColor(it) }
+        deviceNameView?.text = device?.friendlyName ?: "Unknown Device"
+        deviceStatusView?.text = device?.status?.name ?: "Unknown Status"
+        device?.status?.let { updateDeviceStatusColor(it) }
         openAppButtonView?.setOnClickListener { openMyApp() }
 
         // Initialize auto-launch switch state
@@ -316,10 +333,12 @@ class DeviceActivity : AppCompatActivity() {
         super.onPause()
         Log.d(TAG, "Activity onPause")
 
-        try {
-            connectIQ.unregisterForDeviceEvents(device)
-        } catch (_: InvalidStateException) {
-            Log.e(TAG, "Error unregistering for device events")
+        device?.let { dev ->
+            try {
+                connectIQ.unregisterForDeviceEvents(dev)
+            } catch (_: InvalidStateException) {
+                Log.e(TAG, "Error unregistering for device events")
+            }
         }
     }
 
@@ -330,7 +349,9 @@ class DeviceActivity : AppCompatActivity() {
     public override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "Activity onDestroy")
-        stopService(MessageService.createIntent(this, device, CommConstants.COMM_WATCH_ID))
+        device?.let {
+            stopService(MessageService.createIntent(this, it, CommConstants.COMM_WATCH_ID))
+        }
     }
 
     /**
@@ -345,22 +366,26 @@ class DeviceActivity : AppCompatActivity() {
         Toast.makeText(this, "Prompting watch...", Toast.LENGTH_SHORT).show()
 
         // Log the app open attempt
-        AnalyticsUtils.logWatchAppOpen(
-            deviceName = device.friendlyName,
-            deviceId = device.deviceIdentifier.toString(),
-            status = device.status?.name ?: "unknown"
-        )
-
-        try {
-            connectIQ.openApplication(device, myApp, openAppListener)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error opening app", e)
-            // Log the error
+        device?.let { dev ->
             AnalyticsUtils.logWatchAppOpen(
-                deviceName = device.friendlyName,
-                deviceId = device.deviceIdentifier.toString(),
-                status = "error: ${e.message}"
+                deviceName = dev.friendlyName,
+                deviceId = dev.deviceIdentifier.toString(),
+                status = dev.status?.name ?: "unknown"
             )
+        }
+
+        device?.let { dev ->
+            try {
+                connectIQ.openApplication(dev, myApp, openAppListener)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error opening app", e)
+                // Log the error
+                AnalyticsUtils.logWatchAppOpen(
+                    deviceName = dev.friendlyName,
+                    deviceId = dev.deviceIdentifier.toString(),
+                    status = "error: ${e.message}"
+                )
+            }
         }
     }
 
@@ -370,14 +395,16 @@ class DeviceActivity : AppCompatActivity() {
      */
     private fun listenByDeviceEvents() {
         Log.d(TAG, "Registering for device events")
-        try {
-            connectIQ.registerForDeviceEvents(device) { _, status ->
-                Log.d(TAG, "Device status changed: ${status.name}")
-                deviceStatusView?.text = status.name
-                updateDeviceStatusColor(status)
+        device?.let { dev ->
+            try {
+                connectIQ.registerForDeviceEvents(dev) { _, status ->
+                    Log.d(TAG, "Device status changed: ${status.name}")
+                    deviceStatusView?.text = status.name
+                    updateDeviceStatusColor(status)
+                }
+            } catch (e: InvalidStateException) {
+                Log.e(TAG, "Error registering for device events", e)
             }
-        } catch (e: InvalidStateException) {
-            Log.e(TAG, "Error registering for device events", e)
         }
     }
 
@@ -390,29 +417,31 @@ class DeviceActivity : AppCompatActivity() {
      */
     private fun getMyAppStatus() {
         Log.d(TAG, "Checking app status")
-        try {
-            connectIQ.getApplicationInfo(CommConstants.COMM_WATCH_ID, device, object :
-                ConnectIQ.IQApplicationInfoListener {
-                override fun onApplicationInfoReceived(app: IQApp) {
-                    Log.d(TAG, "App is installed, starting message service")
-                    // Start the message service when the app is confirmed to be installed
-                    startService(MessageService.createIntent(this@DeviceActivity, device, CommConstants.COMM_WATCH_ID))
-                }
+        device?.let { dev ->
+            try {
+                connectIQ.getApplicationInfo(CommConstants.COMM_WATCH_ID, dev, object :
+                    ConnectIQ.IQApplicationInfoListener {
+                    override fun onApplicationInfoReceived(app: IQApp) {
+                        Log.d(TAG, "App is installed, starting message service")
+                        // Start the message service when the app is confirmed to be installed
+                        startService(MessageService.createIntent(this@DeviceActivity, dev, CommConstants.COMM_WATCH_ID))
+                    }
 
-                override fun onApplicationNotInstalled(applicationId: String) {
-                    Log.d(TAG, "Garmin ConnectIQ App is not installed")
-                    AlertDialog.Builder(this@DeviceActivity)
-                        .setTitle(R.string.missing_widget)
-                        .setMessage(R.string.missing_widget_message)
-                        .setPositiveButton(android.R.string.ok, null)
-                        .create()
-                        .show()
-                }
-            })
-        } catch (e: InvalidStateException) {
-            Log.e(TAG, "Error getting app info", e)
-        } catch (e: ServiceUnavailableException) {
-            Log.e(TAG, "Service unavailable", e)
+                    override fun onApplicationNotInstalled(applicationId: String) {
+                        Log.d(TAG, "Garmin ConnectIQ App is not installed")
+                        AlertDialog.Builder(this@DeviceActivity)
+                            .setTitle(R.string.missing_widget)
+                            .setMessage(R.string.missing_widget_message)
+                            .setPositiveButton(android.R.string.ok, null)
+                            .create()
+                            .show()
+                    }
+                })
+            } catch (e: InvalidStateException) {
+                Log.e(TAG, "Error getting app info", e)
+            } catch (e: ServiceUnavailableException) {
+                Log.e(TAG, "Service unavailable", e)
+            }
         }
     }
 
@@ -422,28 +451,33 @@ class DeviceActivity : AppCompatActivity() {
      */
     private fun onItemClick(message: String) {
         Log.d(TAG, "Sending message: $message")
-        try {
-            connectIQ.sendMessage(device, myApp, message) { _, _, status ->
-                Log.d(TAG, "Message send status: ${status.name}")
-                Toast.makeText(this@DeviceActivity, status.name, Toast.LENGTH_SHORT).show()
-                
-                // Log camera command event
-                val params = Bundle().apply {
-                    putString("device_name", device.friendlyName)
-                    putString("message", message)
+        device?.let { dev ->
+            try {
+                connectIQ.sendMessage(dev, myApp, message) { _, _, status ->
+                    Log.d(TAG, "Message send status: ${status.name}")
+                    Toast.makeText(this@DeviceActivity, status.name, Toast.LENGTH_SHORT).show()
+                    
+                    // Log camera command event
+                    val params = Bundle().apply {
+                        putString("device_name", dev.friendlyName)
+                        putString("message", message)
+                    }
+                    firebaseAnalytics.logEvent("message_sent_to_watch", params)
                 }
-                firebaseAnalytics.logEvent("message_sent_to_watch", params)
+            } catch (e: InvalidStateException) {
+                Log.e(TAG, "Error sending message", e)
+                Toast.makeText(this, "ConnectIQ is not in a valid state", Toast.LENGTH_SHORT).show()
+            } catch (e: ServiceUnavailableException) {
+                Log.e(TAG, "Service unavailable", e)
+                Toast.makeText(
+                    this,
+                    "ConnectIQ service is unavailable. Is Garmin Connect Mobile installed and running?",
+                    Toast.LENGTH_LONG
+                ).show()
             }
-        } catch (e: InvalidStateException) {
-            Log.e(TAG, "Error sending message", e)
-            Toast.makeText(this, "ConnectIQ is not in a valid state", Toast.LENGTH_SHORT).show()
-        } catch (e: ServiceUnavailableException) {
-            Log.e(TAG, "Service unavailable", e)
-            Toast.makeText(
-                this,
-                "ConnectIQ service is unavailable. Is Garmin Connect Mobile installed and running?",
-                Toast.LENGTH_LONG
-            ).show()
+        } ?: run {
+            Log.e(TAG, "Device is null, cannot send message")
+            Toast.makeText(this, "Device not available", Toast.LENGTH_SHORT).show()
         }
     }
 
