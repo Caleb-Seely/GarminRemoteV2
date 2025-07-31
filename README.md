@@ -13,19 +13,20 @@ CameraClick includes two components:
 
 ---
 
-## ✨ Features
+### 🔒 Privacy First
 
-### Android App
-- 🔄 **Device Discovery**: Automatically detects and connects to nearby Garmin devices  
-- 📸 **Remote Camera Control**: Trigger photo and video capture from your Garmin watch  
-- 🔔 **Background Service**: Maintains connection with your watch even in the background  
-- 🎯 **Accessibility Integration**: Uses Android’s Accessibility Service for reliable shutter triggering  
-- 📊 **Firebase Analytics & Crash Reporting**  
-- 🚀 **Auto-Launch**: Optionally launches your default camera app when the watch connects  
+CameraClick uses Android’s **AccessibilityService** to perform a very specific task: simulate a tap on your phone’s camera shutter when triggered from your Garmin watch. This is the only reason the service exists — it’s not used for any form of surveillance, keylogging, or data harvesting.
 
-### Garmin Watch App
-- 🎛️ **Minimal UI**: Clean, icon-based interface  
-- 📷 **Remote Triggering**: Send a message to capture a photo/video  
+I want to be completely transparent:  
+**I have no interest in collecting personal data.**  
+CameraClick does **not** read or store any app content, camera images, or personal information. The AccessibilityService is only used because it’s the **only available method** on Android to interact with other apps in this way.
+
+The only data I do collect is **non-personal usage statistics** — things like how often the remote shutter is triggered or whether the app has crashed. These help me improve reliability, diagnose bugs, and better support the app.  
+**No app names, no user identifiers, and no camera data is ever collected or stored.**
+
+Apps and their button prefrences are stored locally on device only.
+
+**If you ever have questions about what’s being used or why, reach out — I'm happy to explain it. I built CameraClick for myself, and I’m sharing it with others who want the same simple, private functionality.**
 
 ---
 
@@ -53,23 +54,6 @@ When a message is received:
 3. It simulates a click on that button to trigger a photo or video capture.
 
 > ⚠️ Because this action requires analyzing and interacting with other apps on the screen, **Accessibility permissions** are essential for CameraClick to function.
-
----
-
-### 🔒 Privacy First
-
-CameraClick uses Android’s **AccessibilityService** to perform a very specific task: simulate a tap on your phone’s camera shutter when triggered from your Garmin watch. This is the only reason the service exists — it’s not used for any form of surveillance, keylogging, or data harvesting.
-
-I want to be completely transparent:  
-**I have no interest in collecting personal data.**  
-CameraClick does **not** read or store any app content, camera images, or personal information. The AccessibilityService is only used because it’s the **only available method** on Android to interact with other apps in this way.
-
-The only data I do collect is **non-personal usage statistics** — things like how often the remote shutter is triggered or whether the app has crashed. These help me improve reliability, diagnose bugs, and better support the app.  
-**No app names, no user identifiers, and no camera data is ever collected or stored.**
-
-Apps and their button prefrences are stored locally on device only.
-
-**If you ever have questions about what’s being used or why, reach out — I'm happy to explain it. I built CameraClick for myself, and I’m sharing it with others who want the same simple, private functionality.**
 
 ---
 
@@ -111,12 +95,6 @@ Apps and their button prefrences are stored locally on device only.
 - `POST_NOTIFICATIONS`: For service status notifications  
 - `SYSTEM_ALERT_WINDOW`: Overlay functionality for Accessibility Service  
 - `INTERNET`, `ACCESS_NETWORK_STATE`: Required for Firebase analytics and crash reporting  
-
----
-
-## 📥 Download
-
-[**⬇ Download Latest app-release.apk**](https://github.com/Caleb-Seely/GarminRemoteV2/raw/main/Comm%20Android/app/release/app-release.apk)
 
 ---
 
