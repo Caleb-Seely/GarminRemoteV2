@@ -39,6 +39,7 @@ import android.accessibilityservice.AccessibilityServiceInfo
 import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
 import com.garmin.android.apps.camera.click.comm.views.ButtonLocationOverlay
 import com.garmin.android.apps.camera.click.comm.utils.CameraAppCandidateStore
+import com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils
 import android.widget.Button
 import android.view.Menu
 import android.view.MenuItem
@@ -233,6 +234,9 @@ class DeviceActivity : AppCompatActivity() {
         // Check permissions and show dialogs if needed
         checkAndRequestPermissions()
 
+        // Track app launch for review prompting
+        InAppReviewUtils.trackAppLaunch(this)
+
         FirebaseAnalytics.getInstance(this).setAnalyticsCollectionEnabled(true)
     }
 
@@ -425,6 +429,10 @@ class DeviceActivity : AppCompatActivity() {
                         Log.d(TAG, "App is installed, starting message service")
                         // Start the message service when the app is confirmed to be installed
                         startService(MessageService.createIntent(this@DeviceActivity, dev, CommConstants.COMM_WATCH_ID))
+                        
+                        // This is a good moment to potentially show review prompt
+                        // (after successful connection and app verification)
+                        checkAndShowReviewPrompt()
                     }
 
                     override fun onApplicationNotInstalled(applicationId: String) {
@@ -521,6 +529,23 @@ class DeviceActivity : AppCompatActivity() {
             }
 
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    /**
+     * Checks if we should show the review prompt and displays it if appropriate.
+     * This is called at natural moments in the app flow when the user has
+     * successfully completed an action (like connecting to a device).
+     */
+    private fun checkAndShowReviewPrompt() {
+        if (InAppReviewUtils.shouldShowReviewPrompt(this)) {
+            Log.d(TAG, "Showing in-app review prompt")
+            AnalyticsUtils.logFeatureUsage("in_app_review", "prompt_shown", true)
+            
+            InAppReviewUtils.launchInAppReview(this) { success ->
+                Log.d(TAG, "In-app review completed: $success")
+                AnalyticsUtils.logFeatureUsage("in_app_review", "completed", success)
+            }
         }
     }
 }

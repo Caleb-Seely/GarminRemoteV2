@@ -74,4 +74,8 @@ dependencies {
 
     // JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")
+    
+    // Google Play In-App Review
+    implementation("com.google.android.play:review:2.0.1")
+    implementation("com.google.android.play:review-ktx:2.0.1")
 }
