@@ -10,5 +10,9 @@
         android:id="@+id/load_devices"
         android:title="@string/load_devices"
         android:icon="@android:drawable/ic_menu_rotate" />
+    <item
+        android:id="@+id/reliability_test"
+        android:title="Reliability Test"
+        android:icon="@android:drawable/ic_menu_manage" />
 
 </menu>

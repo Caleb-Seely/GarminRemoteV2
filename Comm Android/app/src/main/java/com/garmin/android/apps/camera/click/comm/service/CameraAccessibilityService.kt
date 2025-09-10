@@ -19,6 +19,8 @@ import com.garmin.android.connectiq.IQApp
 import com.garmin.android.apps.camera.click.comm.utils.AccessibilityUtils
 import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
 import com.garmin.android.apps.camera.click.comm.CommConstants
+import com.garmin.android.apps.camera.click.comm.utils.CameraDetectionUtils
+import com.garmin.android.apps.camera.click.comm.utils.ButtonReliabilityUtils
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
@@ -120,6 +122,7 @@ class CameraAccessibilityService : AccessibilityService() {
 
     /**
      * Handles the camera trigger action:
+     * 1. Validates the current camera app reliability
      * 2. Tries to use saved button location or finds the button
      * 3. Attempts to click the shutter button
      */
@@ -146,25 +149,39 @@ class CameraAccessibilityService : AccessibilityService() {
             return
         }
         
-        // Try to get saved button location first
-//        val savedButtonInfo = AccessibilityUtils.getLastKnownButtonInfo()
-//        if (savedButtonInfo != null) {
-//            Log.d(TAG, "Using saved button location")
-//            Toast.makeText(this, "Using saved button location", Toast.LENGTH_SHORT).show()
-//            FirebaseCrashlytics.getInstance().log("Using saved button location")
-//            // Create a new AccessibilityNodeInfo for the saved location
-//            val root = rootInActiveWindow
-//            if (root != null) {
-//                val node = AccessibilityUtils.findClickableNodeAtLocation(root, savedButtonInfo.bounds)
-//                if (node != null) {
-//                    triggerShutter(node)
-//                    return
-//                } else {
-//                    Log.d(TAG, "Saved location no longer has clickable node, searching again")
-//                    FirebaseCrashlytics.getInstance().log("Saved button location no longer valid, searching again")
-//                }
-//            }
-//        }
+
+        
+        // Try to get user-preferred button for this specific app first
+        val userPreferredButtonInfo = AccessibilityUtils.loadUserPreferredButton(this, packageName)
+        if (userPreferredButtonInfo != null) {
+            Log.d(TAG, "Using user-preferred button for $packageName")
+            Toast.makeText(this, "Using your saved button for this app", Toast.LENGTH_SHORT).show()
+            FirebaseCrashlytics.getInstance().log("Using user-preferred button for $packageName")
+            val root = rootInActiveWindow
+            if (root != null) {
+                val node = AccessibilityUtils.findClickableNodeAtLocation(root, userPreferredButtonInfo.bounds)
+                if (node != null) {
+                    // Enhanced validation for user-preferred button
+                    val validation = ButtonReliabilityUtils.validateButtonReliability(node, packageName)
+                    if (validation.isValid) {
+                        // Additional check to avoid camera switch buttons
+                        if (!ButtonReliabilityUtils.isLikelyCameraSwitchButton(node)) {
+                            triggerShutter(node)
+                            return
+                        } else {
+                            Log.d(TAG, "User-preferred button appears to be a camera switch button, searching again")
+                            Toast.makeText(this, "Your saved button appears to be a camera switch. Searching for capture button.", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Log.d(TAG, "User-preferred button failed validation (score: ${validation.score}), issues: ${validation.issues}")
+                        Toast.makeText(this, "Your saved button isn't working properly. Searching again.", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Log.d(TAG, "User-preferred button location no longer has clickable node, searching again")
+                    Toast.makeText(this, "Your saved button isn't on screen", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
             
         // If no saved location or it's no longer valid, find the button again
         val shutterButton = findShutterButton()
@@ -239,6 +256,21 @@ class CameraAccessibilityService : AccessibilityService() {
         val shutterButton = AccessibilityUtils.findShutterButtonEnhanced(root, packageName, TAG, this::showToast)
         
         if (shutterButton != null) {
+            // Additional validation to avoid camera switch buttons
+            if (ButtonReliabilityUtils.isLikelyCameraSwitchButton(shutterButton)) {
+                Log.d(TAG, "Enhanced detection found button but it appears to be a camera switch, searching for alternatives")
+                showToast("Found camera switch button, looking for capture button...")
+                
+                // Try to find a better alternative
+                val alternativeButton = findAlternativeShutterButton(root, packageName, shutterButton)
+                if (alternativeButton != null) {
+                    Log.d(TAG, "Found alternative shutter button")
+                    return alternativeButton
+                } else {
+                    Log.d(TAG, "No alternative found, will use original button as fallback")
+                }
+            }
+            
             Log.d(TAG, "Enhanced detection found shutter button")
             FirebaseCrashlytics.getInstance().log("Enhanced detection found shutter button in package: $packageName")
             
@@ -298,60 +330,47 @@ class CameraAccessibilityService : AccessibilityService() {
 
         val packageName = rootInActiveWindow?.packageName?.toString() ?: "unknown"
 
-        // Try to perform a direct click first - this is often more reliable for actual buttons
-        try {
-            Log.d(TAG, "Attempting direct performAction CLICK on button")
-            val clickStartTime = System.currentTimeMillis()
-            val clickResult = button.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            val clickTime = System.currentTimeMillis() - clickStartTime
-            Log.d(TAG, "Direct button click result: $clickResult")
-
-            if (clickResult) {
-                Log.d(TAG, "Direct button click successful")
-                FirebaseCrashlytics.getInstance().log("Shutter button clicked successfully")
-                
-                // Log successful click analytics
-                AnalyticsUtils.logShutterButtonClick(
-                    packageName = packageName,
-                    buttonInfo = button,
-                    clickMethod = "direct_click",
-                    success = true,
-                    responseTimeMs = clickTime,
-                    deviceName = device?.friendlyName
-                )
-                
-                // Calculate and log time spent
-                val timeSpent = System.currentTimeMillis() - messageReceivedTime
-                val deviceName = device?.friendlyName ?: "unknown_device" // Safe access
-
-                val bundle = Bundle().apply {
-                    putString("device_name", deviceName)
-                    putLong("time_spent_ms", timeSpent)
-                    putString("method", "direct_click")
-                }
-                FirebaseAnalytics.getInstance(this).logEvent("shutter_response_time", bundle)
-                
-                sendMessageToWatch(MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, "Success!")
-                return
-            } else {
-                // Log failed direct click
-                AnalyticsUtils.logShutterButtonClick(
-                    packageName = packageName,
-                    buttonInfo = button,
-                    clickMethod = "direct_click",
-                    success = false,
-                    responseTimeMs = clickTime,
-                    deviceName = device?.friendlyName
-                )
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Exception during direct button click", e)
-            // Log failed direct click due to exception
+        // Use enhanced reliability utilities for clicking
+        val clickResult = ButtonReliabilityUtils.performReliableClick(button, packageName)
+        
+        if (clickResult.success) {
+            Log.d(TAG, "Button click successful with method: ${clickResult.method}")
+            FirebaseCrashlytics.getInstance().log("Shutter button clicked successfully with ${clickResult.method}")
+            
+            // Log successful click analytics
             AnalyticsUtils.logShutterButtonClick(
                 packageName = packageName,
                 buttonInfo = button,
-                clickMethod = "direct_click_exception",
+                clickMethod = clickResult.method,
+                success = true,
+                responseTimeMs = clickResult.duration,
+                deviceName = device?.friendlyName
+            )
+            
+            // Calculate and log time spent
+            val timeSpent = System.currentTimeMillis() - messageReceivedTime
+            val deviceName = device?.friendlyName ?: "unknown_device"
+
+            val bundle = Bundle().apply {
+                putString("device_name", deviceName)
+                putLong("time_spent_ms", timeSpent)
+                putString("method", clickResult.method)
+            }
+            FirebaseAnalytics.getInstance(this).logEvent("shutter_response_time", bundle)
+            
+            sendMessageToWatch(MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, "Success!")
+            return
+        } else {
+            Log.e(TAG, "All click methods failed: ${clickResult.error}")
+            FirebaseCrashlytics.getInstance().log("All click methods failed for $packageName: ${clickResult.error}")
+            
+            // Log failed click analytics
+            AnalyticsUtils.logShutterButtonClick(
+                packageName = packageName,
+                buttonInfo = button,
+                clickMethod = "all_methods_failed",
                 success = false,
+                responseTimeMs = clickResult.duration,
                 deviceName = device?.friendlyName
             )
         }
@@ -543,5 +562,49 @@ class CameraAccessibilityService : AccessibilityService() {
 
     private fun showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    }
+    
+
+    
+    /**
+     * Finds an alternative shutter button when the primary detection finds a camera switch button
+     */
+    private fun findAlternativeShutterButton(root: AccessibilityNodeInfo, packageName: String, excludeButton: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        val candidates = mutableListOf<AccessibilityNodeInfo>()
+        val excludeBounds = Rect()
+        excludeButton.getBoundsInScreen(excludeBounds)
+        
+        fun traverse(node: AccessibilityNodeInfo) {
+            if (node.isClickable) {
+                val nodeBounds = Rect()
+                node.getBoundsInScreen(nodeBounds)
+                
+                // Skip the button we want to exclude
+                if (nodeBounds != excludeBounds) {
+                    // Prefer buttons that look like shutter buttons
+                    if (ButtonReliabilityUtils.isLikelyShutterButton(node)) {
+                        candidates.add(node)
+                        Log.d(TAG, "Found likely shutter button candidate: ${node.contentDescription}")
+                    } else if (!ButtonReliabilityUtils.isLikelyCameraSwitchButton(node)) {
+                        // Add other clickable buttons as fallback, but not camera switch buttons
+                        candidates.add(node)
+                    }
+                }
+            }
+            
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                traverse(child)
+                child.recycle()
+            }
+        }
+        
+        traverse(root)
+        
+        // Return the best candidate based on validation score
+        return candidates.maxByOrNull { candidate ->
+            val validation = ButtonReliabilityUtils.validateButtonReliability(candidate, packageName)
+            validation.score
+        }
     }
 } 

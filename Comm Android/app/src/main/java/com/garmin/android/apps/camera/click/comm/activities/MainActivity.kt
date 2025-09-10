@@ -273,6 +273,11 @@ class MainActivity : AppCompatActivity() {
                 loadDevices(tryAutoLaunch = false)
                 true
             }
+            R.id.reliability_test -> {
+                AnalyticsUtils.logFeatureUsage("reliability_test", "menu_click", true)
+                startActivity(Intent(this, ReliabilityTestActivity::class.java))
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

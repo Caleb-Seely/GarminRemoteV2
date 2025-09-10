@@ -59,6 +59,8 @@ data class ShutterButtonInfo(
     
     /**
      * Check if this button info is still valid (not too old)
+     * Note: This should only be used for automatically detected buttons, 
+     * NOT for user-preferred buttons which should persist indefinitely
      */
     fun isValid(maxAgeMs: Long = 24 * 60 * 60 * 1000): Boolean {
         return System.currentTimeMillis() - timestamp < maxAgeMs

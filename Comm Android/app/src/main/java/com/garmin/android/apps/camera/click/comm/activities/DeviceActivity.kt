@@ -285,7 +285,7 @@ class DeviceActivity : AppCompatActivity() {
             service.resolveInfo.serviceInfo.name == "com.garmin.android.apps.camera.click.comm.service.CameraAccessibilityService"
         }
     }
-
+    
     /**
      * Shows a dialog explaining why accessibility service is required and provides
      * a button to open the accessibility settings.
@@ -519,6 +519,7 @@ class DeviceActivity : AppCompatActivity() {
                 startActivity(Intent(this, HelpActivity::class.java))
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }

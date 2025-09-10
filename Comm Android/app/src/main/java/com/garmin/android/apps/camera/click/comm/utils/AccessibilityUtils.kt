@@ -9,6 +9,7 @@ import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.garmin.android.apps.camera.click.comm.utils.CameraDetectionUtils
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 /**
  * AccessibilityUtils.kt
@@ -1042,19 +1043,64 @@ object AccessibilityUtils {
      * Save the user-selected button info to preferences for a specific app.
      */
     fun saveUserPreferredButton(context: Context, packageName: String, buttonInfo: ShutterButtonInfo) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val gson = Gson()
-        val allPreferred = loadUserPreferredButtons(context).toMutableMap()
-        allPreferred[packageName] = buttonInfo
-        val json = gson.toJson(allPreferred)
-        prefs.edit().putString(KEY_USER_PREFERRED_BUTTONS, json).apply()
+        if (!isInitialized()) {
+            Log.w(TAG, "Cannot save user preferred button: SharedPreferences not initialized")
+            return
+        }
+        
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val gson = Gson()
+            val allPreferred = loadUserPreferredButtons(context).toMutableMap()
+            
+            // Add timestamp and validation info when saving
+            val enhancedButtonInfo = buttonInfo.copy(
+                timestamp = System.currentTimeMillis(),
+                confidenceScore = 100 // User-selected buttons get max confidence
+            )
+            
+            allPreferred[packageName] = enhancedButtonInfo
+            val json = gson.toJson(allPreferred)
+            
+            val success = prefs.edit().putString(KEY_USER_PREFERRED_BUTTONS, json).commit()
+            if (success) {
+                Log.d(TAG, "Successfully saved user preferred button for $packageName")
+                FirebaseCrashlytics.getInstance().log("User preferred button saved for $packageName")
+            } else {
+                Log.e(TAG, "Failed to save user preferred button for $packageName")
+                FirebaseCrashlytics.getInstance().log("Failed to save user preferred button for $packageName")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving user preferred button", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
     }
 
     /**
      * Load the user-selected button info for a specific app.
      */
     fun loadUserPreferredButton(context: Context, packageName: String): ShutterButtonInfo? {
-        return loadUserPreferredButtons(context)[packageName]
+        try {
+            val buttonInfo = loadUserPreferredButtons(context)[packageName]
+            
+            // User-preferred buttons should persist indefinitely since they were explicitly selected
+            // Only validate that we have valid data, not age
+            if (buttonInfo != null) {
+                Log.d(TAG, "Loaded user preferred button for $packageName: ${buttonInfo.contentDescription}")
+                
+                // Basic validation - ensure the button info has required data
+                if (buttonInfo.bounds.isEmpty) {
+                    Log.w(TAG, "User preferred button for $packageName has invalid bounds, ignoring")
+                    return null
+                }
+            }
+            
+            return buttonInfo
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading user preferred button for $packageName", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            return null
+        }
     }
 
     /**
