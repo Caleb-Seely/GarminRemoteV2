@@ -23,6 +23,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <queries>
+        <!-- Camera intents -->
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
         </intent>
@@ -32,6 +33,22 @@
         <package android:name="com.google.android.GoogleCamera" />
         <package android:name="com.android.camera" />
         <package android:name="com.google.android.apps.camera" />
+        
+        <!-- Browser intents for developer note website links -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        
+        <!-- Email intents for developer note contact -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="mailto" />
+        </intent>
     </queries>
 
     <uses-permission android:name="android.hardware.camera" android:required="false" />

@@ -50,4 +50,33 @@
         <item name="android:lineSpacingExtra">4dp</item>
     </style>
 
+    <!-- Developer Note Dialog Styles -->
+    <style name="DeveloperNoteDialog" parent="Theme.MaterialComponents.Light.Dialog">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowAnimationStyle">@style/DeveloperNoteDialogAnimation</item>
+        <item name="colorPrimary">@color/primary_color</item>
+        <item name="colorAccent">@color/accent_color</item>
+    </style>
+
+    <style name="DeveloperNoteDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/fade_in</item>
+        <item name="android:windowExitAnimation">@anim/fade_out</item>
+    </style>
+
+    <style name="DeveloperNoteTitle">
+        <item name="android:textSize">22sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:gravity">center</item>
+    </style>
+
+    <style name="DeveloperNoteMessage">
+        <item name="android:textSize">17sp</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:lineSpacingExtra">6dp</item>
+        <item name="android:gravity">center</item>
+    </style>
+
 </resources>

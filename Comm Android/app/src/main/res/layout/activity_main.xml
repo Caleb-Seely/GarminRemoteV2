@@ -56,4 +56,24 @@
         </androidx.cardview.widget.CardView>
     </FrameLayout>
 
+    <!-- Developer Note Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_developer_note"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="24dp"
+        android:src="@drawable/baseline_info_24"
+        android:contentDescription="@string/developer_note_button_description"
+        android:scaleX=".8"
+        android:scaleY=".8"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:backgroundTint="@color/primary_color"
+        app:tint="@color/white"
+        app:elevation="8dp"
+        app:pressedTranslationZ="12dp"
+        app:borderWidth="0dp"
+        app:fabSize="normal" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

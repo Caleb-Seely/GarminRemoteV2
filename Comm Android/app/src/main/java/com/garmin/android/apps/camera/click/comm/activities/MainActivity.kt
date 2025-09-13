@@ -35,6 +35,10 @@ import com.garmin.android.apps.camera.click.comm.activities.ManualShutterButtonS
 import android.view.accessibility.AccessibilityNodeInfo
 import com.garmin.android.apps.camera.click.comm.utils.CameraAppCandidateStore
 import android.view.View
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.garmin.android.apps.camera.click.comm.repository.DeveloperNoteContentRepository
+import com.garmin.android.apps.camera.click.comm.dialogs.DeveloperNoteDialogFragment
+import com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils
 
 private const val TAG = "MainActivity"
 private const val PREFS_NAME = "CameraClickPrefs"
@@ -156,7 +160,7 @@ class MainActivity : AppCompatActivity() {
         CameraAppCandidateStore.loadAllFromPrefs(this)
 
         setupUi()
-        setupConnectIQSdk()
+    setupConnectIQSdk()
     }
 
     /**
@@ -219,6 +223,100 @@ class MainActivity : AppCompatActivity() {
         findViewById<RecyclerView>(android.R.id.list).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = this@MainActivity.adapter
+        }
+        
+        // Setup developer note button
+        setupDeveloperNoteButton()
+    }
+    
+    /**
+     * Sets up the developer note floating action button.
+     * This button allows users to learn about the developer and provides a permanent way
+     * to access developer information beyond the automatic timing triggers.
+     */
+    private fun setupDeveloperNoteButton() {
+        val developerNoteButton = findViewById<FloatingActionButton>(R.id.fab_developer_note)
+
+        try {
+            // Only show the developer note button if the app has been installed for at least 5 days
+            val daysSinceInstall = com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.getDaysSinceFirstInstall(this)
+
+            if (daysSinceInstall >= 5) {
+                developerNoteButton.visibility = View.VISIBLE
+                developerNoteButton.setOnClickListener {
+                    Log.d(TAG, "Developer note button clicked from MainActivity")
+                    FirebaseCrashlytics.getInstance().log("Developer note button clicked from MainActivity")
+                    AnalyticsUtils.logFeatureUsage("developer_note", "main_button_clicked", true)
+
+                    showDeveloperNoteFromMain()
+                }
+            } else {
+                // Hide the button until the app has been installed long enough
+                developerNoteButton.visibility = View.GONE
+                Log.d(TAG, "Developer note button hidden - days since install: $daysSinceInstall")
+                FirebaseCrashlytics.getInstance().log("Developer note button hidden - days since install: $daysSinceInstall")
+            }
+
+        } catch (e: Exception) {
+            // If anything goes wrong, keep the button hidden and record the error
+            try {
+                developerNoteButton.visibility = View.GONE
+            } catch (_: Exception) {
+                // ignore
+            }
+            Log.e(TAG, "Error evaluating developer note visibility", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+    }
+    
+    /**
+     * Shows the developer note popup from the main activity.
+     * This shows the current version in the cycle, providing users with
+     * the appropriate message based on their progression.
+     */
+    private fun showDeveloperNoteFromMain() {
+        try {
+            // Get the current version from the normal cycle progression
+            // This respects the user's position in the 4-message cycle
+            val currentVersion = com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.getCurrentVersionIndex(this)
+            
+            // If the cycle is complete, show the first version
+            val versionToShow = if (currentVersion == -1) 0 else currentVersion
+            
+            val content = DeveloperNoteContentRepository.getContentForVersion(this, versionToShow)
+            
+            if (content != null) {
+                Log.d(TAG, "Showing developer note from main activity - version $versionToShow")
+                
+                // Create and show the dialog fragment
+                val dialog = DeveloperNoteDialogFragment.newInstance(content)
+                dialog.show(supportFragmentManager, "developer_note_main")
+                
+                // Log analytics for main activity popup
+                val params = Bundle().apply {
+                    putInt("version", versionToShow)
+                    putBoolean("from_main_activity", true)
+                    putString("timestamp", System.currentTimeMillis().toString())
+                }
+                AnalyticsUtils.logEvent("developer_note_main_popup_shown", params)
+                
+                FirebaseCrashlytics.getInstance().log("Developer note popup shown from main activity - version $versionToShow")
+                
+                // Note: We don't call recordPopupShown() here because this is user-initiated,
+                // not part of the automatic timing cycle. The dialog fragment will record shown
+                // for automatic flows; for user-initiated flows we intentionally don't advance
+                // the automatic cycle here.
+                
+            } else {
+                Log.w(TAG, "No content found for developer note version $versionToShow")
+                Toast.makeText(this, "Developer information temporarily unavailable", Toast.LENGTH_SHORT).show()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing developer note from main activity", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            AnalyticsUtils.logError("developer_note", "main_popup_failed", e.message ?: "unknown")
+            Toast.makeText(this, "Unable to show developer information", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -360,4 +458,180 @@ class MainActivity : AppCompatActivity() {
         findViewById<TextView>(android.R.id.empty)?.visibility = View.GONE
         findViewById<RecyclerView>(android.R.id.list)?.visibility = View.VISIBLE
     }
+    
+    /**
+     * Checks timing triggers with priority system to avoid overwhelming users.
+     * Priority: Review prompt first, then developer note on next app launch.
+     */
+    private fun checkTimingTriggersWithPriority() {
+        try {
+            Log.d(TAG, "=== CHECKING TIMING TRIGGERS ===")
+            
+            // Always track app launch for review prompting
+            com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.trackAppLaunch(this)
+            
+            // Debug current state first
+            debugTimingIssues()
+            
+            // Check if review prompt should be shown (higher priority)
+            val shouldShowReview = com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.shouldShowReviewPrompt(this)
+            val shouldShowDeveloperNote = com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.shouldShowPopup(this)
+            
+            Log.d(TAG, "Timing check - Review: $shouldShowReview, Developer Note: $shouldShowDeveloperNote")
+            
+            if (shouldShowReview) {
+                // Show review prompt first (higher priority)
+                Log.d(TAG, "Showing review prompt (priority over developer note)")
+                showReviewPrompt()
+                
+                // If developer note should also show, defer it to next launch
+                if (shouldShowDeveloperNote) {
+                    deferDeveloperNoteToNextLaunch()
+                }
+            } else if (shouldShowDeveloperNote) {
+                // Only show developer note if review isn't showing
+                Log.d(TAG, "Showing developer note popup")
+                showDeveloperNotePopup()
+            } else {
+                Log.d(TAG, "No timing triggers ready to show")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking timing triggers", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+    }
+    
+    /**
+     * Comprehensive debug method to understand timing trigger issues
+     */
+    private fun debugTimingIssues() {
+        Log.d(TAG, "=== COMPREHENSIVE TIMING DEBUG ===")
+        
+        try {
+            // Review Debug
+            val reviewPrefs = getSharedPreferences("in_app_review_prefs", Context.MODE_PRIVATE)
+            val reviewFirstInstall = reviewPrefs.getLong("first_install_date", 0)
+            val reviewLastRequest = reviewPrefs.getLong("last_review_request", 0)
+            val reviewCompleted = reviewPrefs.getBoolean("review_completed", false)
+            val reviewLaunchCount = reviewPrefs.getInt("launch_count", 0)
+            
+            Log.d(TAG, "REVIEW STATE:")
+            Log.d(TAG, "  First install: $reviewFirstInstall (${java.util.Date(reviewFirstInstall)})")
+            Log.d(TAG, "  Last request: $reviewLastRequest (${if (reviewLastRequest > 0) java.util.Date(reviewLastRequest) else "Never"})")
+            Log.d(TAG, "  Completed: $reviewCompleted")
+            Log.d(TAG, "  Launch count: $reviewLaunchCount")
+            Log.d(TAG, "  Days since install: ${com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.getDaysSinceFirstInstall(this)}")
+            Log.d(TAG, "  Should show: ${com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.shouldShowReviewPrompt(this)}")
+            
+            // Developer Note Debug
+            val devPrefs = getSharedPreferences("developer_note_prefs", Context.MODE_PRIVATE)
+            val devFirstInstall = devPrefs.getLong("developer_note_first_install_date", 0)
+            val devLastPopup = devPrefs.getLong("developer_note_last_popup_date", 0)
+            val devVersion = devPrefs.getInt("developer_note_popup_version_index", 0)
+            
+            Log.d(TAG, "DEVELOPER NOTE STATE:")
+            Log.d(TAG, "  First install: $devFirstInstall (${java.util.Date(devFirstInstall)})")
+            Log.d(TAG, "  Last popup: $devLastPopup (${if (devLastPopup > 0) java.util.Date(devLastPopup) else "Never"})")
+            Log.d(TAG, "  Version index: $devVersion")
+            Log.d(TAG, "  Days since install: ${com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.getDaysSinceFirstInstall(this)}")
+            Log.d(TAG, "  Days since last popup: ${com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.getDaysSinceLastPopup(this)}")
+            Log.d(TAG, "  Should show: ${com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.shouldShowPopup(this)}")
+            
+            // Current time
+            Log.d(TAG, "CURRENT TIME: ${System.currentTimeMillis()} (${java.util.Date()})")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in debug", e)
+        }
+        
+        Log.d(TAG, "=== END COMPREHENSIVE DEBUG ===")
+    }
+    
+    /**
+     * Defers the developer note to the next app launch by adjusting its timing.
+     */
+    private fun deferDeveloperNoteToNextLaunch() {
+        try {
+            Log.d(TAG, "Deferring developer note to next app launch to avoid overwhelming user")
+
+            // Use centralized manager to defer to next launch
+            com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.deferToNextLaunch(this)
+
+            Log.d(TAG, "Developer note deferred via DeveloperNoteManager")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deferring developer note", e)
+        }
+    }
+    
+    /**
+     * Shows the developer note popup automatically based on timing conditions.
+     */
+    private fun showDeveloperNotePopup() {
+        try {
+            val currentVersion = com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.getCurrentVersionIndex(this)
+            val content = DeveloperNoteContentRepository.getContentForVersion(this, currentVersion)
+            
+            if (content != null) {
+                Log.d(TAG, "Showing automatic developer note popup - version $currentVersion")
+                
+                val dialog = DeveloperNoteDialogFragment.newInstance(content)
+                dialog.show(supportFragmentManager, "developer_note_auto")
+                
+                // The dialog fragment records popup shown; avoid double-recording here
+                
+                Log.d(TAG, "Developer note popup shown successfully")
+                
+            } else {
+                Log.w(TAG, "No content found for developer note version $currentVersion")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing automatic developer note popup", e)
+        }
+    }
+    
+    /**
+     * Shows the Google Play in-app review prompt.
+     */
+    private fun showReviewPrompt() {
+        try {
+            Log.d(TAG, "Attempting to show in-app review prompt")
+            
+            com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.launchInAppReview(this) { success ->
+                Log.d(TAG, "Review prompt completed: $success")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing review prompt", e)
+        }
+    }
+    
+    /**
+     * Test method to force trigger timing checks for debugging.
+     */
+    fun testTimingTriggers() {
+        Log.d(TAG, "=== TESTING TIMING TRIGGERS ===")
+        
+        // Reset both states first
+        com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.resetPopupState(this)
+        com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.resetReviewState(this)
+        
+        // Set install dates to 6 days ago to trigger both
+        com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.setTestInstallDate(this, 6)
+        com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.setTestInstallDate(this, 6)
+        
+        // Track a launch to initialize review state
+        com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils.trackAppLaunch(this)
+        
+        // Debug current state
+        debugTimingIssues()
+        
+        // Force trigger the checks with priority system
+        checkTimingTriggersWithPriority()
+        
+        Log.d(TAG, "=== END TESTING ===")
+    }
+
 }

@@ -44,6 +44,11 @@ import android.widget.Button
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.LinearLayout
+import com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager
+import com.garmin.android.apps.camera.click.comm.repository.DeveloperNoteContentRepository
+import com.garmin.android.apps.camera.click.comm.dialogs.DeveloperNoteDialogFragment
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import android.view.View
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -231,11 +236,13 @@ class DeviceActivity : AppCompatActivity() {
             }
         }
 
+        // Debug: Log available content versions
+        logAvailableContentVersions()
+
         // Check permissions and show dialogs if needed
         checkAndRequestPermissions()
 
-        // Track app launch for review prompting
-        InAppReviewUtils.trackAppLaunch(this)
+    // Timing checks are triggered after app verification (onApplicationInfoReceived)
 
         FirebaseAnalytics.getInstance(this).setAnalyticsCollectionEnabled(true)
     }
@@ -429,10 +436,12 @@ class DeviceActivity : AppCompatActivity() {
                         Log.d(TAG, "App is installed, starting message service")
                         // Start the message service when the app is confirmed to be installed
                         startService(MessageService.createIntent(this@DeviceActivity, dev, CommConstants.COMM_WATCH_ID))
-                        
-                        // This is a good moment to potentially show review prompt
-                        // (after successful connection and app verification)
-                        checkAndShowReviewPrompt()
+
+                        // Record an app launch for review timing and then run the full timing checks
+                        InAppReviewUtils.trackAppLaunch(this@DeviceActivity)
+
+                        // Run the comprehensive priority-based timing checks now that verification succeeded
+                        checkTimingTriggersWithPriority()
                     }
 
                     override fun onApplicationNotInstalled(applicationId: String) {
@@ -527,7 +536,6 @@ class DeviceActivity : AppCompatActivity() {
                 startActivity(Intent(this, HelpActivity::class.java))
                 true
             }
-
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -548,4 +556,323 @@ class DeviceActivity : AppCompatActivity() {
             }
         }
     }
+
+    /**
+     * Debug method to log all available content versions
+     */
+    private fun logAvailableContentVersions() {
+        try {
+            Log.d(TAG, "=== Developer Note Content Debug ===")
+            Log.d(TAG, "Total content count: ${DeveloperNoteContentRepository.getContentCount()}")
+            
+            for (i in 0..4) {  // Check versions 0-4 to see what's available
+                val content = DeveloperNoteContentRepository.getContentForVersion(this, i)
+                if (content != null) {
+                    Log.d(TAG, "Version $i: '${content.title}' - '${content.message.take(50)}...'")
+                } else {
+                    Log.d(TAG, "Version $i: NOT AVAILABLE")
+                }
+            }
+            
+            val currentVersion = DeveloperNoteManager.getCurrentVersionIndex(this)
+            Log.d(TAG, "Current version index: $currentVersion")
+            Log.d(TAG, "=== End Debug ===")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error logging content versions", e)
+        }
+    }
+    
+    /**
+     * Shows the developer note popup for testing purposes, bypassing timing conditions.
+     * This method cycles through all 4 versions (0, 1, 2, 3) and then resets to 0.
+     */
+    private fun showDeveloperNoteForTesting() {
+        try {
+            // Get the current version or start from 0 if cycle is complete
+            var currentVersion = DeveloperNoteManager.getCurrentVersionIndex(this)
+            
+            Log.d(TAG, "Test button clicked - current version index: $currentVersion")
+            
+            // If cycle is complete (-1) or invalid, reset to 0
+            if (currentVersion == -1 || currentVersion > 3) {
+                currentVersion = 0
+                DeveloperNoteManager.resetPopupState(this)
+                Log.d(TAG, "Reset to version 0 for testing")
+            }
+            
+            val content = DeveloperNoteContentRepository.getContentForVersion(this, currentVersion)
+            
+            if (content != null) {
+                Log.d(TAG, "Showing test developer note popup - version $currentVersion")
+                Log.d(TAG, "Content title: ${content.title}")
+                Log.d(TAG, "Content message preview: ${content.message.take(50)}...")
+                
+                // Show toast to indicate which version is being shown
+                Toast.makeText(this, "Showing version $currentVersion of 4", Toast.LENGTH_SHORT).show()
+                
+                // Create and show the dialog fragment
+                val dialog = DeveloperNoteDialogFragment.newInstance(content)
+                
+                try {
+                    // Use a special tag to indicate this is a test popup
+                    dialog.show(supportFragmentManager, "developer_note_test")
+                    
+                    // Log test popup display
+                    val params = android.os.Bundle().apply {
+                        putInt("version", currentVersion)
+                        putBoolean("is_test", true)
+                        putString("content_preview", content.message.take(50))
+                        putString("timestamp", System.currentTimeMillis().toString())
+                    }
+                    AnalyticsUtils.logEvent("developer_note_test_popup_shown", params)
+                    
+                    FirebaseCrashlytics.getInstance().log("Developer note test popup shown - version $currentVersion")
+                    
+                    // Advance to next version for next test
+                    // But handle the cycling manually for testing to ensure we see all versions
+                    val nextVersion = if (currentVersion >= 3) {
+                        // After showing version 3, reset to 0 for next test
+                        0
+                    } else {
+                        currentVersion + 1
+                    }
+                    
+                    // Set the next version directly for testing
+                    val prefs = getSharedPreferences("developer_note_prefs", Context.MODE_PRIVATE)
+                    prefs.edit().putInt("developer_note_popup_version_index", nextVersion).apply()
+                    
+                    Log.d(TAG, "Advanced to next version: $nextVersion")
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error showing test developer note dialog", e)
+                    FirebaseCrashlytics.getInstance().recordException(e)
+                    AnalyticsUtils.logError("developer_note", "test_dialog_show_failed", e.message ?: "unknown")
+                    Toast.makeText(this, "Error showing test popup: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+                
+            } else {
+                Log.w(TAG, "No content found for test developer note version $currentVersion")
+                Toast.makeText(this, "No content available for version $currentVersion", Toast.LENGTH_SHORT).show()
+                
+                // Reset and try version 0
+                DeveloperNoteManager.resetPopupState(this)
+                Log.d(TAG, "Reset popup state and trying version 0")
+                
+                val resetContent = DeveloperNoteContentRepository.getContentForVersion(this, 0)
+                if (resetContent != null) {
+                    val dialog = DeveloperNoteDialogFragment.newInstance(resetContent)
+                    dialog.show(supportFragmentManager, "developer_note_test")
+                    
+                    // Set to version 1 for next test
+                    val prefs = getSharedPreferences("developer_note_prefs", Context.MODE_PRIVATE)
+                    prefs.edit().putInt("developer_note_popup_version_index", 1).apply()
+                }
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in showDeveloperNoteForTesting", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            AnalyticsUtils.logError("developer_note", "test_popup_failed", e.message ?: "unknown")
+            Toast.makeText(this, "Error showing test popup: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Checks timing triggers with priority system to avoid overwhelming users.
+     * Priority: Review prompt first, then developer note on next app launch.
+     */
+    private fun checkTimingTriggersWithPriority() {
+        try {
+            // Check if review prompt should be shown (higher priority)
+            val shouldShowReview = InAppReviewUtils.shouldShowReviewPrompt(this)
+            val shouldShowDeveloperNote = DeveloperNoteManager.shouldShowPopup(this)
+            
+            Log.d(TAG, "Timing check - Review: $shouldShowReview, Developer Note: $shouldShowDeveloperNote")
+            
+            if (shouldShowReview) {
+                // Show review prompt first (higher priority)
+                Log.d(TAG, "Showing review prompt (priority over developer note)")
+                showReviewPrompt()
+                
+                // If developer note should also show, defer it to next launch
+                if (shouldShowDeveloperNote) {
+                    deferDeveloperNoteToNextLaunch()
+                }
+            } else if (shouldShowDeveloperNote) {
+                // Only show developer note if review isn't showing
+                Log.d(TAG, "Showing developer note popup")
+                showDeveloperNotePopup()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking timing triggers", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+    }
+    
+    /**
+     * Defers the developer note to the next app launch by adjusting its timing.
+     * This prevents overwhelming users with multiple popups in one session.
+     */
+    private fun deferDeveloperNoteToNextLaunch() {
+        try {
+            Log.d(TAG, "Deferring developer note to next app launch to avoid overwhelming user")
+
+            com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager.deferToNextLaunch(this)
+
+            // Log analytics for deferred popup
+            val params = Bundle().apply {
+                putString("reason", "review_prompt_priority")
+                putString("deferred_to", "next_launch")
+                putString("location", "device_activity")
+                putString("timestamp", System.currentTimeMillis().toString())
+            }
+            AnalyticsUtils.logEvent("developer_note_deferred", params)
+
+            FirebaseCrashlytics.getInstance().log("Developer note deferred to next launch due to review prompt priority")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deferring developer note", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+    }
+    
+    /**
+     * Shows the developer note popup automatically based on timing conditions.
+     * This advances the version cycle and is triggered by timing, not user action.
+     */
+    private fun showDeveloperNotePopup() {
+        try {
+            val currentVersion = DeveloperNoteManager.getCurrentVersionIndex(this)
+            val content = DeveloperNoteContentRepository.getContentForVersion(this, currentVersion)
+            
+            if (content != null) {
+                Log.d(TAG, "Showing automatic developer note popup - version $currentVersion")
+                
+                // Create and show the dialog fragment
+                val dialog = DeveloperNoteDialogFragment.newInstance(content)
+                dialog.show(supportFragmentManager, "developer_note_auto")
+                
+                // The dialog fragment records popup shown; avoid double-recording here
+                
+                // Log analytics for automatic popup
+                val params = Bundle().apply {
+                    putInt("version", currentVersion)
+                    putBoolean("automatic_trigger", true)
+                    putBoolean("from_device_activity", true)
+                    putString("location", "device_activity")
+                    putString("timestamp", System.currentTimeMillis().toString())
+                }
+                AnalyticsUtils.logEvent("developer_note_auto_popup_shown", params)
+                
+                FirebaseCrashlytics.getInstance().log("Developer note popup shown automatically on device page - version $currentVersion")
+                
+            } else {
+                Log.w(TAG, "No content found for developer note version $currentVersion")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing automatic developer note popup", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            AnalyticsUtils.logError("developer_note", "auto_popup_failed", e.message ?: "unknown")
+        }
+    }
+    
+    /**
+     * Shows the Google Play in-app review prompt on the device page.
+     */
+    private fun showReviewPrompt() {
+        try {
+            Log.d(TAG, "Showing in-app review prompt on device page")
+            AnalyticsUtils.logFeatureUsage("in_app_review", "prompt_shown", true)
+            
+            InAppReviewUtils.launchInAppReview(this) { success ->
+                Log.d(TAG, "Review prompt completed: $success")
+                
+                // Log analytics for review completion
+                val params = Bundle().apply {
+                    putBoolean("success", success)
+                    putBoolean("from_device_activity", true)
+                    putString("location", "device_activity")
+                    putString("timestamp", System.currentTimeMillis().toString())
+                }
+                AnalyticsUtils.logEvent("in_app_review_completed", params)
+                
+                FirebaseCrashlytics.getInstance().log("In-app review prompt completed on device page - success: $success")
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing review prompt", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            AnalyticsUtils.logError("in_app_review", "prompt_failed", e.message ?: "unknown")
+        }
+    }
+
+    /**
+     * Debug method to test timing triggers manually.
+     * Call this from a debug menu or button to test the timing logic.
+     */
+    private fun debugTimingTriggers() {
+        Log.d(TAG, "=== DEBUG TIMING TRIGGERS (DeviceActivity) ===")
+        
+        // Developer Note Debug Info
+        val devNoteDays = DeveloperNoteManager.getDaysSinceFirstInstall(this)
+        val devNoteLastPopup = DeveloperNoteManager.getDaysSinceLastPopup(this)
+        val devNoteVersion = DeveloperNoteManager.getCurrentVersionIndex(this)
+        val devNoteShouldShow = DeveloperNoteManager.shouldShowPopup(this)
+        
+        Log.d(TAG, "Developer Note - Days since install: $devNoteDays")
+        Log.d(TAG, "Developer Note - Days since last popup: $devNoteLastPopup")
+        Log.d(TAG, "Developer Note - Current version: $devNoteVersion")
+        Log.d(TAG, "Developer Note - Should show: $devNoteShouldShow")
+        
+        // Review Debug Info
+        val reviewDays = InAppReviewUtils.getDaysSinceFirstInstall(this)
+        val reviewLaunches = InAppReviewUtils.getLaunchCount(this)
+        val reviewShouldShow = InAppReviewUtils.shouldShowReviewPrompt(this)
+        val reviewCompleted = InAppReviewUtils.isReviewCompleted(this)
+        
+        Log.d(TAG, "Review - Days since install: $reviewDays")
+        Log.d(TAG, "Review - Launch count: $reviewLaunches")
+        Log.d(TAG, "Review - Should show: $reviewShouldShow")
+        Log.d(TAG, "Review - Completed: $reviewCompleted")
+        
+        Log.d(TAG, "=== END DEBUG ===")
+    }
+    
+    /**
+     * Test method to force trigger timing checks for debugging.
+     * Call this method to test both developer note and review prompts.
+     */
+    private fun testTimingTriggers() {
+        Log.d(TAG, "=== TESTING TIMING TRIGGERS (DeviceActivity) ===")
+        
+        // Reset both states first
+        DeveloperNoteManager.resetPopupState(this)
+        InAppReviewUtils.resetReviewState(this)
+        
+        // Set install dates to 6 days ago to trigger both
+        DeveloperNoteManager.setTestInstallDate(this, 6)
+        InAppReviewUtils.setTestInstallDate(this, 6)
+        
+        // Track a launch to initialize review state
+        InAppReviewUtils.trackAppLaunch(this)
+        
+        // Debug current state
+        debugTimingTriggers()
+        
+        // Force trigger the checks with priority system
+        checkTimingTriggersWithPriority()
+        
+        Log.d(TAG, "=== END TESTING ===")
+    }
+
+    /**
+     * Checks if the developer note popup should be shown and displays it if conditions are met.
+     * This method uses DeveloperNoteManager to determine timing and gets appropriate content
+     * from DeveloperNoteContentRepository. Includes proper error handling and logging.
+     * Only shows popup when activity is in foreground and properly initialized.
+     */
+
 }

@@ -164,7 +164,7 @@ class HelpActivity : AppCompatActivity() {
             "📎 Quick Links",
             "📝 <a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a>" +
                     "<br><br>⌚ <a href='https://apps.garmin.com/apps/789012f0-dcb2-46c2-b5b8-ef00a75968fa'>CameraClick Garmin App</a>" +
-                    "<br><br>🌐 <a href='https://calebseely.com'>I'm looking for a job!</a>"
+                    "<br><br>🌐 <a href='https://calebseely.com'>About the developer</a>"
 
         )
     }

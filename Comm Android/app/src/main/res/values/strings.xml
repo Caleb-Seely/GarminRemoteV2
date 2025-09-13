@@ -34,4 +34,20 @@
     <string name="help_icon">Help icon</string>
 
     <string name="select_camera_app">Select Camera App</string>
+
+    <!-- Developer Note Popup -->
+    <string name="developer_note_title">Hi, I\'m Caleb</string>
+    <string name="developer_note_website_button">Website</string>
+    <string name="developer_note_email_button">Email</string>
+    <string name="developer_note_close_button">Close</string>
+    <string name="developer_note_avatar_description">Caleb\'s avatar</string>
+    
+    <!-- Developer Note Content Variations -->
+    <string name="developer_note_message_v1">I built CameraClick as a side project, and it\'s grown into something that helps people every day. I\'d love to keep working on meaningful projects like this full-time—if you know of opportunities, please visit my website or send me an email!</string>
+    <string name="developer_note_message_v2">Thanks for continuing to use CameraClick! I\'m still actively seeking new opportunities make a bigger impact. If you\'re hiring or know someone who is, I\'d appreciate you checking out my work.</string>
+    <string name="developer_note_message_v3">It\'s amazing to see how CameraClick has become useful to so many people. Building tools that genuinely help others is what drives me as a developer. I\'m always open to discussing new opportunities.</string>
+    <string name="developer_note_message_v4">Thanks for sticking with CameraClick! Building this from zero users to where it is today has been incredible. I’m still looking for the right opportunity to build and contribute on a bigger scale, if something comes to mind, lets connect!</string>
+    
+    <!-- Developer Note Button -->
+    <string name="developer_note_button_description">About the Developer</string>
 </resources>
