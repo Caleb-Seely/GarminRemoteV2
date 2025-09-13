@@ -13,13 +13,20 @@ import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
 private const val TAG = "AnalyticsUtils"
 
 object AnalyticsUtils {
+    @Volatile
     private var firebaseAnalytics: FirebaseAnalytics? = null
 
-    fun initialize(context: Context) {
-        if (firebaseAnalytics == null) {
-            firebaseAnalytics = Firebase.analytics.apply {
-                setAnalyticsCollectionEnabled(true)
-                
+    /**
+     * Initialize AnalyticsUtils. Prefer passing a FirebaseAnalytics instance from Application
+     * but keeping the old context-only signature for backward compatibility.
+     */
+    @JvmOverloads
+    fun initialize(context: Context, analytics: FirebaseAnalytics? = null) {
+        if (firebaseAnalytics != null) return
+        synchronized(this) {
+            if (firebaseAnalytics == null) {
+                firebaseAnalytics = analytics ?: Firebase.analytics
+                firebaseAnalytics?.setAnalyticsCollectionEnabled(true)
             }
         }
     }

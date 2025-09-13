@@ -114,9 +114,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         sessionStartTime = System.currentTimeMillis()
         
-        FirebaseApp.initializeApp(this)
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(true)
-        FirebaseCrashlytics.getInstance().log("App started")
+    // Firebase/Crashlytics initialized in Application class (CameraClickApplication)
 
         // Initialize preferences first
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -129,19 +127,8 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize Firebase Analytics with detailed logging
         try {
-            AnalyticsUtils.initialize(this)
-            Log.d(TAG, "Firebase Analytics initialization completed")
-            
-            // Log app open
+            // Analytics initialized by Application. Keep app open and engagement logs here.
             AnalyticsUtils.logAppOpen(this, isFirstLaunch)
-            
-            // Log main screen view
-            val bundle = Bundle().apply {
-                putString("page_type", "device_list")
-            }
-            AnalyticsUtils.logScreenView("main", "MainActivity", bundle)
-            
-            // Log user engagement
             AnalyticsUtils.logUserEngagement(0, timeSinceLastSession)
             
         } catch (e: Exception) {
