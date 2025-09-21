@@ -102,18 +102,9 @@ object InAppReviewUtils {
         android.util.Log.d("InAppReviewUtils", "Launching in-app review flow")
 
         try {
-            // Increment show count immediately to avoid spamming
             val prefs = getPrefs(activity)
-            val currentShowCount = prefs.getInt(KEY_REVIEW_SHOW_COUNT, 0) + 1
-            prefs.edit().putInt(KEY_REVIEW_SHOW_COUNT, currentShowCount)
-                .putLong(KEY_LAST_REVIEW_REQUEST, System.currentTimeMillis())
-                .apply()
-
-            if (currentShowCount >= MAX_REVIEW_SHOW_COUNT) {
-                prefs.edit().putBoolean(KEY_REVIEW_COMPLETED, true).apply()
-                android.util.Log.d("InAppReviewUtils", "Reached max show count, marking review completed")
-            }
-
+            // DON'T increment show count here - only increment when we actually show something to the user
+            
             val reviewManager = ReviewManagerFactory.create(activity)
             val request = reviewManager.requestReviewFlow()
 
@@ -121,23 +112,57 @@ object InAppReviewUtils {
                 if (task.isSuccessful) {
                     android.util.Log.d("InAppReviewUtils", "Review flow request successful, launching UI")
 
+                    // We got the ReviewInfo object - NOW increment the count since we're about to show UI
+                    val currentShowCount = prefs.getInt(KEY_REVIEW_SHOW_COUNT, 0) + 1
+                    prefs.edit().putInt(KEY_REVIEW_SHOW_COUNT, currentShowCount)
+                        .putLong(KEY_LAST_REVIEW_REQUEST, System.currentTimeMillis())
+                        .apply()
+
+                    if (currentShowCount >= MAX_REVIEW_SHOW_COUNT) {
+                        prefs.edit().putBoolean(KEY_REVIEW_COMPLETED, true).apply()
+                        android.util.Log.d("InAppReviewUtils", "Reached max show count, marking review completed")
+                    }
+
+                    // Log that we're about to show UI (this helps detect if Google suppresses it)
+                    val uiLaunchParams = android.os.Bundle().apply {
+                        putString("method", "play_review_api")
+                        putString("stage", "ui_launch_requested")
+                        putString("timestamp", System.currentTimeMillis().toString())
+                        putInt("show_count", currentShowCount)
+                    }
+                    AnalyticsUtils.logEvent("in_app_review_ui_launch", uiLaunchParams)
+
                     // We got the ReviewInfo object
                     val reviewInfo = task.result
                     val flow = reviewManager.launchReviewFlow(activity, reviewInfo)
 
                     flow.addOnCompleteListener { flowTask ->
-                        android.util.Log.d("InAppReviewUtils", "Review flow completed")
+                        val flowCompletionTime = System.currentTimeMillis()
+                        val timeSinceRequest = flowCompletionTime - prefs.getLong(KEY_LAST_REVIEW_REQUEST, flowCompletionTime)
+                        
+                        android.util.Log.d("InAppReviewUtils", "Review flow completed in ${timeSinceRequest}ms")
+
+                        // Log completion with timing to help detect suppressed UI
+                        val completionParams = android.os.Bundle().apply {
+                            putString("method", "play_review_api")
+                            putString("stage", "ui_completed")
+                            putLong("completion_time_ms", timeSinceRequest)
+                            putString("timestamp", flowCompletionTime.toString())
+                            putBoolean("likely_suppressed", timeSinceRequest < 100) // Flag suspiciously fast completions
+                        }
+                        AnalyticsUtils.logEvent("in_app_review_ui_completion", completionParams)
 
                         // Update preferences and mark as completed (best-effort)
                         prefs.edit()
-                            .putLong(KEY_LAST_REVIEW_REQUEST, System.currentTimeMillis())
+                            .putLong(KEY_LAST_REVIEW_REQUEST, flowCompletionTime)
                             .putBoolean(KEY_REVIEW_COMPLETED, true)
                             .apply()
 
                         val successParams = android.os.Bundle().apply {
                             putString("method", "play_review_api")
                             putBoolean("success", true)
-                            putString("timestamp", System.currentTimeMillis().toString())
+                            putString("timestamp", flowCompletionTime.toString())
+                            putLong("duration_ms", timeSinceRequest)
                         }
                         AnalyticsUtils.logEvent("in_app_review", successParams)
 
@@ -148,12 +173,22 @@ object InAppReviewUtils {
                     val errorCode = (task.exception as? com.google.android.play.core.review.ReviewException)?.errorCode
                     android.util.Log.w("InAppReviewUtils", "Review flow failed with error: $errorCode, exception: ${task.exception}")
 
-                    // Update last request time already set above
+                    // Update last request time only (don't increment show count for failures)
+                    prefs.edit().putLong(KEY_LAST_REVIEW_REQUEST, System.currentTimeMillis()).apply()
 
                     // If Play Store not available or in debug build, show fallback dialog
                     val isDebuggable = (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
                     if (isDebuggable || errorCode == ReviewErrorCode.PLAY_STORE_NOT_FOUND) {
                         android.util.Log.w("InAppReviewUtils", "Using fallback review dialog (debug or Play Store missing)")
+
+                        // Increment show count here since we're showing fallback UI
+                        val currentShowCount = prefs.getInt(KEY_REVIEW_SHOW_COUNT, 0) + 1
+                        prefs.edit().putInt(KEY_REVIEW_SHOW_COUNT, currentShowCount).apply()
+
+                        if (currentShowCount >= MAX_REVIEW_SHOW_COUNT) {
+                            prefs.edit().putBoolean(KEY_REVIEW_COMPLETED, true).apply()
+                            android.util.Log.d("InAppReviewUtils", "Reached max show count via fallback, marking review completed")
+                        }
 
                         // In debug builds, show the fallback dialog immediately so developers can see the UI
                         if (isDebuggable) {
@@ -191,6 +226,18 @@ object InAppReviewUtils {
             // In case of any exception, offer fallback in debug builds
             val isDebuggable = (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
             if (isDebuggable) {
+                // Increment show count here since we're showing fallback UI
+                val prefs = getPrefs(activity)
+                val currentShowCount = prefs.getInt(KEY_REVIEW_SHOW_COUNT, 0) + 1
+                prefs.edit().putInt(KEY_REVIEW_SHOW_COUNT, currentShowCount)
+                    .putLong(KEY_LAST_REVIEW_REQUEST, System.currentTimeMillis())
+                    .apply()
+
+                if (currentShowCount >= MAX_REVIEW_SHOW_COUNT) {
+                    prefs.edit().putBoolean(KEY_REVIEW_COMPLETED, true).apply()
+                    android.util.Log.d("InAppReviewUtils", "Reached max show count via exception fallback, marking review completed")
+                }
+
                 showFallbackReviewDialog(activity, onComplete)
                 val fallbackExceptionParams = android.os.Bundle().apply {
                     putString("reason", "exception")
@@ -204,8 +251,10 @@ object InAppReviewUtils {
         }
     }
 
-    private fun showFallbackReviewDialog(activity: Activity, onComplete: ((Boolean) -> Unit)? = null) {
+    private fun showFallbackReviewDialog(activity: Activity, onComplete: ((Boolean) -> Unit)? = null, markAsCompleted: Boolean = true) {
         try {
+            android.util.Log.d("InAppReviewUtils", "Showing fallback review dialog (markAsCompleted: $markAsCompleted)")
+            
             val builder = AlertDialog.Builder(activity)
                 .setTitle("Rate CameraClick")
                 .setMessage("Thanks for using my app! Have a couple seconds to review it?")
@@ -224,26 +273,44 @@ object InAppReviewUtils {
                         }
                     }
 
-                    // Treat as completed for testing purposes
-                    markReviewCompleted(activity)
-                    val actParams = android.os.Bundle().apply { putString("action", "rate_app"); putString("timestamp", System.currentTimeMillis().toString()) }
+                    // Only mark as completed if specified
+                    if (markAsCompleted) {
+                        markReviewCompleted(activity)
+                    }
+                    val actParams = android.os.Bundle().apply { 
+                        putString("action", "rate_app")
+                        putString("timestamp", System.currentTimeMillis().toString())
+                        putBoolean("marked_completed", markAsCompleted)
+                    }
                     AnalyticsUtils.logEvent("in_app_review_fallback_action", actParams)
                     onComplete?.invoke(true)
                 }
-                .setNegativeButton("Deny") { dialog, _ ->
-                    // Dismiss and mark as completed for debug fidelity
-                    markReviewCompleted(activity)
-                    val notNowParams = android.os.Bundle().apply { putString("action", "not_now"); putString("timestamp", System.currentTimeMillis().toString()) }
+                .setNegativeButton("Not Now") { dialog, _ ->
+                    // Only mark as completed if specified
+                    if (markAsCompleted) {
+                        markReviewCompleted(activity)
+                    }
+                    val notNowParams = android.os.Bundle().apply { 
+                        putString("action", "not_now")
+                        putString("timestamp", System.currentTimeMillis().toString())
+                        putBoolean("marked_completed", markAsCompleted)
+                    }
                     AnalyticsUtils.logEvent("in_app_review_fallback_action", notNowParams)
-                    onComplete?.invoke(true)
+                    onComplete?.invoke(false)
                     dialog.dismiss()
                 }
                 .setOnCancelListener {
-                    // Treat cancel as completed for testing
-                    markReviewCompleted(activity)
-                    val dismissParams = android.os.Bundle().apply { putString("action", "dismiss"); putString("timestamp", System.currentTimeMillis().toString()) }
+                    // Only mark as completed if specified
+                    if (markAsCompleted) {
+                        markReviewCompleted(activity)
+                    }
+                    val dismissParams = android.os.Bundle().apply { 
+                        putString("action", "dismiss")
+                        putString("timestamp", System.currentTimeMillis().toString())
+                        putBoolean("marked_completed", markAsCompleted)
+                    }
                     AnalyticsUtils.logEvent("in_app_review_fallback_action", dismissParams)
-                    onComplete?.invoke(true)
+                    onComplete?.invoke(false)
                 }
 
             val dialog = builder.create()
@@ -259,11 +326,13 @@ object InAppReviewUtils {
      */
     fun resetReviewState(context: Context) {
         getPrefs(context).edit().clear().apply()
+        android.util.Log.d("InAppReviewUtils", "Review state reset - all preferences cleared")
     }
 
     /**
      * Force-show the visible fallback review dialog (useful for manual QA/testing).
      * This bypasses Play Core and immediately shows the app-hosted dialog used in debug/fallback paths.
+     * Unlike the regular flow, this does NOT mark the review as completed automatically.
      */
     fun forceShowVisibleReview(activity: Activity, onComplete: ((Boolean) -> Unit)? = null) {
         // Only allow force-show in debuggable builds to avoid exposing QA hooks in release
@@ -274,13 +343,23 @@ object InAppReviewUtils {
             return
         }
 
-        // Reset the completed flag so the dialog behaves like a normal prompt
-        try {
-            getPrefs(activity).edit().putBoolean(KEY_REVIEW_COMPLETED, false).apply()
-        } catch (_: Exception) {
-            // ignore
+        android.util.Log.d("InAppReviewUtils", "Force showing visible review dialog for debugging")
+        showFallbackReviewDialog(activity, onComplete, markAsCompleted = false)
+    }
+    
+    /**
+     * Debug method to show review dialog that actually marks as completed (for testing the full flow)
+     */
+    fun debugShowReviewWithCompletion(activity: Activity, onComplete: ((Boolean) -> Unit)? = null) {
+        val isDebuggable = (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (!isDebuggable) {
+            android.util.Log.w("InAppReviewUtils", "debugShowReviewWithCompletion called in non-debug build - no-op")
+            onComplete?.invoke(false)
+            return
         }
-        showFallbackReviewDialog(activity, onComplete)
+
+        android.util.Log.d("InAppReviewUtils", "Debug showing review dialog with completion marking")
+        showFallbackReviewDialog(activity, onComplete, markAsCompleted = true)
     }
 
     
@@ -310,6 +389,32 @@ object InAppReviewUtils {
         val firstInstallDate = prefs.getLong(KEY_FIRST_INSTALL_DATE, System.currentTimeMillis())
         val currentTime = System.currentTimeMillis()
         return (currentTime - firstInstallDate) / (1000 * 60 * 60 * 24)
+    }
+    
+    /**
+     * Check if the review system is likely working based on timing patterns.
+     * This helps detect if Google is suppressing the UI.
+     */
+    fun getReviewSystemHealthInfo(context: Context): Map<String, Any> {
+        val prefs = getPrefs(context)
+        val showCount = prefs.getInt(KEY_REVIEW_SHOW_COUNT, 0)
+        val lastRequest = prefs.getLong(KEY_LAST_REVIEW_REQUEST, 0)
+        val isCompleted = prefs.getBoolean(KEY_REVIEW_COMPLETED, false)
+        val daysSinceInstall = getDaysSinceFirstInstall(context)
+        
+        return mapOf(
+            "show_count" to showCount,
+            "is_completed" to isCompleted,
+            "days_since_install" to daysSinceInstall,
+            "last_request_timestamp" to lastRequest,
+            "should_show_now" to shouldShowReviewPrompt(context),
+            "system_health" to when {
+                showCount > 0 && isCompleted -> "Working - User completed review"
+                showCount > 2 && !isCompleted -> "Potentially suppressed - Multiple attempts without completion"
+                daysSinceInstall > 10 && showCount == 0 -> "Not triggered - Check timing logic"
+                else -> "Normal"
+            }
+        )
     }
     
     /**

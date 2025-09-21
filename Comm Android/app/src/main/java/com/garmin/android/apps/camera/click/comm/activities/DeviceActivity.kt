@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.ActivityNotFoundException
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
@@ -439,6 +441,9 @@ class DeviceActivity : AppCompatActivity() {
 
                         // Record an app launch for review timing and then run the full timing checks
                         InAppReviewUtils.trackAppLaunch(this@DeviceActivity)
+                        
+                        // Invalidate options menu in case rate app button should now be visible
+                        invalidateOptionsMenu()
 
                         // Run the comprehensive priority-based timing checks now that verification succeeded
                         checkTimingTriggersWithPriority()
@@ -514,13 +519,28 @@ class DeviceActivity : AppCompatActivity() {
         buttonLocationOverlay.setButtonInfo(buttonInfo)
     }
 
-    /**
-     * Creates the options menu for the activity.
-     * @param menu The menu to inflate
+        /**
+     * Creates the options menu for this activity.
+     * @param menu The options menu in which items are placed
      * @return true to display the menu
      */
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.device, menu)
+        
+        // Only show the "Rate App" menu item after 5 days
+        val rateAppItem = menu.findItem(R.id.rate_app)
+        val daysSinceInstall = InAppReviewUtils.getDaysSinceFirstInstall(this)
+        val shouldShowRateApp = daysSinceInstall >= 5
+        
+        rateAppItem?.isVisible = shouldShowRateApp
+        
+        Log.d(TAG, "Rate app menu item visibility: $shouldShowRateApp (days since install: $daysSinceInstall)")
+        
+        // Track when rate app button becomes available for the first time
+        if (shouldShowRateApp && daysSinceInstall < 10) { // Only log for first few days it's available
+            AnalyticsUtils.logFeatureUsage("rate_app", "button_available", true)
+        }
+        
         return true
     }
 
@@ -536,7 +556,49 @@ class DeviceActivity : AppCompatActivity() {
                 startActivity(Intent(this, HelpActivity::class.java))
                 true
             }
+            R.id.rate_app -> {
+                openAppStoreForRating()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    /**
+     * Opens the app store listing for rating the app.
+     * Tries Google Play Store first, then falls back to web browser.
+     */
+    private fun openAppStoreForRating() {
+        try {
+            AnalyticsUtils.logFeatureUsage("rate_app", "menu_click", true)
+            
+            // Try to open Google Play Store app
+            val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName"))
+            startActivity(playStoreIntent)
+            
+            Log.d(TAG, "Opened Play Store app for rating")
+            AnalyticsUtils.logFeatureUsage("rate_app", "play_store_opened", true)
+            
+            // Show appreciation message
+            Toast.makeText(this, "Thanks for taking the time to rate CameraClick! 📸⭐", Toast.LENGTH_SHORT).show()
+            
+        } catch (e: ActivityNotFoundException) {
+            // Fallback to web browser
+            try {
+                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$packageName"))
+                startActivity(webIntent)
+                
+                Log.d(TAG, "Opened Play Store web page for rating")
+                AnalyticsUtils.logFeatureUsage("rate_app", "web_store_opened", true)
+                
+                // Show appreciation message
+                Toast.makeText(this, "Thanks for taking the time to rate CameraClick! 📸⭐", Toast.LENGTH_SHORT).show()
+                
+            } catch (e2: Exception) {
+                Log.e(TAG, "Failed to open app store for rating", e2)
+                AnalyticsUtils.logError("rate_app", "store_open_failed", e2.message ?: "unknown")
+                Toast.makeText(this, "Unable to open app store", Toast.LENGTH_SHORT).show()
+            }
         }
     }
     
@@ -710,7 +772,7 @@ class DeviceActivity : AppCompatActivity() {
             FirebaseCrashlytics.getInstance().recordException(e)
         }
     }
-    
+
     /**
      * Defers the developer note to the next app launch by adjusting its timing.
      * This prevents overwhelming users with multiple popups in one session.
@@ -808,71 +870,4 @@ class DeviceActivity : AppCompatActivity() {
             AnalyticsUtils.logError("in_app_review", "prompt_failed", e.message ?: "unknown")
         }
     }
-
-    /**
-     * Debug method to test timing triggers manually.
-     * Call this from a debug menu or button to test the timing logic.
-     */
-    private fun debugTimingTriggers() {
-        Log.d(TAG, "=== DEBUG TIMING TRIGGERS (DeviceActivity) ===")
-        
-        // Developer Note Debug Info
-        val devNoteDays = DeveloperNoteManager.getDaysSinceFirstInstall(this)
-        val devNoteLastPopup = DeveloperNoteManager.getDaysSinceLastPopup(this)
-        val devNoteVersion = DeveloperNoteManager.getCurrentVersionIndex(this)
-        val devNoteShouldShow = DeveloperNoteManager.shouldShowPopup(this)
-        
-        Log.d(TAG, "Developer Note - Days since install: $devNoteDays")
-        Log.d(TAG, "Developer Note - Days since last popup: $devNoteLastPopup")
-        Log.d(TAG, "Developer Note - Current version: $devNoteVersion")
-        Log.d(TAG, "Developer Note - Should show: $devNoteShouldShow")
-        
-        // Review Debug Info
-        val reviewDays = InAppReviewUtils.getDaysSinceFirstInstall(this)
-        val reviewLaunches = InAppReviewUtils.getLaunchCount(this)
-        val reviewShouldShow = InAppReviewUtils.shouldShowReviewPrompt(this)
-        val reviewCompleted = InAppReviewUtils.isReviewCompleted(this)
-        
-        Log.d(TAG, "Review - Days since install: $reviewDays")
-        Log.d(TAG, "Review - Launch count: $reviewLaunches")
-        Log.d(TAG, "Review - Should show: $reviewShouldShow")
-        Log.d(TAG, "Review - Completed: $reviewCompleted")
-        
-        Log.d(TAG, "=== END DEBUG ===")
-    }
-    
-    /**
-     * Test method to force trigger timing checks for debugging.
-     * Call this method to test both developer note and review prompts.
-     */
-    private fun testTimingTriggers() {
-        Log.d(TAG, "=== TESTING TIMING TRIGGERS (DeviceActivity) ===")
-        
-        // Reset both states first
-        DeveloperNoteManager.resetPopupState(this)
-        InAppReviewUtils.resetReviewState(this)
-        
-        // Set install dates to 6 days ago to trigger both
-        DeveloperNoteManager.setTestInstallDate(this, 6)
-        InAppReviewUtils.setTestInstallDate(this, 6)
-        
-        // Track a launch to initialize review state
-        InAppReviewUtils.trackAppLaunch(this)
-        
-        // Debug current state
-        debugTimingTriggers()
-        
-        // Force trigger the checks with priority system
-        checkTimingTriggersWithPriority()
-        
-        Log.d(TAG, "=== END TESTING ===")
-    }
-
-    /**
-     * Checks if the developer note popup should be shown and displays it if conditions are met.
-     * This method uses DeveloperNoteManager to determine timing and gets appropriate content
-     * from DeveloperNoteContentRepository. Includes proper error handling and logging.
-     * Only shows popup when activity is in foreground and properly initialized.
-     */
-
 }

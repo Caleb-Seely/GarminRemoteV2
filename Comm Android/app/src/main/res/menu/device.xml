@@ -6,6 +6,10 @@
         android:id="@+id/help"
         android:title="@string/help"
         android:icon="@android:drawable/ic_menu_help" />
-    <!-- Developer-only test menu items removed for production -->
+        
+    <item
+        android:id="@+id/rate_app"
+        android:title="Rate App"
+        android:icon="@android:drawable/btn_star_big_on" />
 
 </menu> 
