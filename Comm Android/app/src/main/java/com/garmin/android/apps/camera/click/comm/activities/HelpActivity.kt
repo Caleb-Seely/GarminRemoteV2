@@ -122,7 +122,10 @@ class HelpActivity : AppCompatActivity() {
                     "→ Exempt CameraClick from <b>Battery Optimization</b><br><br>" +
 
                     "<b>Clicking the wrong button</b><br>" +
-                    "→ Choose a different button from the settings menu "
+                    "→ Choose a different button from the settings menu<br><br> "+
+
+                    "<b>Change default Garmin device</b><br>" +
+                    "→ Long hold the device you want to default "
         )
 
         // How It Works Section

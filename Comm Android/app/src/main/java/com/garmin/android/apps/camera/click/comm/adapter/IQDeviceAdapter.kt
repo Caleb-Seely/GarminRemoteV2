@@ -4,6 +4,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.ImageView
+import android.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -16,9 +18,13 @@ import com.garmin.android.connectiq.IQDevice.IQDeviceStatus
  * Adapter class for displaying Garmin devices in a RecyclerView.
  * This adapter handles the display of device information and status updates.
  * @param onItemClickListener Callback function for handling device selection
+ * @param onSetDefaultDeviceListener Callback function for setting a device as default
+ * @param getPreferredDeviceId Function to get the currently preferred device ID
  */
 class IQDeviceAdapter(
-    private val onItemClickListener: (IQDevice) -> Unit
+    private val onItemClickListener: (IQDevice) -> Unit,
+    private val onSetDefaultDeviceListener: (IQDevice) -> Unit,
+    private val getPreferredDeviceId: () -> String?
 ) : ListAdapter<IQDevice, IQDeviceViewHolder>(IQDeviceItemDiffCallback()) {
 
     /**
@@ -30,7 +36,7 @@ class IQDeviceAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): IQDeviceViewHolder {
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_device, parent, false)
-        return IQDeviceViewHolder(view, onItemClickListener)
+        return IQDeviceViewHolder(view, onItemClickListener, onSetDefaultDeviceListener, getPreferredDeviceId)
     }
 
     /**
@@ -85,10 +91,14 @@ private class IQDeviceItemDiffCallback : DiffUtil.ItemCallback<IQDevice>() {
  * ViewHolder class for displaying Garmin device information in a RecyclerView.
  * @param view The view to hold
  * @param onItemClickListener Callback function for handling device selection
+ * @param onSetDefaultDeviceListener Callback function for setting a device as default
+ * @param getPreferredDeviceId Function to get the currently preferred device ID
  */
 class IQDeviceViewHolder(
     private val view: View,
-    private val onItemClickListener: (IQDevice) -> Unit
+    private val onItemClickListener: (IQDevice) -> Unit,
+    private val onSetDefaultDeviceListener: (IQDevice) -> Unit,
+    private val getPreferredDeviceId: () -> String?
 ) : RecyclerView.ViewHolder(view) {
 
     /**
@@ -113,8 +123,52 @@ class IQDeviceViewHolder(
         }
         statusIndicator.setBackgroundColor(ContextCompat.getColor(view.context, statusColor))
 
+        // Show/hide default device indicator
+        val defaultIndicator = view.findViewById<ImageView>(R.id.default_indicator)
+        val preferredDeviceId = getPreferredDeviceId()
+        val isDefaultDevice = preferredDeviceId == device.deviceIdentifier.toString()
+        defaultIndicator.visibility = if (isDefaultDevice) View.VISIBLE else View.GONE
+
+        // Set click listener
         view.setOnClickListener {
             onItemClickListener(device)
         }
+
+        // Set long-press listener for context menu
+        view.setOnLongClickListener {
+            showContextMenu(device)
+            true
+        }
+    }
+
+    /**
+     * Shows a context menu for device actions.
+     * @param device The device to show the context menu for
+     */
+    private fun showContextMenu(device: IQDevice) {
+        val popupMenu = PopupMenu(view.context, view)
+        popupMenu.menuInflater.inflate(R.menu.device_context_menu, popupMenu.menu)
+        
+        // Update menu item text based on current state
+        val preferredDeviceId = getPreferredDeviceId()
+        val isCurrentlyDefault = preferredDeviceId == device.deviceIdentifier.toString()
+        
+        if (isCurrentlyDefault) {
+            popupMenu.menu.findItem(R.id.set_default_device)?.title = "Remove as default device"
+        } else {
+            popupMenu.menu.findItem(R.id.set_default_device)?.title = "Set as default device"
+        }
+
+        popupMenu.setOnMenuItemClickListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.set_default_device -> {
+                    onSetDefaultDeviceListener(device)
+                    true
+                }
+                else -> false
+            }
+        }
+
+        popupMenu.show()
     }
 }

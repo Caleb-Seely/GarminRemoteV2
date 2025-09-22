@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/set_default_device"
+        android:title="Set as default device"
+        android:icon="@drawable/baseline_star_24" />
+</menu>

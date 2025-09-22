@@ -43,6 +43,7 @@ import com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils
 private const val TAG = "MainActivity"
 private const val PREFS_NAME = "CameraClickPrefs"
 private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
+private const val KEY_PREFERRED_DEVICE_ID = "preferred_device_id"
 
 /**
  * Main activity of the CameraClick application that handles device discovery and management.
@@ -206,7 +207,11 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
         
         // Setup UI.
-        adapter = IQDeviceAdapter { onItemClick(it) }
+        adapter = IQDeviceAdapter(
+            onItemClickListener = { onItemClick(it) },
+            onSetDefaultDeviceListener = { onSetDefaultDevice(it) },
+            getPreferredDeviceId = { prefs.getString(KEY_PREFERRED_DEVICE_ID, null) }
+        )
         findViewById<RecyclerView>(android.R.id.list).apply {
             layoutManager = LinearLayoutManager(this@MainActivity)
             adapter = this@MainActivity.adapter
@@ -316,6 +321,58 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Handles setting or removing a device as the default auto-launch device.
+     * @param device The device to set/remove as default
+     */
+    private fun onSetDefaultDevice(device: IQDevice) {
+        val currentPreferred = prefs.getString(KEY_PREFERRED_DEVICE_ID, null)
+        val deviceId = device.deviceIdentifier.toString()
+        
+        if (currentPreferred == deviceId) {
+            // Remove as default device
+            prefs.edit().remove(KEY_PREFERRED_DEVICE_ID).apply()
+            
+            // Log analytics
+            AnalyticsUtils.logDefaultDeviceSet(
+                device.friendlyName ?: deviceId,
+                deviceId,
+                false
+            )
+            
+            // Show confirmation toast
+            android.widget.Toast.makeText(
+                this,
+                "${device.friendlyName ?: deviceId} removed as default device",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            
+            Log.d(TAG, "Removed default device: ${device.friendlyName}")
+        } else {
+            // Set as default device
+            prefs.edit().putString(KEY_PREFERRED_DEVICE_ID, deviceId).apply()
+            
+            // Log analytics
+            AnalyticsUtils.logDefaultDeviceSet(
+                device.friendlyName ?: deviceId,
+                deviceId,
+                true
+            )
+            
+            // Show confirmation toast
+            android.widget.Toast.makeText(
+                this,
+                "${device.friendlyName ?: deviceId} set as default device",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            
+            Log.d(TAG, "Set default device: ${device.friendlyName} (${deviceId})")
+        }
+        
+        // Refresh the adapter to update the visual indicators
+        adapter.notifyDataSetChanged()
+    }
+
+    /**
      * Initializes the ConnectIQ SDK with wireless connection type.
      * This method sets up the SDK for wireless communication with Garmin devices.
      */
@@ -400,18 +457,24 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // Always auto-launch the first device on first open
+                // Auto-launch based on user preference or first connected device
                 if (tryAutoLaunch && !autoLaunchAttempted) {
                     autoLaunchAttempted = true
-                    // Start DeviceActivity with the first device
-                    startActivity(DeviceActivity.getIntent(this, devices[0]))
                     
-                    // Only auto-launch camera if the preference is enabled
-                    if (prefs.getBoolean(KEY_AUTO_LAUNCH_CAMERA, false)) {
-                        // Launch camera after a short delay to ensure device connection is established
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            CameraUtils.launchCamera(this)
-                        }, 1000)
+                    val deviceToLaunch = getDeviceForAutoLaunch(devices)
+                    if (deviceToLaunch != null) {
+                        Log.d(TAG, "Auto-launching device: ${deviceToLaunch.friendlyName}")
+                        startActivity(DeviceActivity.getIntent(this, deviceToLaunch))
+                        
+                        // Only auto-launch camera if the preference is enabled
+                        if (prefs.getBoolean(KEY_AUTO_LAUNCH_CAMERA, false)) {
+                            // Launch camera after a short delay to ensure device connection is established
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                CameraUtils.launchCamera(this)
+                            }, 1000)
+                        }
+                    } else {
+                        Log.d(TAG, "No suitable device found for auto-launch")
                     }
                 }
             } else {
@@ -444,6 +507,72 @@ class MainActivity : AppCompatActivity() {
     private fun hideEmptyState() {
         findViewById<TextView>(android.R.id.empty)?.visibility = View.GONE
         findViewById<RecyclerView>(android.R.id.list)?.visibility = View.VISIBLE
+    }
+    
+    /**
+     * Determines which device should be auto-launched based on user preferences and device status.
+     * Priority order:
+     * 1. User's preferred device (if connected)
+     * 2. First connected device
+     * 3. null (no auto-launch)
+     * 
+     * @param devices List of available devices
+     * @return The device to auto-launch, or null if none should be launched
+     */
+    private fun getDeviceForAutoLaunch(devices: List<IQDevice>): IQDevice? {
+        if (devices.isEmpty()) return null
+        
+        val preferredDeviceId = prefs.getString(KEY_PREFERRED_DEVICE_ID, null)
+        val preferredDevice = preferredDeviceId?.let { deviceId ->
+            devices.find { it.deviceIdentifier.toString() == deviceId }
+        }
+        
+        // First try to find and use the preferred device if it's connected
+        preferredDevice?.let { device ->
+            if (device.status == IQDevice.IQDeviceStatus.CONNECTED) {
+                Log.d(TAG, "Auto-launching preferred device: ${device.friendlyName}")
+                
+                // Log analytics - preferred device launch
+                AnalyticsUtils.logAutoLaunchAttempt(
+                    preferredDeviceName = device.friendlyName,
+                    actualDeviceName = device.friendlyName,
+                    usedFallback = false,
+                    success = true
+                )
+                
+                return device
+            } else {
+                Log.d(TAG, "Preferred device ${device.friendlyName} is not connected (${device.status})")
+            }
+        }
+        
+        // Fall back to first connected device
+        val firstConnectedDevice = devices.find { it.status == IQDevice.IQDeviceStatus.CONNECTED }
+        if (firstConnectedDevice != null) {
+            Log.d(TAG, "Auto-launching first connected device: ${firstConnectedDevice.friendlyName}")
+            
+            // Log analytics - fallback device launch
+            AnalyticsUtils.logAutoLaunchAttempt(
+                preferredDeviceName = preferredDevice?.friendlyName,
+                actualDeviceName = firstConnectedDevice.friendlyName,
+                usedFallback = true,
+                success = true
+            )
+            
+            return firstConnectedDevice
+        }
+        
+        Log.d(TAG, "No connected devices available for auto-launch")
+        
+        // Log analytics - failed auto-launch
+        AnalyticsUtils.logAutoLaunchAttempt(
+            preferredDeviceName = preferredDevice?.friendlyName,
+            actualDeviceName = null,
+            usedFallback = false,
+            success = false
+        )
+        
+        return null
     }
     
     /**

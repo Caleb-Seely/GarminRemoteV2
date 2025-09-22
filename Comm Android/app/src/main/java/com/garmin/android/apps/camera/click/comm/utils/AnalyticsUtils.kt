@@ -374,4 +374,35 @@ object AnalyticsUtils {
         }
         logEvent("service_state", params)
     }
+
+    /**
+     * Log when a user sets or removes a default device
+     */
+    fun logDefaultDeviceSet(deviceName: String, deviceId: String, isSet: Boolean) {
+        val params = Bundle().apply {
+            putString("device_name", deviceName)
+            putString("device_id", deviceId)
+            putBoolean("is_set", isSet)
+            putString("action", if (isSet) "set" else "remove")
+        }
+        logEvent("default_device_changed", params)
+    }
+
+    /**
+     * Log auto-launch attempts with details about success/failure
+     */
+    fun logAutoLaunchAttempt(
+        preferredDeviceName: String?,
+        actualDeviceName: String?,
+        usedFallback: Boolean,
+        success: Boolean
+    ) {
+        val params = Bundle().apply {
+            putBoolean("success", success)
+            putBoolean("used_fallback", usedFallback)
+            preferredDeviceName?.let { putString("preferred_device", it) }
+            actualDeviceName?.let { putString("launched_device", it) }
+        }
+        logEvent("auto_launch_attempt", params)
+    }
 } 
