@@ -6,6 +6,7 @@
     android:layout_margin="8dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/surface_1"
     android:stateListAnimator="@animator/card_state_list_anim"
     android:background="?android:attr/selectableItemBackground"
     android:clickable="true"

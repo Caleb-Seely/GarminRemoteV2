@@ -32,14 +32,82 @@ object AnalyticsUtils {
     }
 
     fun logEvent(eventName: String, params: Bundle? = null) {
+        if (eventName.isBlank()) {
+            Log.w(TAG, "Attempted to log event with blank name")
+            return
+        }
+        
         firebaseAnalytics?.let { analytics ->
             try {
                 analytics.logEvent(eventName, params)
-                Log.d(TAG, "Successfully logged event: $eventName with params: $params")
+                Log.d(TAG, "Successfully logged event: $eventName")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to log event: $eventName", e)
             }
         } ?: Log.e(TAG, "Firebase Analytics not initialized")
+    }
+
+    /**
+     * Set user properties for better segmentation and analysis
+     */
+    fun setUserProperties(context: Context) {
+        firebaseAnalytics?.let { analytics ->
+            try {
+                analytics.setUserProperty("app_version", getAppVersion(context))
+                analytics.setUserProperty("device_model", android.os.Build.MODEL)
+                analytics.setUserProperty("android_version", android.os.Build.VERSION.RELEASE)
+                Log.d(TAG, "User properties set successfully")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set user properties", e)
+            }
+        }
+    }
+
+    /**
+     * Set user property for preferred camera detection method
+     */
+    fun setPreferredDetectionMethod(method: String) {
+        firebaseAnalytics?.setUserProperty("preferred_detection_method", method)
+    }
+
+    /**
+     * Set user property for accessibility service status
+     */
+    fun setAccessibilityServiceEnabled(enabled: Boolean) {
+        firebaseAnalytics?.setUserProperty("accessibility_enabled", enabled.toString())
+    }
+
+    private fun getAppVersion(context: Context): String {
+        return try {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            packageInfo.versionName ?: "unknown"
+        } catch (e: Exception) {
+            "unknown"
+        }
+    }
+
+    // Simplified common event methods
+    /**
+     * Log a simple button click event
+     */
+    fun logButtonClick(buttonType: String, success: Boolean = true) {
+        val params = Bundle().apply {
+            putString("button_type", buttonType)
+            putBoolean("success", success)
+        }
+        logEvent("button_clicked", params)
+    }
+
+    /**
+     * Log feature usage with optional method parameter
+     */
+    fun logFeatureUsed(feature: String, method: String? = null, success: Boolean = true) {
+        val params = Bundle().apply {
+            putString("feature", feature)
+            putBoolean("success", success)
+            method?.let { putString("method", it) }
+        }
+        logEvent("feature_used", params)
     }
 
     /**
@@ -59,7 +127,6 @@ object AnalyticsUtils {
             putString("camera_package", packageName)
             putString("detection_method", detectionMethod)
             putBoolean("success", success)
-            putString("timestamp", System.currentTimeMillis().toString())
             putInt("screen_orientation", screenOrientation)
             deviceInfo?.let { putString("device_info", it) }
             detectionTimeMs?.let { putLong("detection_time_ms", it) }
@@ -115,7 +182,6 @@ object AnalyticsUtils {
             putBoolean("validation_passed", validationResult.isValid)
             putInt("validation_score", validationResult.score)
             putString("validation_reasons", validationResult.reasons.joinToString("|"))
-            putString("timestamp", System.currentTimeMillis().toString())
             
             // Button details
             putString("button_resource_id", buttonInfo.viewIdResourceName ?: "null")
@@ -149,7 +215,6 @@ object AnalyticsUtils {
             putString("camera_package", packageName)
             putString("click_method", clickMethod)
             putBoolean("success", success)
-            putString("timestamp", System.currentTimeMillis().toString())
             deviceName?.let { putString("device_name", it) }
             responseTimeMs?.let { putLong("response_time_ms", it) }
             
@@ -187,7 +252,6 @@ object AnalyticsUtils {
             putBoolean("success", success)
             putLong("detection_time_ms", detectionTimeMs)
             putInt("candidates_found", candidatesFound)
-            putString("timestamp", System.currentTimeMillis().toString())
             bestCandidateScore?.let { putInt("best_candidate_score", it) }
         }
         
@@ -212,7 +276,6 @@ object AnalyticsUtils {
             putInt("total_attempts", totalAttempts)
             putLong("total_time_ms", totalTimeMs)
             putString("strategies_tried", strategiesTried.joinToString("|"))
-            putString("timestamp", System.currentTimeMillis().toString())
             deviceInfo?.let { putString("device_info", it) }
             
             // Final button details if available
@@ -250,7 +313,6 @@ object AnalyticsUtils {
             putInt("screen_width", screenWidth)
             putInt("screen_height", screenHeight)
             putInt("screen_orientation", screenOrientation)
-            putString("timestamp", System.currentTimeMillis().toString())
             deviceInfo?.let { putString("device_info", it) }
         }
         
@@ -271,7 +333,6 @@ object AnalyticsUtils {
             putString("camera_package", packageName)
             putString("strategies_tried", strategiesTried.joinToString("|"))
             putString("failure_reason", failureReason)
-            putString("timestamp", System.currentTimeMillis().toString())
             screenCharacteristics?.let { putString("screen_characteristics", it) }
             deviceInfo?.let { putString("device_info", it) }
         }
@@ -290,7 +351,6 @@ object AnalyticsUtils {
         val params = Bundle().apply {
             putString("device_name", deviceName)
             putString("camera_package", cameraPackage)
-            putString("timestamp", System.currentTimeMillis().toString())
             putString("service_state", serviceState)
         }
         logEvent("camera_command_received", params)
@@ -309,7 +369,7 @@ object AnalyticsUtils {
             putString("device_name", deviceName)
             putString("connection_status", status)
         }
-        logEvent("device_connection", params)
+        logEvent("device_connection_changed", params)
     }
 
     fun logWatchAppOpen(deviceName: String, deviceId: String, status: String) {
@@ -317,7 +377,6 @@ object AnalyticsUtils {
             putString("device_name", deviceName)
             putString("device_id", deviceId)
             putString("status", status)
-            putString("timestamp", System.currentTimeMillis().toString())
         }
         logEvent("watch_app_open_attempt", params)
     }
@@ -339,12 +398,11 @@ object AnalyticsUtils {
 
     fun logFeatureUsage(featureName: String, action: String, success: Boolean) {
         val params = Bundle().apply {
-            putString("feature_name", featureName)
+            putString("feature", featureName)
             putString("action", action)
             putBoolean("success", success)
-            putString("timestamp", System.currentTimeMillis().toString())
         }
-        logEvent("feature_usage", params)
+        logEvent("feature_used", params)
     }
 
     fun logError(errorType: String, errorMessage: String, context: String) {
@@ -352,7 +410,6 @@ object AnalyticsUtils {
             putString("error_type", errorType)
             putString("error_message", errorMessage)
             putString("context", context)
-            putString("timestamp", System.currentTimeMillis().toString())
         }
         logEvent("app_error", params)
     }
@@ -361,7 +418,6 @@ object AnalyticsUtils {
         val params = Bundle().apply {
             putString("permission", permission)
             putBoolean("granted", granted)
-            putString("timestamp", System.currentTimeMillis().toString())
         }
         logEvent("permission_state", params)
     }
@@ -370,7 +426,6 @@ object AnalyticsUtils {
         val params = Bundle().apply {
             putString("service_name", serviceName)
             putString("state", state)
-            putString("timestamp", System.currentTimeMillis().toString())
         }
         logEvent("service_state", params)
     }

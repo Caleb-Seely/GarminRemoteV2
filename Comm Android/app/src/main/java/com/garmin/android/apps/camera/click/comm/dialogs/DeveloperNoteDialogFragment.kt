@@ -33,7 +33,6 @@ class DeveloperNoteDialogFragment : DialogFragment() {
         private const val TAG = "DeveloperNoteDialog"
         private const val ARG_CONTENT = "content"
         private const val WEBSITE_URL = "https://CalebSeely.com"
-        private const val EMAIL_ADDRESS = "CalebSeely@gmail.com"
 
         /**
          * Creates a new instance of the dialog with the specified content.
@@ -255,10 +254,10 @@ class DeveloperNoteDialogFragment : DialogFragment() {
             dismissSmoothly()
         }
         
-        // Email button
+        // Review button
         view.findViewById<MaterialButton>(R.id.btn_email)?.setOnClickListener {
-            logEmailClicked(content)
-            openEmailClient()
+            logReviewClicked(content)
+            openReviewPrompt()
             dismissSmoothly()
         }
     }
@@ -345,67 +344,86 @@ class DeveloperNoteDialogFragment : DialogFragment() {
     }
 
     /**
-     * Open email client with pre-filled recipient and comprehensive error handling
-     * Uses direct startActivity approach to work around Android 11+ package visibility restrictions
+     * Open Google Play Store page for review with comprehensive error handling
+     * Uses direct Play Store intent for reliable navigation to review page
      */
-    private fun openEmailClient() {
+    private fun openReviewPrompt() {
         try {
-            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:$EMAIL_ADDRESS")
-                putExtra(Intent.EXTRA_SUBJECT, "CameraClick App - Contact")
-            }
+            val activity = requireActivity()
             
-            // On Android 11+, resolveActivity may return null due to package visibility restrictions
-            // So we'll try to start the activity directly and catch any exceptions
-            startActivity(intent)
+            Log.d(TAG, "Opening Google Play Store for review from developer note")
+            FirebaseCrashlytics.getInstance().log("Developer note Play Store review initiated")
             
-            Log.d(TAG, "Email client opened successfully for: $EMAIL_ADDRESS")
-            FirebaseCrashlytics.getInstance().log("Developer note email client opened successfully")
-            
-            // Log successful email opening
-            val params = android.os.Bundle().apply {
-                putString("email", EMAIL_ADDRESS)
-                putBoolean("success", true)
-                putString("timestamp", System.currentTimeMillis().toString())
-            }
-            AnalyticsUtils.logEvent("developer_note_email_open", params)
-            
-        } catch (e: ActivityNotFoundException) {
-            // This exception is thrown when no app can handle the intent
-            Log.w(TAG, "No email app found to handle mailto intent", e)
-            FirebaseCrashlytics.getInstance().log("No email app found to handle mailto intent")
-            AnalyticsUtils.logError("developer_note", "no_email_app", EMAIL_ADDRESS)
-            
-            // Fallback: try to copy email to clipboard and show message
+            // Try to open Play Store app first
             try {
-                val clipboard = requireContext().getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                val clip = android.content.ClipData.newPlainText("Email", EMAIL_ADDRESS)
-                clipboard.setPrimaryClip(clip)
+                val playStoreIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${activity.packageName}"))
+                activity.startActivity(playStoreIntent)
                 
-                Toast.makeText(context, "No email app found. Email address copied to clipboard: $EMAIL_ADDRESS", Toast.LENGTH_LONG).show()
-                Log.d(TAG, "Email address copied to clipboard as fallback")
+                Log.d(TAG, "Successfully opened Play Store app for review")
                 
-            } catch (clipboardException: Exception) {
-                Log.e(TAG, "Error copying email to clipboard", clipboardException)
-                Toast.makeText(context, "No email app found. Please email: $EMAIL_ADDRESS", Toast.LENGTH_LONG).show()
+                // Log successful Play Store opening
+                val params = android.os.Bundle().apply {
+                    putBoolean("success", true)
+                    putString("method", "play_store_app")
+                    putString("source", "developer_note")
+                    putString("timestamp", System.currentTimeMillis().toString())
+                }
+                AnalyticsUtils.logEvent("developer_note_review_open", params)
+                
+            } catch (e: ActivityNotFoundException) {
+                // Fallback to web browser if Play Store app is not available
+                Log.w(TAG, "Play Store app not found, using web fallback")
+                
+                try {
+                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${activity.packageName}"))
+                    activity.startActivity(webIntent)
+                    
+                    Log.d(TAG, "Successfully opened Play Store web page for review")
+                    
+                    // Log successful web fallback
+                    val params = android.os.Bundle().apply {
+                        putBoolean("success", true)
+                        putString("method", "web_browser")
+                        putString("source", "developer_note")
+                        putString("timestamp", System.currentTimeMillis().toString())
+                    }
+                    AnalyticsUtils.logEvent("developer_note_review_open", params)
+                    
+                } catch (e2: Exception) {
+                    Log.e(TAG, "Error opening Play Store web page", e2)
+                    FirebaseCrashlytics.getInstance().recordException(e2)
+                    
+                    // Log failed web fallback
+                    val params = android.os.Bundle().apply {
+                        putBoolean("success", false)
+                        putString("error", e2.message ?: "unknown")
+                        putString("method", "web_browser_failed")
+                        putString("source", "developer_note")
+                        putString("timestamp", System.currentTimeMillis().toString())
+                    }
+                    AnalyticsUtils.logEvent("developer_note_review_open", params)
+                    
+                    Toast.makeText(context, "Unable to open Play Store. Please try again later.", Toast.LENGTH_SHORT).show()
+                    return
+                }
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error opening email client", e)
+            Log.e(TAG, "Error opening review page", e)
             FirebaseCrashlytics.getInstance().recordException(e)
-            AnalyticsUtils.logError("developer_note", "email_open_failed", e.message ?: "unknown")
+            AnalyticsUtils.logError("developer_note", "review_open_failed", e.message ?: "unknown")
             
-            // Log failed email opening
+            // Log failed review opening
             val params = android.os.Bundle().apply {
-                putString("email", EMAIL_ADDRESS)
                 putBoolean("success", false)
                 putString("error", e.message ?: "unknown")
+                putString("source", "developer_note")
                 putString("timestamp", System.currentTimeMillis().toString())
             }
-            AnalyticsUtils.logEvent("developer_note_email_open", params)
+            AnalyticsUtils.logEvent("developer_note_review_open", params)
             
-            // Show user-friendly error message with email address
-            Toast.makeText(context, "Unable to open email app. Please email: $EMAIL_ADDRESS", Toast.LENGTH_LONG).show()
+            // Show user-friendly error message
+            Toast.makeText(context, "Unable to open review page. Please try again later.", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -498,27 +516,27 @@ class DeveloperNoteDialogFragment : DialogFragment() {
     }
 
     /**
-     * Log analytics event for email button clicked with comprehensive error handling
+     * Log analytics event for review button clicked with comprehensive error handling
      */
-    private fun logEmailClicked(content: DeveloperNoteContent) {
+    private fun logReviewClicked(content: DeveloperNoteContent) {
         try {
-            AnalyticsUtils.logFeatureUsage("developer_note", "email_clicked", true)
+            AnalyticsUtils.logFeatureUsage("developer_note", "review_clicked", true)
             
             val params = android.os.Bundle().apply {
                 putInt("version", content.version)
-                putString("email", EMAIL_ADDRESS)
                 putString("button_text", content.emailButtonText)
+                putString("source", "developer_note")
                 putString("timestamp", System.currentTimeMillis().toString())
             }
-            AnalyticsUtils.logEvent("developer_note_email_clicked", params)
+            AnalyticsUtils.logEvent("developer_note_review_clicked", params)
             
-            Log.d(TAG, "Analytics logged for email clicked - version ${content.version}")
-            FirebaseCrashlytics.getInstance().log("Developer note email clicked analytics logged - version ${content.version}")
+            Log.d(TAG, "Analytics logged for review clicked - version ${content.version}")
+            FirebaseCrashlytics.getInstance().log("Developer note review clicked analytics logged - version ${content.version}")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error logging email clicked analytics", e)
+            Log.e(TAG, "Error logging review clicked analytics", e)
             FirebaseCrashlytics.getInstance().recordException(e)
-            AnalyticsUtils.logError("developer_note", "analytics_email_clicked_failed", e.message ?: "unknown")
+            AnalyticsUtils.logError("developer_note", "analytics_review_clicked_failed", e.message ?: "unknown")
         }
     }
 

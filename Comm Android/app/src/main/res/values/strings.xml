@@ -38,15 +38,15 @@
     <!-- Developer Note Popup -->
     <string name="developer_note_title">Hi, I\'m Caleb</string>
     <string name="developer_note_website_button">Website</string>
-    <string name="developer_note_email_button">Email</string>
+    <string name="developer_note_email_button">Review</string>
     <string name="developer_note_close_button">Close</string>
     <string name="developer_note_avatar_description">Caleb\'s avatar</string>
     
     <!-- Developer Note Content Variations -->
-    <string name="developer_note_message_v1">I built CameraClick as a side project, and it\'s grown into something that helps people every day. I\'d love to keep working on meaningful projects like this full-time—if you know of opportunities, please visit my website or send me an email!</string>
-    <string name="developer_note_message_v2">Thanks for continuing to use CameraClick! I\'m still actively seeking new opportunities make a bigger impact. If you\'re hiring or know someone who is, I\'d appreciate you checking out my work.</string>
-    <string name="developer_note_message_v3">It\'s amazing to see how CameraClick has become useful to so many people. Building tools that genuinely help others is what drives me as a developer. I\'m always open to discussing new opportunities.</string>
-    <string name="developer_note_message_v4">Thanks for sticking with CameraClick! Building this from zero users to where it is today has been incredible. I’m still looking for the right opportunity to build and contribute on a bigger scale, if something comes to mind, lets connect!</string>
+    <string name="developer_note_message_v1">I built CameraClick as a side project, and it\’s grown into something that helps people every day. If it\’s been helpful for you too, a quick review would mean a lot! Feel free to visit my website and reach out anytime!</string>
+    <string name="developer_note_message_v2">Thanks so much for continuing to use CameraClick! If you’re enjoying it, leaving a quick review helps more people discover the app. And if you have suggestions for the future of CameraClick, I would love to connect!</string>
+    <string name="developer_note_message_v3">It\’s amazing to see how CameraClick has become useful to so many people. Building tools that make life a little easier is what drives me. If you\’ve found it helpful, please consider leaving a short review—it really helps!</string>
+    <string name="developer_note_message_v4">Thanks for sticking with CameraClick! Watching it grow from zero users to where it is today has been incredible. If you\’d like to support the app, leaving a quick review goes a long way.</string>
     
     <!-- Developer Note Button -->
     <string name="developer_note_button_description">About the Developer</string>

@@ -3,12 +3,14 @@ package com.garmin.android.apps.camera.click.comm.utils
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Rect
+import android.os.Bundle
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
 import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
+import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
+import com.garmin.android.apps.camera.click.comm.utils.CameraDetectionUtils
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.garmin.android.apps.camera.click.comm.utils.CameraDetectionUtils
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
 /**
@@ -557,9 +559,139 @@ object AccessibilityUtils {
     }
 
     /**
+     * Detects if Samsung Camera is currently in video recording mode
+     * by looking for recording indicators and stop recording buttons
+     */
+    private fun isSamsungCameraRecording(root: AccessibilityNodeInfo, tag: String): Boolean {
+        if (root.packageName != "com.sec.android.app.camera") {
+            return false
+        }
+
+        var hasRecordingIndicators = false
+
+        fun traverse(node: AccessibilityNodeInfo) {
+            val resourceId = node.viewIdResourceName
+            val contentDesc = node.contentDescription?.toString()?.lowercase()
+            val text = node.text?.toString()?.lowercase()
+
+            // Check for stop recording button - strong indicator we're recording
+            if (resourceId == "com.sec.android.app.camera:id/stop_button" && node.isClickable) {
+                Log.d(tag, "Samsung Camera: Found stop recording button - recording detected")
+                hasRecordingIndicators = true
+                return
+            }
+
+            // Check for other recording indicators
+            contentDesc?.let { desc ->
+                if (desc.contains("stop recording") || desc.contains("stop video") || 
+                    desc.contains("recording") || desc.contains("rec")) {
+                    Log.d(tag, "Samsung Camera: Found recording indicator in content desc: $desc")
+                    hasRecordingIndicators = true
+                }
+            }
+
+            text?.let { textContent ->
+                // Look for recording time indicators (00:01, 00:02, etc.)
+                if (textContent.matches(Regex("\\d{2}:\\d{2}"))) {
+                    Log.d(tag, "Samsung Camera: Found recording timer: $textContent")
+                    hasRecordingIndicators = true
+                }
+            }
+
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                traverse(child)
+                child.recycle()
+            }
+        }
+
+        traverse(root)
+        
+        if (hasRecordingIndicators) {
+            Log.d(tag, "Samsung Camera: Video recording mode detected")
+            AnalyticsUtils.logEvent("samsung_video_recording_detected", Bundle().apply {
+                putString("package_name", "com.sec.android.app.camera")
+                putLong("detection_timestamp", System.currentTimeMillis())
+            })
+        }
+        
+        return hasRecordingIndicators
+    }
+
+    /**
+     * Finds the Samsung Camera stop recording button specifically
+     */
+    private fun findSamsungStopRecordingButton(root: AccessibilityNodeInfo, tag: String): AccessibilityNodeInfo? {
+        var stopButton: AccessibilityNodeInfo? = null
+
+        fun traverse(node: AccessibilityNodeInfo) {
+            if (node.isClickable) {
+                val resourceId = node.viewIdResourceName
+                val contentDesc = node.contentDescription?.toString()?.lowercase()
+
+                // Priority 1: Look for the exact stop button resource ID
+                if (resourceId == "com.sec.android.app.camera:id/stop_button") {
+                    Log.d(tag, "Found Samsung stop recording button by resource ID: $resourceId")
+                    stopButton = node
+                    return
+                }
+
+                // Priority 2: Look for stop recording in content description
+                if (contentDesc != null && (contentDesc.contains("stop recording") || 
+                    contentDesc.contains("stop video"))) {
+                    Log.d(tag, "Found Samsung stop recording button by content desc: $contentDesc")
+                    if (stopButton == null) { // Only use if we haven't found the exact resource ID
+                        stopButton = node
+                    }
+                }
+            }
+
+            for (i in 0 until node.childCount) {
+                val child = node.getChild(i) ?: continue
+                traverse(child)
+                child.recycle()
+                if (stopButton != null && stopButton!!.viewIdResourceName == "com.sec.android.app.camera:id/stop_button") {
+                    break // Found exact match, no need to continue
+                }
+            }
+        }
+
+        traverse(root)
+        return stopButton
+    }
+
+    /**
      * Find button using package-specific patterns
+     * 
+     * SPECIAL HANDLING: For Samsung Camera (com.sec.android.app.camera), this method
+     * detects when the user is recording video and prioritizes the "stop recording" 
+     * button over the "capture photo" button to prevent clicking the wrong button
+     * during video recording sessions.
      */
     private fun findPackageSpecificButton(root: AccessibilityNodeInfo, packageName: String, tag: String): AccessibilityNodeInfo? {
+        // Special handling for Samsung Camera during video recording
+        // Fixes issue where users accidentally take photos instead of stopping video recording
+        if (packageName == "com.sec.android.app.camera" && isSamsungCameraRecording(root, tag)) {
+            Log.d(tag, "Samsung Camera recording detected - looking for stop recording button")
+            
+            // First, try to find the stop recording button specifically
+            val stopButton = findSamsungStopRecordingButton(root, tag)
+            if (stopButton != null) {
+                Log.d(tag, "Samsung Camera: Using stop recording button instead of capture button")
+                AnalyticsUtils.logEvent("samsung_video_stop_button_selected", Bundle().apply {
+                    putString("package_name", packageName)
+                    putString("button_resource_id", stopButton.viewIdResourceName ?: "unknown")
+                })
+                return stopButton
+            } else {
+                Log.w(tag, "Samsung Camera: Recording detected but stop button not found, falling back to normal detection")
+                AnalyticsUtils.logEvent("samsung_video_stop_button_not_found", Bundle().apply {
+                    putString("package_name", packageName)
+                    putString("fallback_reason", "recording_detected_but_no_stop_button")
+                })
+            }
+        }
+        
         val pattern = cameraAppPatterns[packageName] ?: return null
         Log.d(tag, "Using package-specific pattern for $packageName")
 

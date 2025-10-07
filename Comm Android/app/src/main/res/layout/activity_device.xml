@@ -1,5 +1,5 @@
 <!--
-Individual device information and tests screen
+Individual device information and tests screen - Premium Material Design 3
 -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -7,274 +7,398 @@ Individual device information and tests screen
     xmlns:material="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
+    android:background="@drawable/premium_background_gradient"
     android:fitsSystemWindows="true"
     tools:context="com.garmin.android.apps.camera.click.comm.activities.MainActivity">
 
-    <!-- App Bar -->
+    <!-- Dark Theme App Bar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="@color/primary_color"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        android:layout_height="64dp"
+        android:background="@color/background_surface"
+        android:elevation="0dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
         app:title="Device Control"
-        app:titleTextColor="@color/white" />
+        app:titleTextColor="@color/text_primary"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar" />
 
-    <!-- Main Content Background Container -->
-    <FrameLayout
+    <!-- Main Content Container -->
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/main_content_bg"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:background="@color/background_light"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="20dp"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Main Content CardView -->
-        <androidx.cardview.widget.CardView
+        <!-- Main Card Container -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/main_card"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_margin="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#33374151"
+            app:strokeWidth="1dp"
+            app:strokeColor="#22FFFFFF"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="16dp">
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
 
-                <!-- Device Information Section -->
+                <!-- Device Header -->
                 <LinearLayout
                     android:id="@+id/device_info_section"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:minHeight="50dp"
-                    app:layout_constraintTop_toTopOf="parent">
+                    android:paddingBottom="24dp">
 
-                    <TextView
-                        android:id="@+id/devicename"
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:gravity="center_vertical"
-                        android:textSize="18sp"
-                        android:textColor="@color/text_primary"
-                        android:textStyle="bold"
-                        tools:text="Forerunner 255" />
+                        android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/devicestatus"
+                        <TextView
+                            android:id="@+id/devicename"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/PremiumDeviceName"
+                            android:textSize="28sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white"
+                            tools:text="Forerunner 255" />
+
+
+                    </LinearLayout>
+
+                    <com.google.android.material.card.MaterialCardView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/success"
-                        android:textStyle="bold"
-                        tools:text="CONNECTED" />
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#14B8A6">
+
+                        <TextView
+                            android:id="@+id/devicestatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CONNECTED"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/white"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"
+                            android:paddingTop="6dp"
+                            android:paddingBottom="6dp"
+                            tools:text="CONNECTED" />
+
+                    </com.google.android.material.card.MaterialCardView>
 
                 </LinearLayout>
 
-                <View
-                    android:id="@+id/dividerA"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"
-                    android:background="@color/divider_color"
-                    app:layout_constraintTop_toBottomOf="@id/device_info_section" />
-
-                <!-- Open App Section -->
-                <LinearLayout
+                <!-- Open App Action -->
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/openapp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:minHeight="50dp"
-                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface_1"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="12dp"
-                    app:layout_constraintTop_toBottomOf="@id/dividerA">
+                    app:strokeWidth="0dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/watch_screentime_35dp"
-                        android:contentDescription="Watch icon"
-                        android:layout_marginEnd="16dp"
-                        app:tint="@color/primary_color" />
-
-                    <TextView
-                        android:id="@+id/openapp_text"
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/prompt_watch_app"
-                        android:textColor="@color/text_primary" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
 
-                </LinearLayout>
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="#14B8A6">
 
-                <View
-                    android:id="@+id/dividerB"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@color/divider_color"
-                    app:layout_constraintTop_toBottomOf="@id/openapp" />
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/watch_screentime_35dp"
+                                android:contentDescription="Watch icon"
+                                app:tint="@color/white" />
 
-                <!-- Tap To Send Section -->
-                <LinearLayout
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:id="@+id/openapp_text"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Open the watch app"
+                            android:textAppearance="@style/PremiumActionTitle"
+                            android:textSize="16sp"
+                            android:textColor="@color/white"
+                            android:layout_marginStart="16dp" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Test Send Action -->
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/taptosend"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:minHeight="50dp"
-                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_marginBottom="12dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface_1"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="12dp"
-                    app:layout_constraintTop_toBottomOf="@id/dividerB">
+                    app:strokeWidth="0dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/baseline_send_24"
-                        android:contentDescription="Send icon"
-                        android:tint="@color/primary_color"
-                        android:layout_marginEnd="16dp" />
-
-                    <TextView
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/tap_to_send"
-                        android:textColor="@color/text_primary" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
 
-                </LinearLayout>
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="#8B5CF6">
 
-                <View
-                    android:id="@+id/dividerC"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@color/divider_color"
-                    app:layout_constraintTop_toBottomOf="@id/taptosend" />
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/baseline_send_24"
+                                android:contentDescription="Send icon"
+                                app:tint="@color/white" />
 
-                <!-- Shutter Selection Button -->
-                <LinearLayout
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Send a test message"
+                            android:textAppearance="@style/PremiumActionTitle"
+                            android:textSize="16sp"
+                            android:textColor="@color/white"
+                            android:layout_marginStart="16dp" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Button Selection Action -->
+                <com.google.android.material.card.MaterialCardView
                     android:id="@+id/manual_shutter_selection_button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:minHeight="50dp"
-                    android:background="?android:attr/selectableItemBackground"
+                    android:layout_marginBottom="20dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/surface_1"
                     android:clickable="true"
                     android:focusable="true"
-                    android:padding="12dp"
-                    app:layout_constraintTop_toBottomOf="@id/dividerC">
+                    app:strokeWidth="0dp">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/baseline_settings_24"
-                        android:contentDescription="Touch app icon"
-                        android:tint="@color/primary_color"
-                        android:layout_marginEnd="16dp" />
-
-                    <TextView
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Select Different Button"
-                        android:textColor="@color/text_primary" />
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:padding="20dp">
 
-                </LinearLayout>
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:cardBackgroundColor="#F59E0B">
 
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/baseline_settings_24"
+                                android:contentDescription="Settings icon"
+                                app:tint="@color/white" />
+
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Select Different Button"
+                            android:textAppearance="@style/PremiumActionTitle"
+                            android:textSize="16sp"
+                            android:textColor="@color/white"
+                            android:layout_marginStart="16dp" />
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/baseline_chevron_right_24"
+                            android:contentDescription="Arrow"
+                            app:tint="@color/text_tertiary" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Separator Line -->
                 <View
-                    android:id="@+id/divider_auto_manual"
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@color/divider_color"
-                    app:layout_constraintTop_toBottomOf="@id/manual_shutter_selection_button" />
+                    android:background="@color/text_tertiary"
+                    android:alpha="0.2"
+                    android:layout_marginBottom="20dp" />
 
-                <!-- Auto Launch Camera Switch -->
+                <!-- Auto Launch Switch (No Card) -->
                 <LinearLayout
                     android:id="@+id/auto_launch_section"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:minHeight="50dp"
-                    app:layout_constraintTop_toBottomOf="@id/divider_auto_manual">
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#4B5563">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/baseline_camera_alt_24"
+                            android:contentDescription="Auto launch icon"
+                            app:tint="@color/white" />
+
+                    </com.google.android.material.card.MaterialCardView>
 
                     <TextView
                         android:id="@+id/auto_launch_label"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/auto_launch_camera"
-                        android:textColor="@color/text_primary"
-                        android:padding="12dp" />
+                        android:text="Auto-launch Camera"
+                        android:textSize="16sp"
+                        android:textColor="@color/white"
+                        android:layout_marginStart="16dp" />
 
-                    <Switch
+                    <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/auto_launch_switch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="12dp" />
+                        android:layout_marginStart="12dp" />
 
                 </LinearLayout>
 
-                <View
-                    android:id="@+id/dividerD"
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="@color/divider_color"
-                    app:layout_constraintTop_toBottomOf="@id/auto_launch_section" />
+            </LinearLayout>
 
-                <!-- Camera Button Section - At bottom of card -->
-                <FrameLayout
-                    android:id="@+id/camera_button_container"
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Premium Camera Button Section -->
+        <FrameLayout
+            android:id="@+id/camera_button_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            app:layout_constraintTop_toBottomOf="@id/main_card"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#00000000"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:id="@+id/camera_button"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:layout_constraintBottom_toBottomOf="parent">
+                    android:layout_height="72dp"
+                    android:background="@drawable/premium_camera_button_gradient"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:src="@drawable/baseline_camera_alt_24"
+                        android:contentDescription="Camera icon"
+                        app:tint="@color/white"
+                        android:layout_marginEnd="12dp" />
 
                     <TextView
-                        android:id="@+id/camera_button"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/camera_button_background"
-                        android:clickable="true"
-                        android:elevation="4dp"
-                        android:focusable="true"
-                        android:gravity="center"
-                        android:padding="24dp"
-                        android:text="@string/launch_camera"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Launch Camera"
                         android:textColor="@color/white"
-                        android:textStyle="bold" />
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:fontFamily="sans-serif-medium" />
 
-                    <TextView
-                        android:id="@+id/square_camera_button"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:layout_gravity="center"
-                        android:background="?android:attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true" />
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/baseline_chevron_right_24"
+                        android:contentDescription="Arrow"
+                        app:tint="@color/white"
+                        android:alpha="0.9"
+                        android:layout_marginStart="12dp" />
 
-                </FrameLayout>
+                </LinearLayout>
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
-    </FrameLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Hidden square button for accessibility -->
+            <View
+                android:id="@+id/square_camera_button"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Empty view for fallback -->
     <TextView

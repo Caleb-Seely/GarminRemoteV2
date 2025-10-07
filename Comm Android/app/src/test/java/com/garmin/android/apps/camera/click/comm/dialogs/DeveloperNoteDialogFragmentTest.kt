@@ -44,11 +44,9 @@ class DeveloperNoteDialogFragmentTest {
     fun `dialog constants are correct`() {
         // Test that the dialog uses correct constants
         val expectedWebsiteUrl = "https://CalebSeely.com"
-        val expectedEmail = "CalebSeely@gmail.com"
         
-        // These constants should match what's used in the DialogFragment
+        // Website URL constant should match what's used in the DialogFragment
         assertEquals("https://CalebSeely.com", expectedWebsiteUrl)
-        assertEquals("CalebSeely@gmail.com", expectedEmail)
     }
 
     @Test

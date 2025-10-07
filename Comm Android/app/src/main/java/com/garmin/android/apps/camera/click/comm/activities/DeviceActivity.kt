@@ -15,7 +15,6 @@ import android.os.Parcelable
 import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.Switch
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -51,6 +50,10 @@ import com.garmin.android.apps.camera.click.comm.repository.DeveloperNoteContent
 import com.garmin.android.apps.camera.click.comm.dialogs.DeveloperNoteDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.view.View
+import android.os.VibrationEffect
+import android.os.Vibrator
+import com.google.android.material.card.MaterialCardView
+import androidx.appcompat.widget.SwitchCompat
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -89,10 +92,11 @@ class DeviceActivity : AppCompatActivity() {
     }
 
     private var deviceStatusView: TextView? = null
-    private var openAppButtonView: LinearLayout? = null
+    private var deviceStatusBadge: com.google.android.material.card.MaterialCardView? = null
+    private var openAppButtonView: com.google.android.material.card.MaterialCardView? = null
     private var openAppTextView: TextView? = null
     private var serviceToggleView: TextView? = null
-    private var autoLaunchSwitch: Switch? = null
+    private var autoLaunchSwitch: androidx.appcompat.widget.SwitchCompat? = null
     private var isServiceRunning = false
 
     private val connectIQ: ConnectIQ = ConnectIQ.getInstance()
@@ -179,14 +183,30 @@ class DeviceActivity : AppCompatActivity() {
 
         val deviceNameView = findViewById<TextView>(R.id.devicename)
         deviceStatusView = findViewById(R.id.devicestatus)
+        deviceStatusBadge = deviceStatusView?.parent as? com.google.android.material.card.MaterialCardView
         openAppButtonView = findViewById(R.id.openapp)
-        openAppTextView = openAppButtonView?.findViewById(R.id.openapp_text)
+        openAppTextView = findViewById<TextView>(R.id.openapp_text)
         autoLaunchSwitch = findViewById(R.id.auto_launch_switch)
 
         deviceNameView?.text = device?.friendlyName ?: "Unknown Device"
         deviceStatusView?.text = device?.status?.name ?: "Unknown Status"
         device?.status?.let { updateDeviceStatusColor(it) }
-        openAppButtonView?.setOnClickListener { openMyApp() }
+        
+        // Premium open app button animation
+        openAppButtonView?.setOnClickListener { 
+            val pressAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_press)
+            val releaseAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_release)
+            
+            it.startAnimation(pressAnimation)
+            pressAnimation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                    it.startAnimation(releaseAnimation)
+                    openMyApp()
+                }
+                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+            })
+        }
 
         // Initialize auto-launch switch state
         autoLaunchSwitch?.isChecked = prefs.getBoolean(KEY_AUTO_LAUNCH_CAMERA, false)
@@ -196,46 +216,76 @@ class DeviceActivity : AppCompatActivity() {
         }
 
         // Add click listener for the tap to send test button
-        findViewById<LinearLayout>(R.id.taptosend)?.setOnClickListener {
-            AnalyticsUtils.logFeatureUsage("test_message", "button_click", true)
-            onItemClick("Test")
-        }
-
-        // Add click listener for the camera button
-        findViewById<TextView>(R.id.camera_button)?.setOnClickListener {
-            // Add button animation
-            val scaleDown = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.button_scale)
-            val scaleUp = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.button_scale_reverse)
+        findViewById<MaterialCardView>(R.id.taptosend)?.setOnClickListener {
+            val pressAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_press)
+            val releaseAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_release)
             
-            it.startAnimation(scaleDown)
-            scaleDown.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+            it.startAnimation(pressAnimation)
+            pressAnimation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
                 override fun onAnimationStart(animation: android.view.animation.Animation?) {}
                 override fun onAnimationEnd(animation: android.view.animation.Animation?) {
-                    it.startAnimation(scaleUp)
+                    it.startAnimation(releaseAnimation)
+                    AnalyticsUtils.logFeatureUsage("test_message", "premium_card_click", true)
+                    onItemClick("Test")
                 }
                 override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
             })
+        }
+
+        // Add click listener for the premium camera button
+        findViewById<LinearLayout>(R.id.camera_button)?.setOnClickListener {
+            // Launch camera immediately
+            FirebaseCrashlytics.getInstance().log("Premium camera launch button clicked")
+            AnalyticsUtils.logFeatureUsage("camera_launch", "premium_button_click", true)
+            CameraUtils.launchCamera(this@DeviceActivity)
             
-            FirebaseCrashlytics.getInstance().log("Camera launch button clicked")
-            AnalyticsUtils.logFeatureUsage("camera_launch", "button_click", true)
-            CameraUtils.launchCamera(this)
+            // Optional: Add animations that don't block the camera launch
+            try {
+                val pressAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_press)
+                val releaseAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_release)
+                
+                it.startAnimation(pressAnimation)
+                pressAnimation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                    override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                    override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                        it.startAnimation(releaseAnimation)
+                    }
+                    override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+                })
+            } catch (e: Exception) {
+                // If animations fail, don't let it affect camera launch
+                Log.w(TAG, "Animation failed but camera should still launch", e)
+            }
         }
 
         // Add click listener for the square camera button
-        findViewById<TextView>(R.id.square_camera_button)?.setOnClickListener {
+        findViewById<View>(R.id.square_camera_button)?.setOnClickListener {
             FirebaseCrashlytics.getInstance().log("Square camera launch button clicked")
             AnalyticsUtils.logFeatureUsage("camera_launch", "square_button_click", true)
             CameraUtils.launchCamera(this)
         }
 
-        // Manual shutter selection button wiring
-        val manualButton = findViewById<LinearLayout>(R.id.manual_shutter_selection_button)
+        // Premium manual shutter selection button
+        val manualButton = findViewById<MaterialCardView>(R.id.manual_shutter_selection_button)
         manualButton.setOnClickListener {
-            if (CameraAppCandidateStore.candidatesByApp.isEmpty()) {
-                Toast.makeText(this, R.string.no_camera_apps_detected_yet, Toast.LENGTH_LONG).show()
-            } else {
-                startActivity(Intent(this, ManualShutterButtonSelectionActivity::class.java))
-            }
+            // Premium card animation
+            val pressAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_press)
+            val releaseAnimation = android.view.animation.AnimationUtils.loadAnimation(this, R.anim.premium_button_release)
+            
+            it.startAnimation(pressAnimation)
+            pressAnimation.setAnimationListener(object : android.view.animation.Animation.AnimationListener {
+                override fun onAnimationStart(animation: android.view.animation.Animation?) {}
+                override fun onAnimationEnd(animation: android.view.animation.Animation?) {
+                    it.startAnimation(releaseAnimation)
+                    
+                    if (CameraAppCandidateStore.candidatesByApp.isEmpty()) {
+                        Toast.makeText(this@DeviceActivity, R.string.no_camera_apps_detected_yet, Toast.LENGTH_LONG).show()
+                    } else {
+                        startActivity(Intent(this@DeviceActivity, ManualShutterButtonSelectionActivity::class.java))
+                    }
+                }
+                override fun onAnimationRepeat(animation: android.view.animation.Animation?) {}
+            })
         }
 
         // Debug: Log available content versions
@@ -243,6 +293,9 @@ class DeviceActivity : AppCompatActivity() {
 
         // Check permissions and show dialogs if needed
         checkAndRequestPermissions()
+
+        // Add premium enter animations for cards
+        addPremiumEnterAnimations()
 
     // Timing checks are triggered after app verification (onApplicationInfoReceived)
 
@@ -477,35 +530,49 @@ class DeviceActivity : AppCompatActivity() {
             try {
                 connectIQ.sendMessage(dev, myApp, message) { _, _, status ->
                     Log.d(TAG, "Message send status: ${status.name}")
-                    Toast.makeText(this@DeviceActivity, status.name, Toast.LENGTH_SHORT).show()
+                    
+                    // Success feedback
+                    runOnUiThread {
+                        if (status == ConnectIQ.IQMessageStatus.SUCCESS) {
+                            // Success toast without animation
+                            Toast.makeText(this@DeviceActivity, "✓ Message sent successfully!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(this@DeviceActivity, "❌ ${status.name}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                     
                     // Log camera command event
                     val params = Bundle().apply {
                         putString("device_name", dev.friendlyName)
                         putString("message", message)
+                        putString("status", status.name)
                     }
                     firebaseAnalytics.logEvent("message_sent_to_watch", params)
                 }
             } catch (e: InvalidStateException) {
                 Log.e(TAG, "Error sending message", e)
-                Toast.makeText(this, "ConnectIQ is not in a valid state", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "❌ ConnectIQ is not in a valid state", Toast.LENGTH_SHORT).show()
             } catch (e: ServiceUnavailableException) {
                 Log.e(TAG, "Service unavailable", e)
                 Toast.makeText(
                     this,
-                    "ConnectIQ service is unavailable. Is Garmin Connect Mobile installed and running?",
+                    "❌ ConnectIQ service is unavailable. Is Garmin Connect Mobile installed and running?",
                     Toast.LENGTH_LONG
                 ).show()
             }
         } ?: run {
             Log.e(TAG, "Device is null, cannot send message")
-            Toast.makeText(this, "Device not available", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "❌ Device not available", Toast.LENGTH_SHORT).show()
         }
     }
 
 
     private fun updateDeviceStatusColor(status: IQDevice.IQDeviceStatus) {
-        deviceStatusView?.setTextColor(
+        // Always keep text white for good contrast
+        deviceStatusView?.setTextColor(ContextCompat.getColor(this, R.color.white))
+        
+        // Update badge background color based on connection status
+        deviceStatusBadge?.setCardBackgroundColor(
             when (status) {
                 IQDevice.IQDeviceStatus.CONNECTED -> ContextCompat.getColor(this, R.color.success)
                 IQDevice.IQDeviceStatus.NOT_CONNECTED -> ContextCompat.getColor(this, R.color.error)
@@ -868,6 +935,33 @@ class DeviceActivity : AppCompatActivity() {
             Log.e(TAG, "Error showing review prompt", e)
             FirebaseCrashlytics.getInstance().recordException(e)
             AnalyticsUtils.logError("in_app_review", "prompt_failed", e.message ?: "unknown")
+        }
+    }
+
+    /**
+     * Adds premium enter animations to make the interface feel more polished and engaging.
+     */
+    private fun addPremiumEnterAnimations() {
+        try {
+            Log.d(TAG, "Initializing premium animations")
+            
+            // Ensure all views are visible first
+            findViewById<LinearLayout>(R.id.device_info_section)?.alpha = 1f
+            findViewById<MaterialCardView>(R.id.main_card)?.alpha = 1f
+            findViewById<MaterialCardView>(R.id.auto_launch_section)?.alpha = 1f
+            findViewById<LinearLayout>(R.id.camera_button)?.alpha = 1f
+            
+            // Optional: Add subtle animations later if desired
+            // For now, just ensure everything is visible
+            Log.d(TAG, "All views set to visible")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up animations", e)
+            // Fallback: make sure all views are visible
+            findViewById<LinearLayout>(R.id.device_info_section)?.alpha = 1f
+            findViewById<MaterialCardView>(R.id.main_card)?.alpha = 1f
+            findViewById<LinearLayout>(R.id.auto_launch_section)?.alpha = 1f
+            findViewById<LinearLayout>(R.id.camera_button)?.alpha = 1f
         }
     }
 }

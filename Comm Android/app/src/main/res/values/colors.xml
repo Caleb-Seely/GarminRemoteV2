@@ -1,29 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#3fe9a3</color> <!-- Replace #FFFFFF with your desired color -->
+    <color name="ic_launcher_background">#6366F1</color>
 
-    <!-- Base colors -->
-    <color name="primary_color">#3fe9a3</color>
-    <color name="primary_dark">#000000</color>
-    <color name="accent_color">#FF4081</color>
+    <!-- Premium Base Colors -->
+    <color name="primary_color">#6366F1</color> <!-- Modern indigo -->
+    <color name="primary_variant">#4F46E5</color> <!-- Darker indigo -->
+    <color name="primary_light">#A5B4FC</color> <!-- Light indigo -->
+    <color name="primary_dark">#1E1B4B</color> <!-- Deep indigo -->
+    <color name="accent_color">#F59E0B</color> <!-- Premium amber -->
+    <color name="secondary_color">#EC4899</color> <!-- Modern pink -->
     <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
 
-    <!-- Background colors -->
-    <color name="background_light">#F5F5F5</color>
-    <color name="card_background">#FFFFFF</color>
+    <!-- Dark Premium Background Colors -->
+    <color name="background_light">#1A1B3A</color> <!-- Dark navy background -->
+    <color name="background_surface">#1A1B3A</color>
+    <color name="background_primary">#6366F1</color>
+    <color name="card_background">#2D3748</color> <!-- Dark card background -->
+    <color name="card_background_elevated">#374151</color> <!-- Slightly lighter dark -->
+    
+    <!-- Dark Theme Surface Colors -->
+    <color name="surface_1">#2D3748</color> <!-- Dark gray card -->
+    <color name="surface_2">#374151</color>
+    <color name="surface_3">#4A5568</color>
+    
+    <!-- Premium Gradient Colors -->
+    <color name="gradient_start">#6366F1</color>
+    <color name="gradient_mid">#8B5CF6</color>
+    <color name="gradient_end">#EC4899</color>
+    
+    <!-- Dark Theme Text Colors -->
+    <color name="text_primary">#FFFFFF</color> <!-- White for dark theme -->
+    <color name="text_secondary">#A0AEC0</color> <!-- Light gray for subtitles -->
+    <color name="text_tertiary">#718096</color> <!-- Medium gray -->
+    <color name="text_hint">#4A5568</color> <!-- Dark gray -->
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_on_surface">#FFFFFF</color>
 
-    <!-- Text colors -->
-    <color name="text_primary">#212121</color>
-    <color name="text_secondary">#757575</color>
-    <color name="text_hint">#BDBDBD</color>
+    <!-- Enhanced Status Colors -->
+    <color name="success">#10B981</color> <!-- Modern emerald green -->
+    <color name="success_light">#D1FAE5</color>
+    <color name="error">#EF4444</color> <!-- Modern red -->
+    <color name="error_light">#FEE2E2</color>
+    <color name="warning">#F59E0B</color> <!-- Amber -->
+    <color name="warning_light">#FEF3C7</color>
+    <color name="info">#3B82F6</color> <!-- Modern blue -->
+    <color name="info_light">#DBEAFE</color>
 
-    <!-- Status colors -->
-    <color name="success">#3fe9a3</color>
-    <color name="error">#F44336</color>
-    <color name="warning">#FFC107</color>
-
-    <!-- UI colors -->
-    <color name="divider_color">#EEEEEE</color>
-    <color name="divider">#BDBDBD</color>
-    <color name="button_selected_background">#E0E0E0</color> <!-- A light grey -->
+    <!-- Premium UI Colors -->
+    <color name="divider_color">#F1F5F9</color> <!-- Very subtle -->
+    <color name="divider_strong">#E2E8F0</color>
+    <color name="divider">#CBD5E1</color>
+    <color name="button_selected_background">#4A5568</color> <!-- Dark gray for good contrast with white text -->
+    <color name="ripple_color">#E0E7FF</color>
+    
+    <!-- Additional Surface Colors -->
+    <color name="surface_overlay">#0F172A80</color> <!-- 50% opacity -->
+    
+    <!-- Shadow Colors -->
+    <color name="shadow_light">#0F172A10</color> <!-- 6% opacity -->
+    <color name="shadow_medium">#0F172A20</color> <!-- 12% opacity -->
+    <color name="shadow_strong">#0F172A30</color> <!-- 18% opacity -->
 </resources>

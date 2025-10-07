@@ -38,6 +38,10 @@ class ManualShutterButtonSelectionActivity : AppCompatActivity() {
         // Setup toolbar
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
+        
+        // Enable back button in the toolbar
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
 
         val title = findViewById<TextView>(R.id.manual_selection_title)
         val recycler = findViewById<RecyclerView>(R.id.candidate_recycler)
@@ -97,6 +101,17 @@ class ManualShutterButtonSelectionActivity : AppCompatActivity() {
                 Toast.makeText(this, "Preference saved for $selectedPackageName", Toast.LENGTH_SHORT).show()
                 finish()
             }
+        }
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return when (item.itemId) {
+            android.R.id.home -> {
+                // Handle back button press
+                finish()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 } 

@@ -43,7 +43,16 @@ class ShutterButtonCandidateAdapter(
         holder.position.text = positionText
         
         holder.score.text = holder.itemView.context.getString(R.string.confidence_score_label, info.confidenceScore)
-        holder.itemView.isSelected = position == selectedIndex
+        
+        // Set selected state for the container and all text views
+        val isSelected = position == selectedIndex
+        holder.itemView.isSelected = isSelected
+        holder.desc.isSelected = isSelected
+        holder.resId.isSelected = isSelected
+        holder.className.isSelected = isSelected
+        holder.position.isSelected = isSelected
+        holder.score.isSelected = isSelected
+        
         holder.itemView.setOnClickListener {
             val prev = selectedIndex
             selectedIndex = position
