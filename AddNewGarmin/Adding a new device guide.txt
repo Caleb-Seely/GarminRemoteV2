@@ -1,0 +1,113 @@
+# Quick Garmin Build Steps
+https://apps.garmin.com/en-US/apps/789012f0-dcb2-46c2-b5b8-ef00a75968fa?tid=2
+
+### Add Devices
+1. Run `sdkmanager.exe`  
+   → `C:\Users\Caleb\Documents\Garmin3\AddNewGarmin\connectiq-sdk-manager-windows`
+2. Download latest SDK
+3. Add devices under **Device** tab
+4. Edit manifest:  
+   `C:\Users\Caleb\Documents\Garmin3\Comm Watch\manifest.xml`
+
+### Build & Sim
+- **Ctrl + Shift + P** → *Build Current Project*  
+- Choose watch → look for **BUILD SUCCESSFUL**
+- Run sim:
+cd C:\Users\Caleb\Documents\Garmin3\Comm Watch\bin
+monkeydo CommWatch.prg <deviceName>
+
+markdown
+Copy code
+
+### Export for Store
+- **Ctrl + Shift + P** → *Export*  
+- Select `Comm Watch` folder
+
+### Errors
+- Update **PATH** if SDK renamed  
+- Add to PATH if `'monkeydo' not recognized`:  
+C:\Users\Caleb\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-8.2.2-2025-07-17-cf29b22d5\bin
+
+
+
+
+
+🧭 Adding a New Device to the Garmin App
+1. Open the SDK Manager
+
+Run the following file:
+
+C:\Users\Caleb\Documents\Garmin3\AddNewGarmin\connectiq-sdk-manager-windows\sdkmanager.exe
+
+2. Download the Latest SDK
+
+In the SDK Manager, download the latest SDK version.
+
+Switch to the Device tab.
+
+Find and add the devices you want.
+
+Note: Not every listed device is a watch — only download the relevant ones.
+
+3. Update the Project Manifest
+
+Open your project manifest file:
+
+C:\Users\Caleb\Documents\Garmin3\Comm Watch\manifest.xml
+
+
+Add the new device(s) manually or use the Select All checkbox to include all devices.
+
+🧩 Building and Testing in the Simulator
+1. Build the Project
+
+In Visual Studio Code (or your editor):
+
+Press Ctrl + Shift + P to open the Command Palette.
+
+Select Monkey C: Build Current Project.
+
+Choose a watch to test with the simulator.
+
+Wait for the BUILD SUCCESSFUL message.
+
+2. Run the Build on the Simulator
+
+Open a command prompt and navigate to:
+
+C:\Users\Caleb\Documents\Garmin3\Comm Watch\bin
+
+
+Run:
+
+monkeydo CommWatch.prg <deviceName>
+
+
+This should launch the simulator and run the app successfully.
+
+🚀 Exporting / Building for the Garmin Store
+
+Press Ctrl + Shift + P.
+
+Select Monkey C: Export.
+
+Choose the default Comm Watch folder.
+
+The tool will build the app for all 240+ supported devices.
+
+⚙️ Common Errors & Fixes
+❌ SDK Deleted or Renamed
+
+If you delete or rename an SDK,
+→ Update your PATH environment variable to point to the new SDK name.
+
+❌ 'monkeydo' is not recognized
+
+If you see this error:
+
+The term 'monkeydo' is not recognized as the name of a cmdlet, function, or script file.
+
+
+Then make sure the following directory is included in your System PATH:
+
+C:\Users\Caleb\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-8.2.2-2025-07-17-cf29b22d5\bin

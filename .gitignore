@@ -76,3 +76,4 @@ temp/
 .annotations
 .api
 *.ciq
+/AddNewGarmin/connectiq-sdk-manager-windows

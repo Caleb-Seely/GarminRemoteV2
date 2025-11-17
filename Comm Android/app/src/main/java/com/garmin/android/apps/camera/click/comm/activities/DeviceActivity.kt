@@ -50,8 +50,6 @@ import com.garmin.android.apps.camera.click.comm.repository.DeveloperNoteContent
 import com.garmin.android.apps.camera.click.comm.dialogs.DeveloperNoteDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import android.view.View
-import android.os.VibrationEffect
-import android.os.Vibrator
 import com.google.android.material.card.MaterialCardView
 import androidx.appcompat.widget.SwitchCompat
 

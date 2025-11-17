@@ -114,6 +114,8 @@
          <iq:product id="venu2s"/>
          <iq:product id="venu3"/>
          <iq:product id="venu3s"/>
+         <iq:product id="venu441mm"/>
+         <iq:product id="venu445mm"/>
          <iq:product id="venud"/>
          <iq:product id="venusq"/>
          <iq:product id="venusq2"/>
@@ -132,6 +134,7 @@
          <iq:product id="vivoactive_hr"/>
       </iq:products>
       <iq:permissions>
+         <iq:uses-permission id="Communications"/>
          <iq:uses-permission id="Communications"/>
       </iq:permissions>
       <iq:languages>

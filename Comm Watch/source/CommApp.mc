@@ -75,7 +75,7 @@ class CommExample extends Application.AppBase {
      * Handles incoming mailbox messages
      * @param mailIter Iterator for mailbox messages
      */
-    function onMail(mailIter) {
+    function onMail(mailIter as Communications.MailboxIterator) as Void {
         var mail = mailIter.next();
 
         while(mail != null) {
@@ -91,7 +91,7 @@ class CommExample extends Application.AppBase {
      * Handles incoming phone app messages
      * @param msg Message received from phone app
      */
-    function onPhone(msg) {
+    function onPhone(msg as Communications.PhoneAppMessage) as Void {
         // Show message in MessageView
         WatchUi.pushView(new MessageView(msg.data.toString()), null, WatchUi.SLIDE_IMMEDIATE);
     }
