@@ -460,4 +460,92 @@ object AnalyticsUtils {
         }
         logEvent("auto_launch_attempt", params)
     }
+
+    /**
+     * Log compatibility check performed with all results
+     */
+    fun logCompatibilityCheck(
+        overallStatus: String,
+        checksPassed: Int,
+        checksWarning: Int,
+        checksInfo: Int,
+        accessibilityEnabled: Boolean,
+        switchAccessEnabled: Boolean,
+        notificationsGranted: Boolean,
+        garminConnectInstalled: Boolean,
+        deviceManufacturer: String,
+        deviceModel: String,
+        androidVersion: String,
+        cameraAppsCount: Int,
+        defaultCamera: String?,
+        isFirstLaunch: Boolean
+    ) {
+        val params = Bundle().apply {
+            putString("overall_status", overallStatus)
+            putInt("checks_passed", checksPassed)
+            putInt("checks_warning", checksWarning)
+            putInt("checks_info", checksInfo)
+            putBoolean("accessibility_enabled", accessibilityEnabled)
+            putBoolean("switch_access_enabled", switchAccessEnabled)
+            putBoolean("notifications_granted", notificationsGranted)
+            putBoolean("garmin_connect_installed", garminConnectInstalled)
+            putString("device_manufacturer", deviceManufacturer)
+            putString("device_model", deviceModel)
+            putString("android_version", androidVersion)
+            putInt("camera_apps_count", cameraAppsCount)
+            defaultCamera?.let { putString("default_camera", it) }
+            putBoolean("is_first_launch", isFirstLaunch)
+        }
+        logEvent("compatibility_check_performed", params)
+    }
+
+    /**
+     * Log compatibility check action (user response to compatibility dialog)
+     */
+    fun logCompatibilityCheckAction(
+        actionType: String,
+        checkId: String
+    ) {
+        val params = Bundle().apply {
+            putString("action_type", actionType)
+            putString("check_id", checkId)
+        }
+        logEvent("compatibility_check_action", params)
+    }
+
+    /**
+     * Log Switch Access status detection
+     */
+    fun logSwitchAccessStatus(
+        enabled: Boolean,
+        detected: Boolean,
+        deviceManufacturer: String,
+        deviceModel: String
+    ) {
+        val params = Bundle().apply {
+            putBoolean("switch_access_enabled", enabled)
+            putBoolean("switch_access_detected", detected)
+            putString("device_manufacturer", deviceManufacturer)
+            putString("device_model", deviceModel)
+        }
+        logEvent("switch_access_status", params)
+    }
+
+    /**
+     * Log camera app detection results
+     */
+    fun logCameraAppDetection(
+        installedCount: Int,
+        knownCount: Int,
+        defaultApp: String?,
+        hasDefault: Boolean
+    ) {
+        val params = Bundle().apply {
+            putInt("installed_camera_apps", installedCount)
+            putInt("known_camera_apps", knownCount)
+            putBoolean("has_default_camera", hasDefault)
+            defaultApp?.let { putString("default_camera_package", it) }
+        }
+        logEvent("camera_app_detection", params)
+    }
 } 

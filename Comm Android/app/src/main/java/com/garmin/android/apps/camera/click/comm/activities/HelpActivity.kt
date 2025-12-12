@@ -1,10 +1,12 @@
 package com.garmin.android.apps.camera.click.comm.activities
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
@@ -29,6 +31,13 @@ class HelpActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setDisplayShowHomeEnabled(true)
 
+        // Setup modern back press handling
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                finish()
+            }
+        })
+
         // Record start time
         startTime = System.currentTimeMillis()
 
@@ -43,7 +52,7 @@ class HelpActivity : AppCompatActivity() {
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        onBackPressed()
+        finish()
         return true
     }
 
@@ -74,6 +83,15 @@ class HelpActivity : AppCompatActivity() {
 
     private fun setupSections() {
         val sectionsContainer = findViewById<LinearLayout>(R.id.sections_container)
+
+        // System Status Section (NEW)
+        createSection(
+            sectionsContainer,
+            "📊 System Status",
+            "Check your device compatibility and system information. " +
+                    "This diagnostic tool helps identify setup issues.<br><br>" +
+                    "<b><font color='#3fe9a3'><a href='#run_check'>→ Check System Status</a></font></b>"
+        )
 
         // Getting Started Section
         createSection(
@@ -165,9 +183,9 @@ class HelpActivity : AppCompatActivity() {
         createSection(
             sectionsContainer,
             "📎 Quick Links",
-            "📝 <a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a>" +
-                    "<br><br>⌚ <a href='https://apps.garmin.com/apps/789012f0-dcb2-46c2-b5b8-ef00a75968fa'>CameraClick Garmin App</a>" +
-                    "<br><br>🌐 <a href='https://calebseely.com'>About the developer</a>"
+            "📝 <font color='#3fe9a3'><a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a></font>" +
+                    "<br><br>⌚ <font color='#3fe9a3'><a href='https://apps.garmin.com/apps/789012f0-dcb2-46c2-b5b8-ef00a75968fa'>CameraClick Garmin App</a></font>" +
+                    "<br><br>🌐 <font color='#3fe9a3'><a href='https://calebseely.com'>About the developer</a></font>"
 
         )
     }
@@ -179,9 +197,21 @@ class HelpActivity : AppCompatActivity() {
         sectionView.findViewById<TextView>(R.id.section_title).text = title
 
         // Set the section content with HTML formatting
-        sectionView.findViewById<TextView>(R.id.section_content).apply {
+        val contentView = sectionView.findViewById<TextView>(R.id.section_content)
+        contentView.apply {
             text = HtmlCompat.fromHtml(content, HtmlCompat.FROM_HTML_MODE_COMPACT)
             movementMethod = LinkMovementMethod.getInstance() // Makes links clickable
+        }
+
+        // Special handling for System Status section
+        if (title.contains("System Status")) {
+            contentView.setOnClickListener {
+                // Launch System Status Activity
+                startActivity(Intent(this, SystemStatusActivity::class.java))
+
+                // Log analytics
+                AnalyticsUtils.logFeatureUsage("compatibility_check", "manual_trigger_from_help", true)
+            }
         }
 
         // Add the section to the container

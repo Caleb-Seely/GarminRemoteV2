@@ -17,17 +17,24 @@ import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import com.garmin.android.apps.camera.click.comm.R
 import com.garmin.android.apps.camera.click.comm.model.DeveloperNoteContent
+import com.garmin.android.apps.camera.click.comm.repository.CompatibilityCheckRepository
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 import com.garmin.android.apps.camera.click.comm.utils.DeveloperNoteManager
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import android.widget.Toast
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * DialogFragment that displays developer note popup with user interaction handling.
  * Shows periodic messages from the app developer with options to visit website or send email.
  */
+@AndroidEntryPoint
 class DeveloperNoteDialogFragment : DialogFragment() {
+
+    @Inject
+    lateinit var compatibilityRepository: CompatibilityCheckRepository
 
     companion object {
         private const val TAG = "DeveloperNoteDialog"
@@ -433,7 +440,7 @@ class DeveloperNoteDialogFragment : DialogFragment() {
     private fun logPopupShown(content: DeveloperNoteContent) {
         try {
             AnalyticsUtils.logFeatureUsage("developer_note", "popup_shown", true)
-            
+
             // Additional detailed analytics
             val params = android.os.Bundle().apply {
                 putInt("version", content.version)
@@ -444,14 +451,74 @@ class DeveloperNoteDialogFragment : DialogFragment() {
                 putString("timestamp", System.currentTimeMillis().toString())
             }
             AnalyticsUtils.logEvent("developer_note_popup_shown", params)
-            
+
             Log.d(TAG, "Analytics logged for popup shown - version ${content.version}")
             FirebaseCrashlytics.getInstance().log("Developer note popup analytics logged - version ${content.version}")
-            
+
+            // Collect compatibility check analytics when developer note is shown
+            logCompatibilityAnalytics()
+
         } catch (e: Exception) {
             Log.e(TAG, "Error logging popup shown analytics", e)
             FirebaseCrashlytics.getInstance().recordException(e)
             AnalyticsUtils.logError("developer_note", "analytics_popup_shown_failed", e.message ?: "unknown")
+        }
+    }
+
+    /**
+     * Log system compatibility analytics when developer note popup is shown
+     * This ensures we capture device/compatibility data even if users never visit the System Status page
+     */
+    private fun logCompatibilityAnalytics() {
+        try {
+            // Perform compatibility check
+            val result = compatibilityRepository.performCompatibilityCheck(forceRefresh = false)
+
+            val switchAccessCheck = result.checks.find { it.id == "switch_access" }
+            val accessibilityCheck = result.checks.find { it.id == "accessibility_service" }
+            val notificationCheck = result.checks.find { it.id == "notification_permission" }
+            val garminConnectCheck = result.checks.find { it.id == "garmin_connect" }
+
+            // Log compatibility check (same as SystemStatusActivity but from developer note popup)
+            AnalyticsUtils.logCompatibilityCheck(
+                overallStatus = result.overallStatus.name,
+                checksPassed = result.checks.count { it.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.PASS },
+                checksWarning = result.checks.count { it.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.WARNING },
+                checksInfo = result.checks.count { it.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.INFO },
+                accessibilityEnabled = accessibilityCheck?.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.PASS,
+                switchAccessEnabled = switchAccessCheck?.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.PASS,
+                notificationsGranted = notificationCheck?.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.PASS,
+                garminConnectInstalled = garminConnectCheck?.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.PASS,
+                deviceManufacturer = result.systemDiagnostics.manufacturer,
+                deviceModel = result.systemDiagnostics.model,
+                androidVersion = result.systemDiagnostics.androidVersion,
+                cameraAppsCount = result.systemDiagnostics.installedCameraApps.size,
+                defaultCamera = result.systemDiagnostics.defaultCameraApp?.packageName,
+                isFirstLaunch = false // Not first launch since developer note appears after 5 days
+            )
+
+            // Log Switch Access status
+            AnalyticsUtils.logSwitchAccessStatus(
+                enabled = switchAccessCheck?.status == com.garmin.android.apps.camera.click.comm.model.CheckStatus.PASS,
+                detected = switchAccessCheck != null,
+                deviceManufacturer = result.systemDiagnostics.manufacturer,
+                deviceModel = result.systemDiagnostics.model
+            )
+
+            // Log camera app detection
+            AnalyticsUtils.logCameraAppDetection(
+                installedCount = result.systemDiagnostics.installedCameraApps.size,
+                knownCount = result.systemDiagnostics.installedCameraApps.count { it.isKnownCompatible },
+                defaultApp = result.systemDiagnostics.defaultCameraApp?.packageName,
+                hasDefault = result.systemDiagnostics.defaultCameraApp != null
+            )
+
+            Log.d(TAG, "Compatibility analytics logged from developer note popup")
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error logging compatibility analytics", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            // Don't fail the popup if analytics fail
         }
     }
 

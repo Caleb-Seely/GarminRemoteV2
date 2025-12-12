@@ -30,7 +30,7 @@
     <string name="accessibility_service_description">This service turns your Garmin watch into a remote camera trigger</string>
     <string name="manual_selection_title">Select a Different Button</string>
     <string name="confidence_score_label">Score: %1$d</string>
-    <string name="no_camera_apps_detected_yet">No camera apps have been detected yet. Please open a camera app first, then return here.</string>
+    <string name="no_camera_apps_detected_yet">Please try with a camera app first, then return here.</string>
     <string name="help_icon">Help icon</string>
 
     <string name="select_camera_app">Select Camera App</string>
@@ -50,4 +50,34 @@
     
     <!-- Developer Note Button -->
     <string name="developer_note_button_description">About the Developer</string>
+
+    <!-- Compatibility Check -->
+    <string name="compatibility_check_title">System Compatibility Check</string>
+    <string name="compatibility_overall_ready">Your system is ready!</string>
+    <string name="compatibility_overall_setup_needed">Setup needed for full features</string>
+    <string name="compatibility_overall_info">System information available</string>
+    <string name="compatibility_section_permissions">Required Permissions</string>
+    <string name="compatibility_section_optional">Optional Features</string>
+    <string name="compatibility_section_camera_apps">Camera Apps</string>
+    <string name="compatibility_section_system_info">System Information</string>
+    <string name="compatibility_copy_diagnostics">Copy Diagnostics</string>
+    <string name="compatibility_diagnostics_copied">Diagnostic report copied to clipboard</string>
+    <string name="compatibility_continue">Continue</string>
+    <string name="compatibility_run_check">Run Compatibility Check</string>
+    <string name="compatibility_system_status_section">System Status</string>
+    <string name="compatibility_system_status_description">View your device compatibility and system information</string>
+
+    <!-- Alert Banner -->
+    <string name="alert_banner_title">Action Required</string>
+    <string name="alert_banner_message">Complete the setup steps below to use CameraClick with your Garmin watch</string>
+
+    <!-- Badges -->
+    <string name="badge_required">Required</string>
+    <string name="badge_optional">Optional</string>
+
+    <!-- Enhanced Check Descriptions -->
+    <string name="check_accessibility_description">Allows the app to control your device\'s camera remotely from your Garmin watch</string>
+    <string name="check_notification_description">Required for background control</string>
+    <string name="check_garmin_connect_description">Required to connect your Garmin watch to this app</string>
+    <string name="check_switch_access_description">Advanced accessibility feature for camera control (optional for most users)</string>
 </resources>

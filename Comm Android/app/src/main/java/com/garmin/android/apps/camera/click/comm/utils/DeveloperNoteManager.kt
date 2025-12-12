@@ -16,63 +16,55 @@ object DeveloperNoteManager {
     private const val KEY_FIRST_INSTALL_DATE = "developer_note_first_install_date"
     private const val KEY_LAST_POPUP_DATE = "developer_note_last_popup_date"
     private const val KEY_POPUP_VERSION_INDEX = "developer_note_popup_version_index"
-    
+    private const val KEY_DEFER_TO_NEXT_LAUNCH = "developer_note_defer_next_launch"
+
+    // New simplified state tracking
+    private const val KEY_POPUP_SHOWN = "developer_note_popup_shown"
+    private const val KEY_POPUP_SHOWN_DATE = "developer_note_popup_shown_date"
+
     // Production timing constants
     private const val INITIAL_DELAY_MS = 5 * 24 * 60 * 60 * 1000L // 5 days
     private const val REPEAT_INTERVAL_MS = 60 * 24 * 60 * 60 * 1000L // 60 days
-    private const val KEY_DEFER_TO_NEXT_LAUNCH = "developer_note_defer_next_launch"
     
     // Version constants
     private const val VERSION_COMPLETE = -1
     private const val MAX_VERSION_INDEX = 3 // 0, 1, 2, 3 = 4 versions total
     
     /**
-     * Check if the popup should be displayed based on timing and version progression
+     * Check if the popup should be displayed based on timing (simplified single-show logic)
      */
     fun shouldShowPopup(context: Context): Boolean {
         return try {
             val prefs = getPrefs(context)
-            
+
             // Initialize first install date if not set
             initializeFirstInstallDateIfNeeded(prefs, context)
-            
-            // Check if popup cycle is complete
-            val versionIndex = prefs.getInt(KEY_POPUP_VERSION_INDEX, 0)
-            if (versionIndex == VERSION_COMPLETE) {
-                Log.d(TAG, "Popup cycle complete, not showing popup")
-                logTimingCheck(context, false, "cycle_complete", versionIndex)
+
+            // Check if popup has already been shown (new simplified logic)
+            val popupShown = prefs.getBoolean(KEY_POPUP_SHOWN, false)
+            if (popupShown) {
+                Log.d(TAG, "Popup already shown, not showing again")
+                logTimingCheck(context, false, "already_shown", 0)
                 return false
             }
-            
+
             val currentTime = System.currentTimeMillis()
             val firstInstallDate = prefs.getLong(KEY_FIRST_INSTALL_DATE, currentTime)
-            val lastPopupDate = prefs.getLong(KEY_LAST_POPUP_DATE, 0)
             val deferred = prefs.getBoolean(KEY_DEFER_TO_NEXT_LAUNCH, false)
-            
-            val shouldShow = when (versionIndex) {
-                0 -> {
-                    // First popup: show after INITIAL_DELAY_MS from install
-                    val daysSinceInstall = (currentTime - firstInstallDate) / (24 * 60 * 60 * 1000L)
-                    val shouldShowFirst = (currentTime - firstInstallDate) >= INITIAL_DELAY_MS
-                    Log.d(TAG, "First popup check: $daysSinceInstall days since install, should show: $shouldShowFirst")
-                    shouldShowFirst || deferred
-                }
-                in 1..MAX_VERSION_INDEX -> {
-                    // Subsequent popups: show 60 days after last popup
-                    val daysSinceLastPopup = if (lastPopupDate > 0) (currentTime - lastPopupDate) / (24 * 60 * 60 * 1000L) else -1
-                    val shouldShowNext = (lastPopupDate > 0 && (currentTime - lastPopupDate) >= REPEAT_INTERVAL_MS) || deferred
-                    Log.d(TAG, "Subsequent popup check (version $versionIndex): $daysSinceLastPopup days since last popup, should show: $shouldShowNext (deferred=$deferred)")
-                    shouldShowNext
-                }
-                else -> {
-                    Log.w(TAG, "Invalid version index: $versionIndex")
-                    false
-                }
+
+            // Show after 5 days from install OR if deferred from previous launch
+            val daysSinceInstall = (currentTime - firstInstallDate) / (24 * 60 * 60 * 1000L)
+            val shouldShow = (currentTime - firstInstallDate) >= INITIAL_DELAY_MS || deferred
+
+            Log.d(TAG, "Popup check: $daysSinceInstall days since install, should show: $shouldShow (deferred=$deferred)")
+
+            val reason = when {
+                shouldShow && deferred -> "deferred"
+                shouldShow -> "timing_met"
+                else -> "timing_not_met"
             }
-            
-            val reason = if (shouldShow) "timing_met" else "timing_not_met"
-            logTimingCheck(context, shouldShow, reason, versionIndex)
-            
+            logTimingCheck(context, shouldShow, reason, 0)
+
             shouldShow
         } catch (e: Exception) {
             Log.e(TAG, "Error checking if popup should show", e)
@@ -84,39 +76,33 @@ object DeveloperNoteManager {
     
     /**
      * Get the current version index for popup content selection
+     * Always returns 0 for single-message system
      */
     fun getCurrentVersionIndex(context: Context): Int {
-        val prefs = getPrefs(context)
-        return prefs.getInt(KEY_POPUP_VERSION_INDEX, 0)
+        // Simplified: always return 0 (single message)
+        return 0
     }
     
     /**
-     * Record that a popup was shown and advance to next version
+     * Record that a popup was shown (simplified single-show logic)
      */
     fun recordPopupShown(context: Context) {
         try {
             val prefs = getPrefs(context)
-            val currentVersion = prefs.getInt(KEY_POPUP_VERSION_INDEX, 0)
             val currentTime = System.currentTimeMillis()
-            
-            val nextVersion = if (currentVersion >= MAX_VERSION_INDEX) {
-                VERSION_COMPLETE
-            } else {
-                currentVersion + 1
-            }
-            
+
             prefs.edit()
-                .putLong(KEY_LAST_POPUP_DATE, currentTime)
-                .putInt(KEY_POPUP_VERSION_INDEX, nextVersion)
+                .putBoolean(KEY_POPUP_SHOWN, true)
+                .putLong(KEY_POPUP_SHOWN_DATE, currentTime)
                 .putBoolean(KEY_DEFER_TO_NEXT_LAUNCH, false)
                 .apply()
-            
-            Log.d(TAG, "Popup shown recorded: version $currentVersion -> $nextVersion")
-            FirebaseCrashlytics.getInstance().log("Developer note popup shown - version $currentVersion, next: $nextVersion")
-            
+
+            Log.d(TAG, "Popup shown recorded at $currentTime")
+            FirebaseCrashlytics.getInstance().log("Developer note popup shown - single-show system")
+
             // Log state change analytics
-            logStateChange(context, "popup_shown", currentVersion, nextVersion)
-            
+            logStateChange(context, "popup_shown", 0, -1)
+
         } catch (e: Exception) {
             Log.e(TAG, "Error recording popup shown", e)
             FirebaseCrashlytics.getInstance().recordException(e)
@@ -236,9 +222,92 @@ object DeveloperNoteManager {
     fun getDaysSinceLastPopup(context: Context): Long {
         val lastPopupDate = getLastPopupDate(context)
         if (lastPopupDate == 0L) return -1
-        
+
         val currentTime = System.currentTimeMillis()
         return (currentTime - lastPopupDate) / (24 * 60 * 60 * 1000L)
+    }
+
+    /**
+     * Check if popup has been shown (new simplified logic)
+     */
+    fun isPopupShown(context: Context): Boolean {
+        return try {
+            getPrefs(context).getBoolean(KEY_POPUP_SHOWN, false)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking if popup shown", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            false
+        }
+    }
+
+    /**
+     * Get the timestamp when popup was shown
+     */
+    fun getPopupShownDate(context: Context): Long {
+        return try {
+            getPrefs(context).getLong(KEY_POPUP_SHOWN_DATE, 0)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting popup shown date", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            0
+        }
+    }
+
+    /**
+     * Migrate existing users who have seen old multi-version popups
+     * to the new single-popup system
+     */
+    fun migrateExistingUsers(context: Context) {
+        try {
+            val prefs = getPrefs(context)
+
+            // Check if already migrated
+            if (prefs.contains(KEY_POPUP_SHOWN)) {
+                Log.d(TAG, "Already migrated to new popup system")
+                return
+            }
+
+            val versionIndex = prefs.getInt(KEY_POPUP_VERSION_INDEX, 0)
+            val lastPopupDate = prefs.getLong(KEY_LAST_POPUP_DATE, 0)
+
+            // If user has seen ANY version (index > 0) or has a last popup date, mark as shown
+            if (versionIndex > 0 || lastPopupDate > 0) {
+                prefs.edit()
+                    .putBoolean(KEY_POPUP_SHOWN, true)
+                    .putLong(KEY_POPUP_SHOWN_DATE, lastPopupDate)
+                    .apply()
+
+                Log.d(TAG, "Migrated existing user: version $versionIndex, last shown at $lastPopupDate")
+                FirebaseCrashlytics.getInstance().log("Developer note migrated - version $versionIndex to single-popup system")
+
+                // Log migration analytics
+                val params = android.os.Bundle().apply {
+                    putInt("old_version_index", versionIndex)
+                    putLong("old_last_popup_date", lastPopupDate)
+                    putBoolean("had_seen_popup", true)
+                    putString("timestamp", System.currentTimeMillis().toString())
+                }
+                AnalyticsUtils.logEvent("developer_note_migration", params)
+            } else {
+                // New user or user who hasn't seen popup yet - just mark as migrated
+                prefs.edit()
+                    .putBoolean(KEY_POPUP_SHOWN, false)
+                    .putLong(KEY_POPUP_SHOWN_DATE, 0)
+                    .apply()
+
+                Log.d(TAG, "Migrated new user - no previous popups")
+
+                val params = android.os.Bundle().apply {
+                    putBoolean("had_seen_popup", false)
+                    putString("timestamp", System.currentTimeMillis().toString())
+                }
+                AnalyticsUtils.logEvent("developer_note_migration", params)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error migrating existing users", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+            AnalyticsUtils.logError("developer_note", "migration_failed", e.message ?: "unknown")
+        }
     }
     
     private fun getPrefs(context: Context): SharedPreferences {

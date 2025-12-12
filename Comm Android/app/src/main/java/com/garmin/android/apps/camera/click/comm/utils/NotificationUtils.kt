@@ -31,7 +31,7 @@ object NotificationUtils {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
                 "Garmin Message Service",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Keeps connection to Garmin device active"
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC

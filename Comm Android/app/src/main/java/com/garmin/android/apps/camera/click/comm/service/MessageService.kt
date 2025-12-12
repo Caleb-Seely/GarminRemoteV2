@@ -3,6 +3,7 @@ package com.garmin.android.apps.camera.click.comm.service
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.IBinder
 import android.os.Bundle
 import android.util.Log
@@ -105,7 +106,12 @@ class MessageService : Service() {
                 return START_NOT_STICKY
             }
             else -> {
-                device = intent.getParcelableExtra(EXTRA_DEVICE) ?: run {
+                device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(EXTRA_DEVICE, IQDevice::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(EXTRA_DEVICE)
+                } ?: run {
                     Log.e(TAG, "No device provided in intent")
                     stopSelf()
                     return START_NOT_STICKY
@@ -120,14 +126,14 @@ class MessageService : Service() {
                 if (!isServiceRunning) {
                     Log.d(TAG, "Starting service for device: ${device.friendlyName}")
                     app = IQApp(appId)
-                    
+
                     try {
                         val notification = NotificationUtils.createForegroundNotification(this, device)
                         Log.d(TAG, "Created notification with flags: ${notification.flags}")
-                        
+
                         startForeground(NotificationUtils.NOTIFICATION_ID, notification)
                         Log.d(TAG, "Started foreground service with notification")
-                        
+
                         registerForMessages()
                         isServiceRunning = true
                     } catch (e: Exception) {
@@ -137,8 +143,13 @@ class MessageService : Service() {
                     }
                 } else {
                     Log.d(TAG, "Service already running for device: ${device.friendlyName}")
+                    // Even if service is running, ensure we're registered for messages
+                    // This handles cases where registration may have failed or been lost
+                    Log.d(TAG, "Re-registering for app events to ensure we're listening")
+                    app = IQApp(appId)
+                    registerForMessages()
                 }
-                
+
                 return START_REDELIVER_INTENT
             }
         }
@@ -200,39 +211,101 @@ class MessageService : Service() {
 
     /**
      * Sets up the message listener for receiving messages from the Garmin device.
-     * This method:
-     * - Registers a listener for messages from the companion app
-     * - Forwards received messages to the CameraAccessibilityService
-     * - Logs message events for analytics
+     * This method registers for app events which receives BOTH:
+     * - Mailbox messages (from sendMessage)
+     * - Direct messages (from Communications.transmit on watch)
+     *
+     * Forwards received messages to the CameraAccessibilityService for processing.
      */
     private fun registerForMessages() {
         try {
-            connectIQ.registerForAppEvents(device, app) { _, _, message, _ ->
-                Log.d(TAG, "Received message: ${message.joinToString()}")
-                val messageReceivedTime = System.currentTimeMillis()
+            Log.d(TAG, "====== REGISTERING FOR MESSAGES ======")
+            Log.d(TAG, "Device: ${device.friendlyName}")
+            Log.d(TAG, "Device ID: ${device.deviceIdentifier}")
+            Log.d(TAG, "Device Status: ${device.status}")
+            Log.d(TAG, "App ID: ${app.applicationId}")
+            Log.d(TAG, "======================================")
 
-                val bundle = Bundle().apply {
-                    putString("device_name", device.friendlyName)
-                    putString("device_id", device.deviceIdentifier.toString())
-                    putString("message", message.joinToString())
-                    putLong("message_received_time", messageReceivedTime)
+            // Register for app events - this receives BOTH mailbox and direct messages
+            connectIQ.registerForAppEvents(device, app) { dev, iqApp, message, status ->
+                Log.d(TAG, "")
+                Log.d(TAG, "========================================")
+                Log.d(TAG, "MESSAGE CALLBACK TRIGGERED!")
+                Log.d(TAG, "========================================")
+                Log.d(TAG, "Device: ${dev?.friendlyName} (${dev?.deviceIdentifier})")
+                Log.d(TAG, "App: ${iqApp?.applicationId}")
+                Log.d(TAG, "Message object: $message")
+                Log.d(TAG, "Message class: ${message?.javaClass?.name}")
+                Log.d(TAG, "Message toString: ${message?.toString()}")
+
+                // Try to extract message content in different ways
+                try {
+                    if (message is List<*>) {
+                        Log.d(TAG, "Message is List with ${message.size} elements:")
+                        message.forEachIndexed { index, item ->
+                            Log.d(TAG, "  [$index]: $item (${item?.javaClass?.simpleName})")
+                        }
+                        Log.d(TAG, "Message joined: ${message.joinToString()}")
+                    } else if (message is String) {
+                        Log.d(TAG, "Message is String: $message")
+                    } else {
+                        Log.d(TAG, "Message is unknown type")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error parsing message", e)
                 }
-                firebaseAnalytics.logEvent("message_received_from_watch", bundle)
-                
-                val intent = Intent(CameraAccessibilityService.ACTION_MESSAGE_RECEIVED).apply {
-                    putExtra(CameraAccessibilityService.EXTRA_MESSAGE, message.joinToString())
-                    putExtra(CameraAccessibilityService.EXTRA_MESSAGE_TIME, messageReceivedTime)
-                    setPackage(packageName)
-                    addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
-                }
-                sendBroadcast(intent, null)
-                Log.d(TAG, "Broadcast message to CameraAccessibilityService")
+
+                Log.d(TAG, "Status: ${status?.name}")
+                Log.d(TAG, "========================================")
+                Log.d(TAG, "")
+
+                handleIncomingMessage(message, status?.name ?: "unknown")
             }
-            Log.d(TAG, "Successfully registered for app events")
+
+            Log.d(TAG, "✓ Successfully registered for app events")
+            Log.d(TAG, "✓ Now listening for BOTH mailbox and direct messages")
+            FirebaseCrashlytics.getInstance().log("Successfully registered for messages from ${device.friendlyName}")
+
         } catch (e: InvalidStateException) {
-            Log.e(TAG, "Failed to register for app events", e)
-            stopSelf()
+            Log.e(TAG, "✗ Failed to register - ConnectIQ not initialized", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        } catch (e: Exception) {
+            Log.e(TAG, "✗ Unexpected error during registration", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
         }
+    }
+
+    /**
+     * Handles incoming messages from the watch and forwards them to the accessibility service.
+     */
+    private fun handleIncomingMessage(message: Any, statusName: String) {
+        Log.d(TAG, "===== MESSAGE RECEIVED FROM WATCH =====")
+        Log.d(TAG, "Message content: $message")
+        Log.d(TAG, "Message type: ${message.javaClass.simpleName}")
+        Log.d(TAG, "Status: $statusName")
+        Log.d(TAG, "======================================")
+
+        val messageReceivedTime = System.currentTimeMillis()
+        val messageString = message.toString()
+
+        val bundle = Bundle().apply {
+            putString("device_name", device.friendlyName)
+            putString("device_id", device.deviceIdentifier.toString())
+            putString("message", messageString)
+            putLong("message_received_time", messageReceivedTime)
+            putString("status", statusName)
+        }
+        firebaseAnalytics.logEvent("message_received_from_watch", bundle)
+        FirebaseCrashlytics.getInstance().log("Message received from watch: $messageString")
+
+        val intent = Intent(CameraAccessibilityService.ACTION_MESSAGE_RECEIVED).apply {
+            putExtra(CameraAccessibilityService.EXTRA_MESSAGE, messageString)
+            putExtra(CameraAccessibilityService.EXTRA_MESSAGE_TIME, messageReceivedTime)
+            setPackage(packageName)
+            addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+        }
+        sendBroadcast(intent, null)
+        Log.d(TAG, "Broadcast sent to CameraAccessibilityService with action: ${CameraAccessibilityService.ACTION_MESSAGE_RECEIVED}")
     }
 
     /**

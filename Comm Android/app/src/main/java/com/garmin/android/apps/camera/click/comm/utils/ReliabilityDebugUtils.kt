@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Rect
 import android.util.Log
 import android.view.accessibility.AccessibilityNodeInfo
+import com.garmin.android.apps.camera.click.comm.detection.ButtonLocationRepository
 import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import java.text.SimpleDateFormat
@@ -126,7 +127,11 @@ object ReliabilityDebugUtils {
     /**
      * Validate user preferences persistence
      */
-    fun testUserPreferencesPersistence(context: Context, packageName: String): PreferencesTestResult {
+    fun testUserPreferencesPersistence(
+        context: Context,
+        packageName: String,
+        repository: ButtonLocationRepository
+    ): PreferencesTestResult {
         val testButton = ShutterButtonInfo(
             bounds = Rect(100, 100, 200, 200),
             packageName = packageName,
@@ -135,16 +140,16 @@ object ReliabilityDebugUtils {
             confidenceScore = 95,
             timestamp = System.currentTimeMillis()
         )
-        
+
         try {
             // Test saving
             val saveStartTime = System.currentTimeMillis()
-            AccessibilityUtils.saveUserPreferredButton(context, packageName, testButton)
+            repository.saveUserPreferredButton(packageName, testButton)
             val saveTime = System.currentTimeMillis() - saveStartTime
-            
+
             // Test loading
             val loadStartTime = System.currentTimeMillis()
-            val loadedButton = AccessibilityUtils.loadUserPreferredButton(context, packageName)
+            val loadedButton = repository.getUserPreferredButton(packageName)
             val loadTime = System.currentTimeMillis() - loadStartTime
             
             val success = loadedButton != null && 
@@ -188,17 +193,20 @@ object ReliabilityDebugUtils {
     /**
      * Generate a comprehensive reliability report
      */
-    fun generateReliabilityReport(context: Context): ReliabilityReport {
+    fun generateReliabilityReport(
+        context: Context,
+        repository: ButtonLocationRepository
+    ): ReliabilityReport {
         val packageNames = listOf(
             "com.google.android.GoogleCamera",
-            "com.android.camera", 
+            "com.android.camera",
             "com.sec.android.app.camera",
             "com.oplus.camera",
             "com.motorola.camera3"
         )
-        
+
         val preferencesTests = packageNames.map { packageName ->
-            packageName to testUserPreferencesPersistence(context, packageName)
+            packageName to testUserPreferencesPersistence(context, packageName, repository)
         }.toMap()
         
         val report = ReliabilityReport(

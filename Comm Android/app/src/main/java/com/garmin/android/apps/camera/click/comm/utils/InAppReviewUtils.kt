@@ -23,12 +23,13 @@ object InAppReviewUtils {
     private const val KEY_LAUNCH_COUNT = "launch_count"
     private const val KEY_LAST_REVIEW_REQUEST = "last_review_request"
     private const val KEY_REVIEW_COMPLETED = "review_completed"
-    
+    private const val KEY_REVIEW_SHOW_COUNT = "review_show_count"
+    private const val KEY_REVIEW_DELAY_AFTER_DEVELOPER_NOTE = "review_delay_after_developer_note"
+
     // Production thresholds
     private const val INITIAL_DELAY_DAYS = 5
     private const val DAYS_BETWEEN_REVIEW_REQUESTS = 30
     private const val MAX_REVIEW_SHOW_COUNT = 6
-    private const val KEY_REVIEW_SHOW_COUNT = "review_show_count"
     
     /**
      * Call this method when your app launches to track usage
@@ -44,10 +45,11 @@ object InAppReviewUtils {
     
     /**
      * Check if we should show the review prompt based on best practices
+     * Now coordinated with developer note popup
      */
     fun shouldShowReviewPrompt(context: Context): Boolean {
         val prefs = getPrefs(context)
-        
+
         // Don't show if user already completed a review
         val isCompleted = prefs.getBoolean(KEY_REVIEW_COMPLETED, false)
         if (isCompleted) {
@@ -62,36 +64,71 @@ object InAppReviewUtils {
             prefs.edit().putBoolean(KEY_REVIEW_COMPLETED, true).apply()
             return false
         }
-        
+
+        // NEW: Check if developer note has been shown first
+        if (!DeveloperNoteManager.isPopupShown(context)) {
+            android.util.Log.d("InAppReviewUtils", "Developer note not shown yet, review deferred")
+            return false
+        }
+
         // Initialize first install date if not set
         initializeFirstInstallDateIfNeeded(prefs, context)
-        
+
         val currentTime = System.currentTimeMillis()
         val firstInstallDate = prefs.getLong(KEY_FIRST_INSTALL_DATE, currentTime)
         val lastRequest = prefs.getLong(KEY_LAST_REVIEW_REQUEST, 0)
-        
-    // Check if INITIAL_DELAY_DAYS have passed since install
-    val daysSinceInstall = (currentTime - firstInstallDate) / (1000 * 60 * 60 * 24)
-    android.util.Log.d("InAppReviewUtils", "Days since install: $daysSinceInstall (need $INITIAL_DELAY_DAYS)")
-        
-    if (daysSinceInstall < INITIAL_DELAY_DAYS) {
+
+        // Check if INITIAL_DELAY_DAYS have passed since install
+        val daysSinceInstall = (currentTime - firstInstallDate) / (1000 * 60 * 60 * 24)
+        android.util.Log.d("InAppReviewUtils", "Days since install: $daysSinceInstall (need $INITIAL_DELAY_DAYS)")
+
+        if (daysSinceInstall < INITIAL_DELAY_DAYS) {
             android.util.Log.d("InAppReviewUtils", "Not enough days since install")
             return false
         }
-        
-        // If we've never shown a review request, show it now (after 5 days)
+
+        // NEW: Enforce 1-3 day delay after developer note
+        val developerNoteDate = DeveloperNoteManager.getPopupShownDate(context)
+        val daysSinceDeveloperNote = (currentTime - developerNoteDate) / (1000 * 60 * 60 * 24)
+
+        // Use random delay between 1-3 days (save in prefs for consistency)
+        val targetDelay = prefs.getInt(KEY_REVIEW_DELAY_AFTER_DEVELOPER_NOTE, -1)
+        if (targetDelay == -1) {
+            val randomDelay = (1..3).random()
+            prefs.edit().putInt(KEY_REVIEW_DELAY_AFTER_DEVELOPER_NOTE, randomDelay).apply()
+            android.util.Log.d("InAppReviewUtils", "Set random review delay to $randomDelay days after developer note")
+        }
+
+        val actualDelay = prefs.getInt(KEY_REVIEW_DELAY_AFTER_DEVELOPER_NOTE, 1)
+        if (daysSinceDeveloperNote < actualDelay) {
+            android.util.Log.d("InAppReviewUtils", "Only $daysSinceDeveloperNote days since developer note, need $actualDelay")
+            return false
+        }
+
+        // NEW: Enforce 24-hour gap from ANY popup
+        val lastDeveloperNoteDate = DeveloperNoteManager.getPopupShownDate(context)
+        val lastReviewDate = prefs.getLong(KEY_LAST_REVIEW_REQUEST, 0)
+        val lastPopupDate = maxOf(lastDeveloperNoteDate, lastReviewDate)
+
+        val hoursSinceLastPopup = (currentTime - lastPopupDate) / (1000 * 60 * 60)
+        if (hoursSinceLastPopup < 24) {
+            android.util.Log.d("InAppReviewUtils", "Only $hoursSinceLastPopup hours since last popup, need 24")
+            return false
+        }
+
+        // If we've never shown a review request, show it now (after all checks pass)
         if (lastRequest == 0L) {
-            android.util.Log.d("InAppReviewUtils", "First time showing review prompt")
+            android.util.Log.d("InAppReviewUtils", "First time showing review prompt (after developer note)")
             return true
         }
-        
-    // Check time since last request (DAYS_BETWEEN_REVIEW_REQUESTS between requests)
-    val daysSinceLastRequest = if (lastRequest > 0) (currentTime - lastRequest) / (1000 * 60 * 60 * 24) else Long.MAX_VALUE
-    android.util.Log.d("InAppReviewUtils", "Days since last request: $daysSinceLastRequest (need $DAYS_BETWEEN_REVIEW_REQUESTS)")
-        
-    val shouldShow = daysSinceLastRequest >= DAYS_BETWEEN_REVIEW_REQUESTS || lastRequest == 0L
-    android.util.Log.d("InAppReviewUtils", "Should show review: $shouldShow")
-    return shouldShow
+
+        // Check time since last request (DAYS_BETWEEN_REVIEW_REQUESTS between requests)
+        val daysSinceLastRequest = if (lastRequest > 0) (currentTime - lastRequest) / (1000 * 60 * 60 * 24) else Long.MAX_VALUE
+        android.util.Log.d("InAppReviewUtils", "Days since last request: $daysSinceLastRequest (need $DAYS_BETWEEN_REVIEW_REQUESTS)")
+
+        val shouldShow = daysSinceLastRequest >= DAYS_BETWEEN_REVIEW_REQUESTS
+        android.util.Log.d("InAppReviewUtils", "Should show review: $shouldShow")
+        return shouldShow
     }
     
     /**

@@ -3,10 +3,15 @@
     tools:context="com.garmin.android.apps.camera.click.comm.activities.DeviceActivity" >
 
     <item
+        android:id="@+id/system_status"
+        android:title="@string/compatibility_system_status_section"
+        android:icon="@android:drawable/ic_menu_info_details" />
+
+    <item
         android:id="@+id/help"
         android:title="@string/help"
         android:icon="@android:drawable/ic_menu_help" />
-        
+
     <item
         android:id="@+id/rate_app"
         android:title="Rate App"

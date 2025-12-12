@@ -86,13 +86,11 @@
             android:name=".activities.ManualShutterButtonSelectionActivity"
             android:theme="@style/AppTheme" />
 
-        <!-- Reliability test activity - For testing and validating improvements -->
+        <!-- System status activity - Displays compatibility checks and diagnostics -->
         <activity
-            android:name=".activities.ReliabilityTestActivity"
+            android:name=".activities.SystemStatusActivity"
             android:theme="@style/AppTheme"
-            android:label="Reliability Test" />
-
-
+            android:label="@string/compatibility_check_title" />
 
         <!-- Message service - Handles communication with Garmin devices -->
         <service

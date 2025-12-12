@@ -17,25 +17,40 @@
         <item name="colorOnPrimary">@color/text_on_primary</item>
         <item name="colorPrimaryContainer">@color/primary_light</item>
         <item name="colorOnPrimaryContainer">@color/text_primary</item>
-        
+
         <item name="colorSecondary">@color/secondary_color</item>
         <item name="colorOnSecondary">@color/white</item>
-        
+
         <item name="colorSurface">@color/surface_1</item>
         <item name="colorOnSurface">@color/text_on_surface</item>
         <item name="colorSurfaceVariant">@color/surface_2</item>
         <item name="colorOnSurfaceVariant">@color/text_secondary</item>
-        
+
         <item name="android:colorBackground">@color/background_light</item>
         <item name="colorOnBackground">@color/text_primary</item>
-        
+
         <item name="colorError">@color/error</item>
         <item name="colorOnError">@color/white</item>
-        
+
         <!-- Enhanced Material Components -->
         <item name="materialCardViewStyle">@style/PremiumCardViewStyle</item>
         <item name="materialButtonStyle">@style/PremiumButtonStyle</item>
-        
+
+        <!-- Toolbar and Action Bar -->
+        <item name="toolbarStyle">@style/PremiumToolbarStyle</item>
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:actionMenuTextColor">@android:color/white</item>
+        <item name="popupMenuStyle">@style/PremiumPopupMenu</item>
+        <item name="actionOverflowMenuStyle">@style/PremiumOverflowMenu</item>
+
+        <!-- Menu text and icon colors -->
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">@android:color/white</item>
+        <item name="actionOverflowButtonStyle">@style/OverflowButtonStyle</item>
+        <item name="android:itemTextAppearance">@style/MenuTextAppearance</item>
+        <item name="android:textAppearanceLargePopupMenu">@style/MenuTextAppearance</item>
+        <item name="android:textAppearanceSmallPopupMenu">@style/MenuTextAppearance</item>
+
         <!-- Window and system UI -->
         <item name="android:windowBackground">@drawable/premium_background_gradient</item>
         <item name="android:windowAnimationStyle">@style/PremiumWindowAnimation</item>
@@ -58,7 +73,35 @@
         <item name="android:letterSpacing">0.01</item>
         <item name="android:textAllCaps">false</item>
     </style>
-    
+
+    <!-- Premium Toolbar Style -->
+    <style name="PremiumToolbarStyle" parent="Widget.MaterialComponents.Toolbar">
+        <item name="titleTextColor">@android:color/white</item>
+        <item name="subtitleTextColor">@android:color/white</item>
+        <item name="android:theme">@style/ThemeOverlay.AppCompat.Dark.ActionBar</item>
+    </style>
+
+    <!-- Overflow Button Style -->
+    <style name="OverflowButtonStyle" parent="Widget.AppCompat.ActionButton.Overflow">
+        <item name="android:tint">@android:color/white</item>
+    </style>
+
+    <!-- Premium Popup Menu Style -->
+    <style name="PremiumPopupMenu" parent="Widget.MaterialComponents.PopupMenu">
+        <item name="android:popupBackground">@color/surface_1</item>
+    </style>
+
+    <!-- Premium Overflow Menu Style -->
+    <style name="PremiumOverflowMenu" parent="Widget.MaterialComponents.PopupMenu.Overflow">
+        <item name="android:popupBackground">@color/surface_1</item>
+    </style>
+
+    <!-- Menu Text Appearance -->
+    <style name="MenuTextAppearance" parent="TextAppearance.AppCompat.Widget.PopupMenu.Large">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
     <!-- Premium Window Animations -->
     <style name="PremiumWindowAnimation" parent="@android:style/Animation.Activity">
         <item name="android:activityOpenEnterAnimation">@anim/premium_card_enter</item>
