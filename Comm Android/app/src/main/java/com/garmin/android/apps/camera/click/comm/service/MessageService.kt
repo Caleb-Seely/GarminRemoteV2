@@ -88,6 +88,7 @@ class MessageService : Service() {
 
         if (intent == null) {
             Log.e(TAG, "Service started with null intent")
+            stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
         }
@@ -113,12 +114,14 @@ class MessageService : Service() {
                     intent.getParcelableExtra(EXTRA_DEVICE)
                 } ?: run {
                     Log.e(TAG, "No device provided in intent")
+                    stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                     return START_NOT_STICKY
                 }
 
                 val appId = intent.getStringExtra(EXTRA_APP_ID) ?: run {
                     Log.e(TAG, "No app ID provided in intent")
+                    stopForeground(STOP_FOREGROUND_REMOVE)
                     stopSelf()
                     return START_NOT_STICKY
                 }
@@ -138,6 +141,7 @@ class MessageService : Service() {
                         isServiceRunning = true
                     } catch (e: Exception) {
                         Log.e(TAG, "Error showing notification", e)
+                        stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
                         return START_NOT_STICKY
                     }
@@ -171,7 +175,16 @@ class MessageService : Service() {
     override fun onDestroy() {
         Log.d(TAG, "Service onDestroy")
         isServiceRunning = false
-        
+
+        // CRITICAL: Stop foreground service before cleanup to prevent ForegroundServiceDidNotStopInTimeException
+        try {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            Log.d(TAG, "Stopped foreground service")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping foreground service", e)
+            FirebaseCrashlytics.getInstance().recordException(e)
+        }
+
         // Log service destruction to Firebase
         val bundle = Bundle().apply {
             putString("device_name", device.friendlyName)
