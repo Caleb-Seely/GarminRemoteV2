@@ -19,6 +19,7 @@ import com.garmin.android.apps.camera.click.comm.service.handlers.WatchCommunica
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.*
 import javax.inject.Inject
 
 private const val TAG = "CameraAccessibilityService"
@@ -51,6 +52,9 @@ class CameraAccessibilityService : AccessibilityService() {
 
     // Handler for posting delayed tasks to the main thread
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // Coroutine scope tied to service lifecycle
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     // Broadcast receiver for listening to incoming messages
     private lateinit var messageReceiver: BroadcastReceiver
@@ -121,119 +125,130 @@ class CameraAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Handles the camera trigger action by coordinating between handlers.
-     * This is now a simplified orchestration method with error handling and fallback strategies.
+     * Handles the camera trigger action by launching a coroutine.
+     * This method is called from BroadcastReceiver, so it must be synchronous.
      */
     private fun handleCameraTrigger() {
-        try {
-            Log.d(TAG, "handleCameraTrigger called")
-            FirebaseCrashlytics.getInstance().log("Camera command received from watch")
-
-            // Initialize Firebase Analytics
+        serviceScope.launch {
             try {
-                AnalyticsUtils.initialize(this)
-                Log.d(TAG, "Firebase Analytics initialized for camera command")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to initialize Firebase Analytics", e)
-                // Continue without analytics - not critical
-            }
-
-            val currentPackage = getCurrentApp()
-
-            // Log camera command event
-            try {
-                AnalyticsUtils.logCameraCommand(
-                    deviceName = device?.friendlyName ?: "unknown_device",
-                    cameraPackage = currentPackage ?: "unknown",
-                    serviceState = if (isServiceConnected) "connected" else "disconnected"
-                )
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to log camera command analytics", e)
-                // Continue without this specific analytics event
-            }
-
-            // Get the root accessibility node with retry logic
-            var root = rootInActiveWindow
-            if (root == null) {
-                Log.w(TAG, "No active window found on first attempt, retrying...")
-                Thread.sleep(100) // Brief delay
-                root = rootInActiveWindow
-            }
-
-            if (root == null) {
-                Log.e(TAG, "No active window found after retry")
-                FirebaseCrashlytics.getInstance().log("No active window package name found")
-                watchCommunicationHandler.sendFailureMessage(this, "Failed")
-                return
-            }
-
-            val packageName = root.packageName?.toString()
-            if (packageName == null) {
-                Log.e(TAG, "No package name found")
-                FirebaseCrashlytics.getInstance().log("No package name found in active window")
-                watchCommunicationHandler.sendFailureMessage(this, "Failed")
-                Toast.makeText(this, "No camera app detected", Toast.LENGTH_SHORT).show()
-                return
-            }
-
-            Log.d(TAG, "Camera app package: $packageName")
-
-            // Get app name for better error messages
-            val appName = try {
-                packageManager.getApplicationLabel(
-                    packageManager.getApplicationInfo(packageName, 0)
-                ).toString()
-            } catch (e: Exception) {
-                packageName.substringAfterLast('.')
-            }
-
-            // Use ShutterActionHandler to find the button (with built-in retry logic)
-            val shutterButton = shutterActionHandler.findShutterButton(root, packageName, this)
-
-            if (shutterButton != null) {
-                Log.d(TAG, "Found button, attempting to trigger")
-                FirebaseCrashlytics.getInstance().log("Found shutter button in package: $packageName")
-
-                // Use ShutterActionHandler to trigger the shutter
-                val result = shutterActionHandler.triggerShutter(
-                    button = shutterButton,
-                    packageName = packageName,
-                    deviceName = device?.friendlyName,
-                    context = this,
-                    messageReceivedTime = messageReceivedTime
-                )
-
-                // Use WatchCommunicationHandler to send result to watch (with built-in retry logic)
-                if (result.success) {
-                    watchCommunicationHandler.sendSuccessMessage(this, "Success")
-                    Toast.makeText(this, "✓ Triggered $appName", Toast.LENGTH_SHORT).show()
-                } else {
-                    watchCommunicationHandler.sendFailureMessage(this, "Failed")
-                    Toast.makeText(this, "✗ Button click failed in $appName", Toast.LENGTH_LONG).show()
+                withTimeout(2000L) {
+                    handleCameraTriggerAsync()
                 }
-            } else {
-                Log.d(TAG, "Could not find button in active app")
-                Toast.makeText(this, "No button found in $appName\nTry selecting manually", Toast.LENGTH_LONG).show()
-                FirebaseCrashlytics.getInstance().log("No button found in package: $packageName")
-                watchCommunicationHandler.sendFailureMessage(this, "Failed")
+            } catch (e: TimeoutCancellationException) {
+                Log.e(TAG, "Camera trigger timed out after 2 seconds")
+                FirebaseCrashlytics.getInstance().log("Camera trigger timeout")
+                watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Timeout")
+                Toast.makeText(this@CameraAccessibilityService, "Camera trigger timed out", Toast.LENGTH_SHORT).show()
+            } catch (e: CancellationException) {
+                Log.d(TAG, "Camera trigger cancelled")
+                throw e // Re-throw to propagate cancellation
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error in handleCameraTrigger", e)
+                FirebaseCrashlytics.getInstance().recordException(e)
+                watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
+                Toast.makeText(this@CameraAccessibilityService, "Unexpected error - please try again", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
 
-        } catch (e: SecurityException) {
-            Log.e(TAG, "Security exception in handleCameraTrigger - accessibility permission may be revoked", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
-            watchCommunicationHandler.sendFailureMessage(this, "Failed")
-            Toast.makeText(this, "Permission error - check accessibility settings", Toast.LENGTH_LONG).show()
+    /**
+     * Async version of camera trigger handling.
+     * This is where the actual work happens with non-blocking delays.
+     */
+    private suspend fun handleCameraTriggerAsync() {
+        Log.d(TAG, "handleCameraTriggerAsync called")
+        FirebaseCrashlytics.getInstance().log("Camera command received from watch")
 
-        } catch (e: IllegalStateException) {
-            Log.e(TAG, "Illegal state in handleCameraTrigger - service may be disconnecting", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
-            watchCommunicationHandler.sendFailureMessage(this, "Failed")
-
+        // Initialize Firebase Analytics
+        try {
+            AnalyticsUtils.initialize(this)
+            Log.d(TAG, "Firebase Analytics initialized for camera command")
         } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error in handleCameraTrigger", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
-            watchCommunicationHandler.sendFailureMessage(this, "Failed")
-            Toast.makeText(this, "Unexpected error - please try again", Toast.LENGTH_SHORT).show()
+            Log.e(TAG, "Failed to initialize Firebase Analytics", e)
+            // Continue without analytics - not critical
+        }
+
+        val currentPackage = getCurrentApp()
+
+        // Log camera command event
+        try {
+            AnalyticsUtils.logCameraCommand(
+                deviceName = device?.friendlyName ?: "unknown_device",
+                cameraPackage = currentPackage ?: "unknown",
+                serviceState = if (isServiceConnected) "connected" else "disconnected"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to log camera command analytics", e)
+            // Continue without this specific analytics event
+        }
+
+        // Get the root accessibility node with async retry logic
+        var root = rootInActiveWindow
+        if (root == null) {
+            Log.w(TAG, "No active window found on first attempt, retrying...")
+            delay(100) // NON-BLOCKING delay
+            root = rootInActiveWindow
+        }
+
+        if (root == null) {
+            Log.e(TAG, "No active window found after retry")
+            FirebaseCrashlytics.getInstance().log("No active window package name found")
+            watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
+            return
+        }
+
+        val packageName = root.packageName?.toString()
+        if (packageName == null) {
+            Log.e(TAG, "No package name found")
+            FirebaseCrashlytics.getInstance().log("No package name found in active window")
+            watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
+            Toast.makeText(this@CameraAccessibilityService, "No camera app detected", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        Log.d(TAG, "Camera app package: $packageName")
+
+        // Get app name for better error messages
+        val appName = try {
+            packageManager.getApplicationLabel(
+                packageManager.getApplicationInfo(packageName, 0)
+            ).toString()
+        } catch (e: Exception) {
+            packageName.substringAfterLast('.')
+        }
+
+        // Use ShutterActionHandler to find the button (with built-in async retry logic)
+        val shutterButton = shutterActionHandler.findShutterButtonAsync(root, packageName, this@CameraAccessibilityService)
+
+        if (shutterButton != null) {
+            Log.d(TAG, "Found button, attempting to trigger")
+            FirebaseCrashlytics.getInstance().log("Found shutter button in package: $packageName")
+
+            // Use ShutterActionHandler to trigger the shutter
+            val result = shutterActionHandler.triggerShutterAsync(
+                button = shutterButton,
+                packageName = packageName,
+                deviceName = device?.friendlyName,
+                context = this@CameraAccessibilityService,
+                messageReceivedTime = messageReceivedTime
+            )
+
+            // Use WatchCommunicationHandler to send result to watch (with built-in async retry logic)
+            if (result.success) {
+                watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
+                // Success toast shown AFTER shutter click completes
+                Toast.makeText(this@CameraAccessibilityService, "✓ Triggered $appName", Toast.LENGTH_SHORT).show()
+            } else {
+                watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
+                // Failure toast shown immediately
+                Toast.makeText(this@CameraAccessibilityService, "✗ Button click failed in $appName", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Log.d(TAG, "Could not find button in active app")
+            // Failure toast shown immediately
+            Toast.makeText(this@CameraAccessibilityService, "No button found in $appName\nTry selecting manually", Toast.LENGTH_LONG).show()
+            FirebaseCrashlytics.getInstance().log("No button found in package: $packageName")
+            watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
         }
     }
 
@@ -293,6 +308,10 @@ class CameraAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         Log.d(TAG, "Service being destroyed")
         isServiceConnected = false
+
+        // Cancel all pending coroutines
+        serviceScope.cancel()
+
         super.onDestroy()
         try {
             unregisterReceiver(messageReceiver)

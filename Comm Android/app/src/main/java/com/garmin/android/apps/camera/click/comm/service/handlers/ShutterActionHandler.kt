@@ -12,6 +12,7 @@ import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 import com.garmin.android.apps.camera.click.comm.utils.ButtonReliabilityUtils
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,7 +27,8 @@ private const val TAG = "ShutterActionHandler"
  */
 @Singleton
 class ShutterActionHandler @Inject constructor(
-    private val buttonDetector: AdaptiveButtonDetector
+    private val buttonDetector: AdaptiveButtonDetector,
+    private val coroutineScope: CoroutineScope
 ) {
     /**
      * Result of a shutter action attempt.
@@ -39,7 +41,7 @@ class ShutterActionHandler @Inject constructor(
     )
 
     /**
-     * Attempts to find the shutter button with retry logic.
+     * Attempts to find the shutter button with retry logic (blocking version for backward compatibility).
      *
      * @param root The root accessibility node
      * @param packageName The camera app package name
@@ -48,6 +50,26 @@ class ShutterActionHandler @Inject constructor(
      * @return The AccessibilityNodeInfo of the shutter button if found, null otherwise
      */
     fun findShutterButton(
+        root: AccessibilityNodeInfo,
+        packageName: String,
+        context: Context,
+        maxRetries: Int = 2
+    ): AccessibilityNodeInfo? {
+        return runBlocking {
+            findShutterButtonAsync(root, packageName, context, maxRetries)
+        }
+    }
+
+    /**
+     * Async version: Attempts to find the shutter button with non-blocking retry logic.
+     *
+     * @param root The root accessibility node
+     * @param packageName The camera app package name
+     * @param context The application context
+     * @param maxRetries Maximum number of retry attempts (default: 2)
+     * @return The AccessibilityNodeInfo of the shutter button if found, null otherwise
+     */
+    suspend fun findShutterButtonAsync(
         root: AccessibilityNodeInfo,
         packageName: String,
         context: Context,
@@ -71,14 +93,17 @@ class ShutterActionHandler @Inject constructor(
                 if (attempt < maxRetries) {
                     val delayMs = (50L * (1 shl attempt)) // Exponential backoff: 50ms, 100ms
                     Log.d(TAG, "No button found, retrying in ${delayMs}ms (attempt ${attempt + 1}/$maxRetries)")
-                    Thread.sleep(delayMs)
+                    delay(delayMs) // NON-BLOCKING delay
                 }
+            } catch (e: CancellationException) {
+                Log.d(TAG, "Button detection cancelled")
+                throw e // Re-throw cancellation
             } catch (e: Exception) {
                 lastError = e
                 Log.e(TAG, "Error during button detection attempt $attempt", e)
                 if (attempt < maxRetries) {
                     val delayMs = (50L * (1 shl attempt))
-                    Thread.sleep(delayMs)
+                    delay(delayMs) // NON-BLOCKING delay
                 }
             }
             attempt++
@@ -125,7 +150,7 @@ class ShutterActionHandler @Inject constructor(
                     Total candidates: ${session.candidates.size}
                 """.trimIndent())
 
-                showToast(context, "Found button (${(candidate.confidence * 100).toInt()}% confident)")
+                // REMOVED: showToast - deferred to CameraAccessibilityService after shutter click
 
                 // Log button details
                 val bounds = Rect()
@@ -158,9 +183,9 @@ class ShutterActionHandler @Inject constructor(
                 Log.d(TAG, "Adaptive detection failed to find suitable button")
                 if (session.candidates.isNotEmpty()) {
                     Log.d(TAG, "Found ${session.candidates.size} candidates but all below confidence threshold")
-                    showToast(context, "Found buttons but unsure which is correct")
+                    // REMOVED: showToast - failures shown in CameraAccessibilityService
                 } else {
-                    showToast(context, "No shutter button found")
+                    // REMOVED: showToast - failures shown in CameraAccessibilityService
                 }
 
                 FirebaseCrashlytics.getInstance().log("Adaptive detection failed for $packageName")
@@ -180,23 +205,23 @@ class ShutterActionHandler @Inject constructor(
         } catch (e: SecurityException) {
             Log.e(TAG, "Security exception during button detection - accessibility permissions may be missing", e)
             FirebaseCrashlytics.getInstance().recordException(e)
-            showToast(context, "Permission error - check accessibility settings")
+            // REMOVED: showToast - errors shown in CameraAccessibilityService
             null
         } catch (e: IllegalStateException) {
             Log.e(TAG, "Illegal state during button detection - window may have closed", e)
             FirebaseCrashlytics.getInstance().recordException(e)
-            showToast(context, "Window state error - please try again")
+            // REMOVED: showToast - errors shown in CameraAccessibilityService
             null
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error during button detection for $packageName", e)
             FirebaseCrashlytics.getInstance().recordException(e)
-            showToast(context, "Detection error - please try again")
+            // REMOVED: showToast - errors shown in CameraAccessibilityService
             null
         }
     }
 
     /**
-     * Attempts to trigger the camera shutter by clicking the provided button.
+     * Attempts to trigger the camera shutter (blocking version for backward compatibility).
      *
      * @param button The AccessibilityNodeInfo of the shutter button
      * @param packageName The camera app package name
@@ -212,14 +237,36 @@ class ShutterActionHandler @Inject constructor(
         context: Context,
         messageReceivedTime: Long
     ): ShutterActionResult {
-        return try {
+        return runBlocking {
+            triggerShutterAsync(button, packageName, deviceName, context, messageReceivedTime)
+        }
+    }
+
+    /**
+     * Async version: Attempts to trigger the camera shutter by clicking the provided button.
+     *
+     * @param button The AccessibilityNodeInfo of the shutter button
+     * @param packageName The camera app package name
+     * @param deviceName The Garmin device name (for analytics)
+     * @param context The application context
+     * @param messageReceivedTime Timestamp when message was received (for response time calculation)
+     * @return ShutterActionResult indicating success/failure
+     */
+    suspend fun triggerShutterAsync(
+        button: AccessibilityNodeInfo,
+        packageName: String,
+        deviceName: String?,
+        context: Context,
+        messageReceivedTime: Long
+    ): ShutterActionResult = withContext(Dispatchers.Main.immediate) {
+        try {
             Log.d(TAG, "Attempting to trigger shutter button")
             FirebaseCrashlytics.getInstance().log("Attempting to trigger shutter button")
 
             // Validate button is still valid
             if (!button.isClickable || !button.isEnabled) {
                 Log.e(TAG, "Button is no longer clickable or enabled")
-                return ShutterActionResult(
+                return@withContext ShutterActionResult(
                     success = false,
                     error = "Button is no longer clickable or enabled"
                 )
@@ -233,42 +280,42 @@ class ShutterActionHandler @Inject constructor(
             // Try primary click methods
             val clickResult = ButtonReliabilityUtils.performReliableClick(button, packageName)
 
-        if (clickResult.success) {
-            Log.d(TAG, "Button click successful with method: ${clickResult.method}")
-            FirebaseCrashlytics.getInstance().log("Shutter button clicked successfully with ${clickResult.method}")
+            if (clickResult.success) {
+                Log.d(TAG, "Button click successful with method: ${clickResult.method}")
+                FirebaseCrashlytics.getInstance().log("Shutter button clicked successfully with ${clickResult.method}")
 
-            // Log successful click analytics
-            AnalyticsUtils.logShutterButtonClick(
-                packageName = packageName,
-                buttonInfo = button,
-                clickMethod = clickResult.method,
-                success = true,
-                responseTimeMs = clickResult.duration,
-                deviceName = deviceName
-            )
+                // Log successful click analytics
+                AnalyticsUtils.logShutterButtonClick(
+                    packageName = packageName,
+                    buttonInfo = button,
+                    clickMethod = clickResult.method,
+                    success = true,
+                    responseTimeMs = clickResult.duration,
+                    deviceName = deviceName
+                )
 
-            // Calculate and log response time
-            val responseTime = System.currentTimeMillis() - messageReceivedTime
-            logResponseTime(context, deviceName ?: "unknown_device", responseTime, clickResult.method)
+                // Calculate and log response time
+                val responseTime = System.currentTimeMillis() - messageReceivedTime
+                logResponseTime(context, deviceName ?: "unknown_device", responseTime, clickResult.method)
 
-            return ShutterActionResult(
-                success = true,
-                method = clickResult.method,
-                responseTimeMs = responseTime
-            )
-        }
+                return@withContext ShutterActionResult(
+                    success = true,
+                    method = clickResult.method,
+                    responseTimeMs = responseTime
+                )
+            }
 
-        Log.e(TAG, "Primary click methods failed: ${clickResult.error}")
+            Log.e(TAG, "Primary click methods failed: ${clickResult.error}")
 
-        // Try child button clicks as fallback
-        val childResult = tryChildButtonClicks(button, packageName, deviceName, context, messageReceivedTime)
-        if (childResult.success) {
-            return childResult
-        }
+            // Try child button clicks as fallback
+            val childResult = tryChildButtonClicks(button, packageName, deviceName, context, messageReceivedTime)
+            if (childResult.success) {
+                return@withContext childResult
+            }
 
-        // All methods failed
-        Log.e(TAG, "All click methods failed")
-        FirebaseCrashlytics.getInstance().log("All click methods failed for $packageName")
+            // All methods failed
+            Log.e(TAG, "All click methods failed")
+            FirebaseCrashlytics.getInstance().log("All click methods failed for $packageName")
 
             AnalyticsUtils.logShutterButtonClick(
                 packageName = packageName,

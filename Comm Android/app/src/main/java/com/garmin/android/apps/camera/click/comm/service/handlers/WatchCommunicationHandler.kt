@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import com.garmin.android.apps.camera.click.comm.service.MessageService
 import com.google.firebase.crashlytics.FirebaseCrashlytics
+import kotlinx.coroutines.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,10 +17,12 @@ private const val TAG = "WatchCommunicationHandler"
  * through the MessageService with retry logic and error recovery.
  */
 @Singleton
-class WatchCommunicationHandler @Inject constructor() {
+class WatchCommunicationHandler @Inject constructor(
+    private val coroutineScope: CoroutineScope
+) {
 
     /**
-     * Sends a message to the watch using the MessageService with retry logic.
+     * Sends a message to the watch (blocking version for backward compatibility).
      *
      * @param context The application context
      * @param messageType The type of message to send (e.g., SHUTTER_SUCCESS, SHUTTER_FAILED)
@@ -28,6 +31,26 @@ class WatchCommunicationHandler @Inject constructor() {
      * @return true if the message was sent successfully, false otherwise
      */
     fun sendMessageToWatch(
+        context: Context,
+        messageType: String,
+        details: String? = null,
+        maxRetries: Int = 2
+    ): Boolean {
+        return runBlocking {
+            sendMessageToWatchAsync(context, messageType, details, maxRetries)
+        }
+    }
+
+    /**
+     * Async version: Sends a message to the watch with non-blocking retry logic.
+     *
+     * @param context The application context
+     * @param messageType The type of message to send (e.g., SHUTTER_SUCCESS, SHUTTER_FAILED)
+     * @param details Optional details about the message
+     * @param maxRetries Maximum number of retry attempts (default: 2)
+     * @return true if the message was sent successfully, false otherwise
+     */
+    suspend fun sendMessageToWatchAsync(
         context: Context,
         messageType: String,
         details: String? = null,
@@ -70,8 +93,12 @@ class WatchCommunicationHandler @Inject constructor() {
                 // Retry with exponential backoff for state issues
                 if (attempt < maxRetries) {
                     val delayMs = (100L * (1 shl attempt)) // 100ms, 200ms
-                    Thread.sleep(delayMs)
+                    delay(delayMs) // NON-BLOCKING delay
                 }
+
+            } catch (e: CancellationException) {
+                Log.d(TAG, "Watch message send cancelled")
+                throw e // Re-throw cancellation
 
             } catch (e: Exception) {
                 lastException = e
@@ -80,7 +107,7 @@ class WatchCommunicationHandler @Inject constructor() {
                 // Retry with exponential backoff for other exceptions
                 if (attempt < maxRetries) {
                     val delayMs = (100L * (1 shl attempt))
-                    Thread.sleep(delayMs)
+                    delay(delayMs) // NON-BLOCKING delay
                 }
             }
             attempt++
@@ -95,7 +122,7 @@ class WatchCommunicationHandler @Inject constructor() {
     }
 
     /**
-     * Sends a success message to the watch.
+     * Sends a success message to the watch (blocking version).
      *
      * @param context The application context
      * @param details Optional success details
@@ -105,12 +132,32 @@ class WatchCommunicationHandler @Inject constructor() {
     }
 
     /**
-     * Sends a failure message to the watch.
+     * Sends a failure message to the watch (blocking version).
      *
      * @param context The application context
      * @param reason The reason for failure
      */
     fun sendFailureMessage(context: Context, reason: String) {
         sendMessageToWatch(context, MessageService.MESSAGE_TYPE_SHUTTER_FAILED, reason)
+    }
+
+    /**
+     * Async version: Sends a success message to the watch.
+     *
+     * @param context The application context
+     * @param details Optional success details
+     */
+    suspend fun sendSuccessMessageAsync(context: Context, details: String = "Success!") {
+        sendMessageToWatchAsync(context, MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, details)
+    }
+
+    /**
+     * Async version: Sends a failure message to the watch.
+     *
+     * @param context The application context
+     * @param reason The reason for failure
+     */
+    suspend fun sendFailureMessageAsync(context: Context, reason: String) {
+        sendMessageToWatchAsync(context, MessageService.MESSAGE_TYPE_SHUTTER_FAILED, reason)
     }
 }

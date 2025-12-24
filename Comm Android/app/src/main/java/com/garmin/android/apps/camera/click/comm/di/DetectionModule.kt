@@ -9,6 +9,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 /**
@@ -48,5 +51,16 @@ object DetectionModule {
     @Singleton
     fun provideGson(): Gson {
         return Gson()
+    }
+
+    /**
+     * Provides a CoroutineScope for dependency injection.
+     * Uses SupervisorJob so individual coroutine failures don't cancel the entire scope.
+     * Uses Dispatchers.Main.immediate for immediate dispatch when already on main thread.
+     */
+    @Provides
+    @Singleton
+    fun provideCoroutineScope(): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     }
 }
