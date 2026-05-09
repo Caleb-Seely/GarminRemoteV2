@@ -24,7 +24,7 @@
 
     <!-- Accessibility Dialog -->
     <string name="accessibility_dialog_title">Enable Accessibility Service</string>
-    <string name="accessibility_dialog_message">CameraClick requires Accessibility permissions to function properly. This permission allows the app to remotely and programmatically tap your camera\'s shutter button. No personal data is collected or stored. Accessibility access is strictly used to enable the remote camera control feature.</string>
+   <string name="accessibility_dialog_message">CameraClick requires Accessibility permission to enable remote shutter control. The permission is used solely to simulate a shutter button press in the camera app. CameraClick will never access, collect, or store personal information.</string>
     <string name="open_settings">Open Settings</string>
     <!--    Accessibility Menu Text-->
     <string name="accessibility_service_description">This service turns your Garmin watch into a remote camera trigger</string>
