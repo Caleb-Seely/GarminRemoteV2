@@ -25,6 +25,19 @@ class DevicePreferencesRepository @Inject constructor(
         )
     }
 
+    init {
+        // Users upgrading from a version before onboarding was added won't have
+        // FIRST_LAUNCH_COMPLETE. Use PackageManager to distinguish an update
+        // (lastUpdateTime > firstInstallTime) from a fresh install, so existing
+        // users skip onboarding without needing any specific prefs key to be present.
+        if (!prefs.contains(PreferencesKeys.Compatibility.FIRST_LAUNCH_COMPLETE)) {
+            val pkg = try { context.packageManager.getPackageInfo(context.packageName, 0) } catch (e: Exception) { null }
+            if (pkg != null && pkg.lastUpdateTime > pkg.firstInstallTime) {
+                prefs.edit().putBoolean(PreferencesKeys.Compatibility.FIRST_LAUNCH_COMPLETE, true).apply()
+            }
+        }
+    }
+
     /**
      * Auto-launch camera feature settings
      */
