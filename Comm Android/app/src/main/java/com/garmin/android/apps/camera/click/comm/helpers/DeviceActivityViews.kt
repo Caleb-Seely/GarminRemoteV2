@@ -2,6 +2,7 @@ package com.garmin.android.apps.camera.click.comm.helpers
 
 import android.app.Activity
 import android.view.View
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.widget.SwitchCompat
@@ -53,7 +54,9 @@ data class DeviceActivityViews(
     val manualSelectionButton: MaterialCardView,
     val deviceInfoSection: View,
     val mainCard: View,
-    val autoLaunchSection: View
+    val autoLaunchSection: View,
+    val setupIncompleteBanner: MaterialCardView?,
+    val btnBannerConfigure: Button?
 ) {
     companion object {
         /**
@@ -83,7 +86,9 @@ data class DeviceActivityViews(
                 manualSelectionButton = activity.findViewById(R.id.manual_shutter_selection_button),
                 deviceInfoSection = activity.findViewById(R.id.device_info_section),
                 mainCard = activity.findViewById(R.id.main_card),
-                autoLaunchSection = activity.findViewById(R.id.auto_launch_section)
+                autoLaunchSection = activity.findViewById(R.id.auto_launch_section),
+                setupIncompleteBanner = activity.findViewById(R.id.setup_incomplete_banner),
+                btnBannerConfigure = activity.findViewById(R.id.btn_banner_configure)
             )
         }
     }

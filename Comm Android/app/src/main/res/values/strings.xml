@@ -28,7 +28,7 @@
     <string name="open_settings">Open Settings</string>
     <!--    Accessibility Menu Text-->
     <string name="accessibility_service_description">This service turns your Garmin watch into a remote camera trigger</string>
-    <string name="manual_selection_title">Select a Different Button</string>
+    <string name="manual_selection_title">Configure Camera Button</string>
     <string name="confidence_score_label">Score: %1$d</string>
     <string name="no_camera_apps_detected_yet">Please try with a camera app first, then return here.</string>
     <string name="help_icon">Help icon</string>
@@ -42,11 +42,7 @@
     <string name="developer_note_close_button">Close</string>
     <string name="developer_note_avatar_description">Caleb\'s avatar</string>
     
-    <!-- Developer Note Content Variations -->
-    <string name="developer_note_message_v1">I built CameraClick as a side project, and it\’s grown into something that helps people every day. If it\’s been helpful for you too, a quick review would mean a lot! Feel free to visit my website and reach out anytime!</string>
-    <string name="developer_note_message_v2">Thanks so much for continuing to use CameraClick! If you’re enjoying it, leaving a quick review helps more people discover the app. And if you have suggestions for the future of CameraClick, I would love to connect!</string>
-    <string name="developer_note_message_v3">It\’s amazing to see how CameraClick has become useful to so many people. Building tools that make life a little easier is what drives me. If you\’ve found it helpful, please consider leaving a short review—it really helps!</string>
-    <string name="developer_note_message_v4">Thanks for sticking with CameraClick! Watching it grow from zero users to where it is today has been incredible. If you\’d like to support the app, leaving a quick review goes a long way.</string>
+    <string name="developer_note_message_v1">I built CameraClick as a side project, and it\’s grown into something that helps people every day. If it\’s been helpful for you too, a quick review would mean a lot! Feel free to checkout my other projects and reach out anytime!</string>
     
     <!-- Developer Note Button -->
     <string name="developer_note_button_description">About the Developer</string>
@@ -70,6 +66,10 @@
     <!-- Alert Banner -->
     <string name="alert_banner_title">Action Required</string>
     <string name="alert_banner_message">Complete the setup steps below to use CameraClick with your Garmin watch</string>
+
+    <!-- Setup Incomplete Banner (DeviceActivity) -->
+    <string name="setup_incomplete_banner_message">Camera button not configured — trigger may not work</string>
+    <string name="setup_incomplete_configure">Configure</string>
 
     <!-- Badges -->
     <string name="badge_required">Required</string>

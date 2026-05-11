@@ -10,10 +10,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AnimationUtils
 import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import com.garmin.android.apps.camera.click.comm.R
 import com.garmin.android.apps.camera.click.comm.model.DeveloperNoteContent
@@ -69,8 +66,7 @@ class DeveloperNoteDialogFragment : DialogFragment() {
             arguments?.getSerializable(ARG_CONTENT) as? DeveloperNoteContent
         }
         
-        // Set dialog style for proper appearance
-        setStyle(STYLE_NO_TITLE, android.R.style.Theme_Material_Dialog)
+        setStyle(STYLE_NO_TITLE, R.style.DeveloperNoteDialog)
     }
 
     override fun onCreateView(
@@ -91,24 +87,13 @@ class DeveloperNoteDialogFragment : DialogFragment() {
             return
         }
 
-        setupViews(view, currentContent)
         setupClickListeners(view, currentContent)
-        
-        // Apply fade-in animation
-        applyFadeInAnimation(view)
-        
-        // Log analytics event for popup shown
         logPopupShown(currentContent)
-        
-        // Record popup shown in manager (but not for test popups)
+
         context?.let { ctx ->
-            // Check if this is a test popup by looking at the fragment tag
             val isTestPopup = tag == "developer_note_test"
             if (!isTestPopup) {
                 DeveloperNoteManager.recordPopupShown(ctx)
-                Log.d(TAG, "Recorded popup shown in manager")
-            } else {
-                Log.d(TAG, "Skipped recording popup shown - this is a test popup")
             }
         }
     }
@@ -173,78 +158,6 @@ class DeveloperNoteDialogFragment : DialogFragment() {
     }
 
     /**
-     * Setup all views with content data
-     */
-    private fun setupViews(view: View, content: DeveloperNoteContent) {
-        try {
-            // Set title
-            view.findViewById<TextView>(R.id.tv_title)?.text = content.title
-            
-            // Set message content
-            view.findViewById<TextView>(R.id.tv_message)?.text = content.message
-            
-            // Set button texts
-            view.findViewById<MaterialButton>(R.id.btn_website)?.text = content.websiteButtonText
-            view.findViewById<MaterialButton>(R.id.btn_email)?.text = content.emailButtonText
-            
-            // Load avatar image with enhanced error handling
-            loadAvatarImage(view, content)
-            
-            Log.d(TAG, "Views setup completed for version ${content.version}")
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "Error setting up views", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
-            AnalyticsUtils.logError("developer_note", "view_setup_failed", e.message ?: "unknown")
-        }
-    }
-    
-    /**
-     * Load avatar image with comprehensive error handling
-     */
-    private fun loadAvatarImage(view: View, content: DeveloperNoteContent) {
-        val avatarImageView = view.findViewById<ImageView>(R.id.iv_avatar)
-        avatarImageView?.let { imageView ->
-            try {
-                // Use direct image resource loading since Glide is not available
-                imageView.setImageResource(R.drawable.caleb_avatar)
-                Log.d(TAG, "Avatar image loaded successfully")
-                
-                // Log successful image loading
-                val params = android.os.Bundle().apply {
-                    putInt("version", content.version)
-                    putBoolean("success", true)
-                    putString("timestamp", System.currentTimeMillis().toString())
-                }
-                AnalyticsUtils.logEvent("developer_note_image_load", params)
-                
-            } catch (e: Exception) {
-                Log.e(TAG, "Error loading avatar image", e)
-                FirebaseCrashlytics.getInstance().recordException(e)
-                AnalyticsUtils.logError("developer_note", "image_load_failed", e.message ?: "unknown")
-                
-                // Log failed image loading
-                val params = android.os.Bundle().apply {
-                    putInt("version", content.version)
-                    putBoolean("success", false)
-                    putString("error", e.message ?: "unknown")
-                    putString("timestamp", System.currentTimeMillis().toString())
-                }
-                AnalyticsUtils.logEvent("developer_note_image_load", params)
-                
-                // Fallback - leave default image from layout or set a placeholder
-                try {
-                    // Try to set a fallback drawable if available
-                    imageView.setImageResource(android.R.drawable.ic_menu_gallery)
-                } catch (fallbackException: Exception) {
-                    Log.e(TAG, "Error setting fallback image", fallbackException)
-                    // Leave whatever default is in the layout
-                }
-            }
-        }
-    }
-
-    /**
      * Setup click listeners for all interactive elements
      */
     private fun setupClickListeners(view: View, content: DeveloperNoteContent) {
@@ -266,20 +179,6 @@ class DeveloperNoteDialogFragment : DialogFragment() {
             logReviewClicked(content)
             openReviewPrompt()
             dismissSmoothly()
-        }
-    }
-
-    /**
-     * Apply smooth appearance to the dialog (removed custom animation to prevent artifacts)
-     */
-    private fun applyFadeInAnimation(view: View) {
-        try {
-            // Removed custom fade-in animation for consistency with dismissal behavior
-            // Android's default dialog appearance animation is smoother and more reliable
-            Log.d(TAG, "Dialog appeared smoothly with system animation")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error in dialog appearance", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
         }
     }
 

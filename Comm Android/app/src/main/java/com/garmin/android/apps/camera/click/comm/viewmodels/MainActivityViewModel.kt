@@ -260,7 +260,10 @@ class MainActivityViewModel @Inject constructor(
             connectIQ.shutdown(context)
             Log.d(TAG, "ConnectIQ SDK shutdown")
         } catch (e: InvalidStateException) {
-            Log.w(TAG, "Error shutting down ConnectIQ SDK", e)
+            Log.w(TAG, "ConnectIQ SDK already in invalid state during shutdown", e)
+        } catch (e: IllegalArgumentException) {
+            // Receiver was never registered (e.g. SDK not fully initialized) or already unregistered
+            Log.w(TAG, "ConnectIQ SDK receiver not registered during shutdown — already shut down?", e)
         }
     }
 

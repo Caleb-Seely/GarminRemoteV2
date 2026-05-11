@@ -72,6 +72,11 @@
             </intent-filter>
         </activity>
 
+        <!-- Onboarding wizard - First-run setup guide -->
+        <activity
+            android:name=".activities.OnboardingActivity"
+            android:theme="@style/AppTheme" />
+
         <!-- Help activity - Provides setup and usage instructions -->
         <activity 
             android:name=".activities.HelpActivity"

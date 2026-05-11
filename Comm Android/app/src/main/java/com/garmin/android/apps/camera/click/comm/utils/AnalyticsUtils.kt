@@ -548,4 +548,28 @@ object AnalyticsUtils {
         }
         logEvent("camera_app_detection", params)
     }
-} 
+
+    fun logPhotoConfirmation(confirmed: Boolean, latencyMs: Long, packageName: String? = null) {
+        val params = Bundle().apply {
+            putBoolean("photo_confirmed", confirmed)
+            putLong("latency_ms", latencyMs)
+            packageName?.let { putString("camera_package", it) }
+        }
+        logEvent("shutter_photo_confirmed", params)
+    }
+
+    fun logOnboardingStep(step: Int, action: String) {
+        val params = Bundle().apply {
+            putInt("step", step)
+            putString("action", action)
+        }
+        logEvent("onboarding_step", params)
+    }
+
+    fun logFailureRecovery(action: String) {
+        val params = Bundle().apply {
+            putString("action", action)
+        }
+        logEvent("failure_recovery_action", params)
+    }
+}

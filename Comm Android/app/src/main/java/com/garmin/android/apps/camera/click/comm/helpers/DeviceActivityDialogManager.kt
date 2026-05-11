@@ -1,15 +1,21 @@
 package com.garmin.android.apps.camera.click.comm.helpers
 
 import android.app.Activity
+import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.ViewGroup
+import android.view.Window
+import android.view.WindowManager
+import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
 import com.garmin.android.apps.camera.click.comm.R
 import com.garmin.android.apps.camera.click.comm.repository.DeveloperNoteContentRepository
 import com.garmin.android.apps.camera.click.comm.dialogs.DeveloperNoteDialogFragment
@@ -47,26 +53,30 @@ class DeviceActivityDialogManager(private val activity: Activity) {
      * and provides a button to open the accessibility settings.
      */
     fun showAccessibilityDialog() {
-        val dialog = AlertDialog.Builder(activity)
-            .setTitle(R.string.accessibility_dialog_title)
-            .setMessage(R.string.accessibility_dialog_message)
-            .setPositiveButton(R.string.open_settings) { _, _ ->
-                FirebaseCrashlytics.getInstance().log("Opening accessibility settings")
-                activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .setCancelable(false)  // Make dialog non-dismissible
-            .create()
+        val dialogView = activity.layoutInflater.inflate(R.layout.dialog_accessibility_permission, null)
+
+        val dialog = Dialog(activity)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(dialogView)
+        dialog.setCancelable(false)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        dialog.window?.setLayout(
+            (activity.resources.displayMetrics.widthPixels * 0.90).toInt(),
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        dialog.window?.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        dialog.window?.attributes = dialog.window?.attributes?.apply { dimAmount = 0.55f }
+
+        dialogView.findViewById<Button>(R.id.btn_dialog_cancel)?.setOnClickListener {
+            dialog.dismiss()
+        }
+        dialogView.findViewById<Button>(R.id.btn_dialog_open_settings)?.setOnClickListener {
+            FirebaseCrashlytics.getInstance().log("Opening accessibility settings")
+            dialog.dismiss()
+            activity.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }
 
         dialog.show()
-
-        // Apply custom styling to the buttons after the dialog is shown
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
-            setTextColor(ContextCompat.getColor(activity, R.color.primary_color))
-        }
-        dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
-            setTextColor(ContextCompat.getColor(activity, R.color.text_secondary))
-        }
     }
 
     /**

@@ -5,8 +5,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
@@ -16,7 +18,11 @@ import com.garmin.android.connectiq.IQApp
 import com.garmin.android.apps.camera.click.comm.CommConstants
 import com.garmin.android.apps.camera.click.comm.service.handlers.ShutterActionHandler
 import com.garmin.android.apps.camera.click.comm.service.handlers.WatchCommunicationHandler
+import com.garmin.android.apps.camera.click.comm.config.AppConfig
+import com.garmin.android.apps.camera.click.comm.config.PreferencesKeys
+import com.garmin.android.apps.camera.click.comm.repository.DevicePreferencesRepository
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
+import androidx.core.app.NotificationCompat
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
@@ -37,10 +43,23 @@ private const val TAG = "CameraAccessibilityService"
 @AndroidEntryPoint
 class CameraAccessibilityService : AccessibilityService() {
     companion object {
-        // Intent action and extra key for receiving messages
         const val ACTION_MESSAGE_RECEIVED = "com.garmin.android.apps.camera.click.comm.ACTION_MESSAGE_RECEIVED"
         const val EXTRA_MESSAGE = "message"
         const val EXTRA_MESSAGE_TIME = "message_time"
+        const val FAILURE_RECOVERY_NOTIFICATION_ID = 1002
+        const val PREF_LAST_TRIGGER_TIME = "last_trigger_time"
+        const val PREF_LAST_TRIGGER_SUCCESS = "last_trigger_success"
+        private const val PREFS_NAME = PreferencesKeys.Files.CAMERA_CLICK_PREFS
+    }
+
+    private fun persistTriggerResult(success: Boolean) {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putLong(PREF_LAST_TRIGGER_TIME, System.currentTimeMillis())
+            .putBoolean(PREF_LAST_TRIGGER_SUCCESS, success)
+            .apply()
+        if (success) {
+            preferencesRepository.isSetupComplete = true
+        }
     }
 
     // Injected handlers
@@ -49,6 +68,9 @@ class CameraAccessibilityService : AccessibilityService() {
 
     @Inject
     lateinit var watchCommunicationHandler: WatchCommunicationHandler
+
+    @Inject
+    lateinit var preferencesRepository: DevicePreferencesRepository
 
     // Handler for posting delayed tasks to the main thread
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -131,11 +153,11 @@ class CameraAccessibilityService : AccessibilityService() {
     private fun handleCameraTrigger() {
         serviceScope.launch {
             try {
-                withTimeout(2000L) {
+                withTimeout(7000L) {
                     handleCameraTriggerAsync()
                 }
             } catch (e: TimeoutCancellationException) {
-                Log.e(TAG, "Camera trigger timed out after 2 seconds")
+                Log.e(TAG, "Camera trigger timed out after 7 seconds")
                 FirebaseCrashlytics.getInstance().log("Camera trigger timeout")
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Timeout")
                 Toast.makeText(this@CameraAccessibilityService, "Camera trigger timed out", Toast.LENGTH_SHORT).show()
@@ -233,22 +255,35 @@ class CameraAccessibilityService : AccessibilityService() {
                 messageReceivedTime = messageReceivedTime
             )
 
-            // Use WatchCommunicationHandler to send result to watch (with built-in async retry logic)
+            // Wait for photo to actually be saved before reporting success to watch
             if (result.success) {
-                watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
-                // Success toast shown AFTER shutter click completes
-                Toast.makeText(this@CameraAccessibilityService, "✓ Triggered $appName", Toast.LENGTH_SHORT).show()
+                val clickTime = System.currentTimeMillis()
+                val photoConfirmed = waitForPhotoCapture(packageName)
+                val latencyMs = System.currentTimeMillis() - clickTime
+                AnalyticsUtils.logPhotoConfirmation(photoConfirmed, latencyMs, packageName)
+
+                persistTriggerResult(photoConfirmed)
+                if (photoConfirmed) {
+                    watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
+                    Toast.makeText(this@CameraAccessibilityService, "✓ Photo captured", Toast.LENGTH_SHORT).show()
+                } else {
+                    FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName")
+                    watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "no_photo_detected")
+                    Toast.makeText(this@CameraAccessibilityService, "✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG).show()
+                    showFailureRecoveryNotification()
+                }
             } else {
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
-                // Failure toast shown immediately
                 Toast.makeText(this@CameraAccessibilityService, "✗ Button click failed in $appName", Toast.LENGTH_LONG).show()
+                showFailureRecoveryNotification()
             }
         } else {
             Log.d(TAG, "Could not find button in active app")
-            // Failure toast shown immediately
             Toast.makeText(this@CameraAccessibilityService, "No button found in $appName\nTry selecting manually", Toast.LENGTH_LONG).show()
             FirebaseCrashlytics.getInstance().log("No button found in package: $packageName")
+            persistTriggerResult(false)
             watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
+            showFailureRecoveryNotification()
         }
     }
 
@@ -320,6 +355,56 @@ class CameraAccessibilityService : AccessibilityService() {
             Log.e(TAG, "Error unregistering receiver", e)
         }
         mainHandler.removeCallbacksAndMessages(null)
+    }
+
+    /**
+     * Observes MediaStore for a new image within the timeout window.
+     * Samsung devices can delay MediaStore writes, so we use 4 seconds.
+     * No READ_MEDIA_IMAGES permission needed — ContentObserver only receives
+     * URI change notifications, it does not read file content.
+     */
+    private suspend fun waitForPhotoCapture(packageName: String, timeoutMs: Long = 4000L): Boolean {
+        val photoSaved = CompletableDeferred<Boolean>()
+        val observer = object : ContentObserver(mainHandler) {
+            override fun onChange(selfChange: Boolean) {
+                photoSaved.complete(true)
+            }
+        }
+        return try {
+            contentResolver.registerContentObserver(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                true,
+                observer
+            )
+            withTimeoutOrNull(timeoutMs) { photoSaved.await() } ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error observing MediaStore for $packageName", e)
+            false
+        } finally {
+            contentResolver.unregisterContentObserver(observer)
+        }
+    }
+
+    private fun showFailureRecoveryNotification() {
+        try {
+            val intent = Intent(this, com.garmin.android.apps.camera.click.comm.activities.ManualShutterButtonSelectionActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            val pendingIntent = android.app.PendingIntent.getActivity(
+                this, 0, intent,
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE
+            )
+            val notification = NotificationCompat.Builder(this, AppConfig.Notifications.CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("Camera didn't capture")
+                .setContentText("Tap to configure your camera button")
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .build()
+            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            nm.notify(FAILURE_RECOVERY_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to show failure recovery notification", e)
+        }
     }
 
     /**

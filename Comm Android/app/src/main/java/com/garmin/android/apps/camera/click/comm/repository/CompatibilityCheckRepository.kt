@@ -373,4 +373,19 @@ class CompatibilityCheckRepository @Inject constructor(
         cachedResult = null
         cacheTimestamp = 0
     }
+
+    fun isAccessibilityServiceEnabled(): Boolean {
+        return try {
+            val accessibilityManager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            val enabledServices = accessibilityManager.getEnabledAccessibilityServiceList(
+                AccessibilityServiceInfo.FEEDBACK_ALL_MASK
+            )
+            enabledServices.any { service ->
+                service.resolveInfo.serviceInfo.packageName == context.packageName &&
+                service.resolveInfo.serviceInfo.name == "com.garmin.android.apps.camera.click.comm.service.CameraAccessibilityService"
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
 }

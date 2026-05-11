@@ -143,6 +143,12 @@
         <item name="android:lineSpacingExtra">4dp</item>
     </style>
 
+    <!-- Avatar circle clip shape for ShapeableImageView -->
+    <style name="ShapeAppearance.AvatarCircle" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
     <!-- Developer Note Dialog Styles -->
     <style name="DeveloperNoteDialog" parent="Theme.MaterialComponents.Light.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>

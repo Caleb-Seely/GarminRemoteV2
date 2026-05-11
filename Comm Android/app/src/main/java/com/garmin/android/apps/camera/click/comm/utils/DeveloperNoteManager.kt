@@ -22,13 +22,7 @@ object DeveloperNoteManager {
     private const val KEY_POPUP_SHOWN = "developer_note_popup_shown"
     private const val KEY_POPUP_SHOWN_DATE = "developer_note_popup_shown_date"
 
-    // Production timing constants
-    private const val INITIAL_DELAY_MS = 5 * 24 * 60 * 60 * 1000L // 5 days
-    private const val REPEAT_INTERVAL_MS = 60 * 24 * 60 * 60 * 1000L // 60 days
-    
-    // Version constants
-    private const val VERSION_COMPLETE = -1
-    private const val MAX_VERSION_INDEX = 3 // 0, 1, 2, 3 = 4 versions total
+    private const val INITIAL_DELAY_MS = 30 * 24 * 60 * 60 * 1000L // 30 days
     
     /**
      * Check if the popup should be displayed based on timing (simplified single-show logic)
@@ -137,13 +131,7 @@ object DeveloperNoteManager {
         }
     }
     
-    /**
-     * Check if the popup cycle is complete (all 4 versions shown)
-     */
-    fun isPopupCycleComplete(context: Context): Boolean {
-        val prefs = getPrefs(context)
-        return prefs.getInt(KEY_POPUP_VERSION_INDEX, 0) == VERSION_COMPLETE
-    }
+    fun isPopupCycleComplete(context: Context): Boolean = isPopupShown(context)
 
     /**
      * Defer the next developer note to the next app launch regardless of interval.
@@ -389,7 +377,7 @@ object DeveloperNoteManager {
                 putString("action", action)
                 putInt("current_version", currentVersion)
                 putInt("next_version", nextVersion)
-                putBoolean("cycle_complete", nextVersion == VERSION_COMPLETE)
+                putBoolean("cycle_complete", true)
                 putLong("days_since_install", getDaysSinceFirstInstall(context))
                 putString("timestamp", System.currentTimeMillis().toString())
             }

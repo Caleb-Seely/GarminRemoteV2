@@ -60,7 +60,9 @@ import com.garmin.android.apps.camera.click.comm.viewmodels.DeviceActivityViewMo
 import com.garmin.android.apps.camera.click.comm.helpers.DeviceActivityViews
 import com.garmin.android.apps.camera.click.comm.helpers.DeviceActivityAnimationHelper
 import com.garmin.android.apps.camera.click.comm.helpers.DeviceActivityDialogManager
+import com.garmin.android.apps.camera.click.comm.repository.DevicePreferencesRepository
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 private const val TAG = "DeviceActivity"
 private const val EXTRA_IQ_DEVICE = "IQDevice"
@@ -81,6 +83,8 @@ private const val KEY_AUTO_LAUNCH_CAMERA = "auto_launch_camera"
  */
 @AndroidEntryPoint
 class DeviceActivity : AppCompatActivity() {
+
+    @Inject lateinit var preferencesRepository: DevicePreferencesRepository
 
     // ViewModel
     private val viewModel: DeviceActivityViewModel by viewModels()
@@ -268,6 +272,11 @@ class DeviceActivity : AppCompatActivity() {
      * Setup click listeners for all interactive UI elements
      */
     private fun setupClickListeners() {
+        // Setup-incomplete banner configure button
+        views.btnBannerConfigure?.setOnClickListener {
+            startActivity(Intent(this, ManualShutterButtonSelectionActivity::class.java))
+        }
+
         // Open app button with animation
         views.openAppButtonView.setOnClickListener {
             animationHelper.animateOpenAppButton(it) {
@@ -422,6 +431,12 @@ class DeviceActivity : AppCompatActivity() {
 
         // Update button visibility in case candidates were added while activity was paused
         updateManualSelectionButtonVisibility()
+        updateSetupIncompleteBanner()
+    }
+
+    private fun updateSetupIncompleteBanner() {
+        val showBanner = !preferencesRepository.isSetupComplete
+        views.setupIncompleteBanner?.visibility = if (showBanner) View.VISIBLE else View.GONE
     }
 
     /**

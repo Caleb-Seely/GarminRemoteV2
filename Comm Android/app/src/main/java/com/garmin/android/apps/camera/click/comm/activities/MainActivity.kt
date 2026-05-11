@@ -23,11 +23,13 @@ import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
 import com.garmin.android.apps.camera.click.comm.utils.CameraAppCandidateStore
 import com.garmin.android.apps.camera.click.comm.utils.CameraUtils
 import com.garmin.android.apps.camera.click.comm.utils.InAppReviewUtils
+import com.garmin.android.apps.camera.click.comm.repository.DevicePreferencesRepository
 import com.garmin.android.apps.camera.click.comm.viewmodels.MainActivityViewModel
 import com.garmin.android.connectiq.IQDevice
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 private const val TAG = "MainActivity"
 
@@ -46,9 +48,12 @@ private const val TAG = "MainActivity"
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
+    @Inject lateinit var preferencesRepository: DevicePreferencesRepository
+
     private val viewModel: MainActivityViewModel by viewModels()
     private lateinit var adapter: IQDeviceAdapter
     private var isFirstLaunch = true
+    private var sdkInitialized = false
 
     /**
      * Initializes the activity, sets up the UI, and initializes the ConnectIQ SDK.
@@ -63,6 +68,13 @@ class MainActivity : AppCompatActivity() {
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Redirect first-time users to the onboarding wizard
+        if (preferencesRepository.isFirstAppLaunch) {
+            startActivity(Intent(this, OnboardingActivity::class.java))
+            finish()
+            return
+        }
 
         setContentView(R.layout.activity_main)
 
@@ -84,6 +96,7 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize ConnectIQ SDK through ViewModel
         viewModel.initializeConnectIQSdk(this)
+        sdkInitialized = true
 
         // Check timing triggers (review prompt, developer notes)
         viewModel.checkTimingTriggers(this)
@@ -212,8 +225,10 @@ class MainActivity : AppCompatActivity() {
         // Log session end through ViewModel
         viewModel.logSessionEnd()
 
-        // Shutdown ConnectIQ SDK through ViewModel
-        viewModel.shutdownConnectIQSdk(this)
+        // Shutdown ConnectIQ SDK through ViewModel (only if it was initialized)
+        if (sdkInitialized) {
+            viewModel.shutdownConnectIQSdk(this)
+        }
     }
 
     /**

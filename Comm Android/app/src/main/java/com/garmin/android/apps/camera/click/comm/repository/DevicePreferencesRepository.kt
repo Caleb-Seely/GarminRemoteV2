@@ -61,6 +61,14 @@ class DevicePreferencesRepository @Inject constructor(
         set(value) = prefs.edit().putBoolean(PreferencesKeys.Compatibility.SESSION_DISMISSED, value).apply()
 
     /**
+     * Set to true after the first confirmed successful photo capture.
+     * Controls the setup-incomplete banner visibility in DeviceActivity.
+     */
+    var isSetupComplete: Boolean
+        get() = prefs.getBoolean(PreferencesKeys.App.SETUP_COMPLETE, false)
+        set(value) = prefs.edit().putBoolean(PreferencesKeys.App.SETUP_COMPLETE, value).apply()
+
+    /**
      * Clear all preferences
      */
     fun clearAll() {
