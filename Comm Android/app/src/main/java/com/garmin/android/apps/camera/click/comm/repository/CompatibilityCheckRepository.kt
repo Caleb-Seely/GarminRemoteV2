@@ -221,8 +221,8 @@ class CompatibilityCheckRepository @Inject constructor(
         return CompatibilityCheck(
             id = "battery_optimization",
             name = "Battery Optimization",
-            status = if (isDisabled) CheckStatus.PASS else CheckStatus.INFO,
-            severity = CheckSeverity.OPTIONAL,
+            status = if (isDisabled) CheckStatus.PASS else CheckStatus.WARNING,
+            severity = CheckSeverity.CRITICAL,
             message = if (isDisabled) {
                 "Disabled"
             } else {

@@ -48,8 +48,12 @@ class CameraUtils {
                     val defaultPackage = defaultResolveInfo.activityInfo.packageName
                     Log.d(TAG, "Found default camera app: $defaultPackage")
                     FirebaseCrashlytics.getInstance().log("Launching default full camera app: $defaultPackage")
-                    
+
                     try {
+                        if (defaultPackage != "android") {
+                            cameraIntent.setPackage(defaultPackage)
+                        }
+                        cameraIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(cameraIntent)
                         AnalyticsUtils.logCameraLaunch(true, defaultPackage)
                         return true

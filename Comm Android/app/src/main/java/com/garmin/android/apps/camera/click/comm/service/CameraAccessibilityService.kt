@@ -359,11 +359,21 @@ class CameraAccessibilityService : AccessibilityService() {
 
     /**
      * Observes MediaStore for a new image within the timeout window.
-     * Samsung devices can delay MediaStore writes, so we use 4 seconds.
+     * Samsung devices can delay MediaStore writes, so we use 8 seconds.
+     * Apps like Snapchat/Instagram write to scoped storage rather than MediaStore,
+     * so for those we skip MediaStore verification entirely and trust the button click.
      * No READ_MEDIA_IMAGES permission needed — ContentObserver only receives
      * URI change notifications, it does not read file content.
      */
-    private suspend fun waitForPhotoCapture(packageName: String, timeoutMs: Long = 4000L): Boolean {
+    private val scopedStorageApps = setOf(
+        "com.snapchat.android",
+        "com.instagram.android"
+    )
+
+    private suspend fun waitForPhotoCapture(packageName: String, timeoutMs: Long = 8000L): Boolean {
+        if (packageName in scopedStorageApps) {
+            return true
+        }
         val photoSaved = CompletableDeferred<Boolean>()
         val observer = object : ContentObserver(mainHandler) {
             override fun onChange(selfChange: Boolean) {

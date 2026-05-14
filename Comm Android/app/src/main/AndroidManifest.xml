@@ -13,11 +13,8 @@
     android:versionCode="1"
     android:versionName="1.0">
 
-    <!-- Required permissions for ConnectIQ SDK -->
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -102,8 +99,8 @@
             android:name=".service.MessageService"
             android:enabled="true"
             android:exported="true"
-            android:foregroundServiceType="dataSync"
-            android:permission="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+            android:foregroundServiceType="remoteMessaging"
+            android:permission="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
 
         <!-- Accessibility service - Handles camera trigger functionality -->
         <service
@@ -119,7 +116,6 @@
         </service>
     </application>
 
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
 
 
