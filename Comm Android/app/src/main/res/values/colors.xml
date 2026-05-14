@@ -48,17 +48,30 @@
     <color name="info_light">#DBEAFE</color>
 
     <!-- Premium UI Colors -->
-    <color name="divider_color">#F1F5F9</color> <!-- Very subtle -->
-    <color name="divider_strong">#E2E8F0</color>
-    <color name="divider">#CBD5E1</color>
-    <color name="button_selected_background">#4A5568</color> <!-- Dark gray for good contrast with white text -->
+    <color name="divider_color">#374151</color>
+    <color name="divider_strong">#4A5568</color>
+    <color name="divider">#374151</color>
+    <color name="divider_dark">#374151</color>
+    <color name="button_selected_background">#4A5568</color>
     <color name="ripple_color">#E0E7FF</color>
-    
+
+    <!-- Action Chip Colors -->
+    <color name="chip_teal">#14B8A6</color>
+    <color name="chip_violet">#8B5CF6</color>
+    <color name="chip_amber">#F59E0B</color>
+
+    <!-- Glass Card Colors -->
+    <color name="card_glass">#33374151</color>
+    <color name="card_glass_stroke">#22FFFFFF</color>
+
+    <!-- Status Surface Colors -->
+    <color name="success_surface">#1A10B981</color>
+
     <!-- Additional Surface Colors -->
-    <color name="surface_overlay">#0F172A80</color> <!-- 50% opacity -->
-    
+    <color name="surface_overlay">#0F172A80</color>
+
     <!-- Shadow Colors -->
-    <color name="shadow_light">#0F172A10</color> <!-- 6% opacity -->
-    <color name="shadow_medium">#0F172A20</color> <!-- 12% opacity -->
-    <color name="shadow_strong">#0F172A30</color> <!-- 18% opacity -->
+    <color name="shadow_light">#0F172A10</color>
+    <color name="shadow_medium">#0F172A20</color>
+    <color name="shadow_strong">#0F172A30</color>
 </resources>

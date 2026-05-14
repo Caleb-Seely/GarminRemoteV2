@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
     app:cardBackgroundColor="@color/surface_1"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/divider_dark"
     android:stateListAnimator="@animator/card_state_list_anim"
-    android:background="?android:attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
 
@@ -17,13 +18,14 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:background="?android:attr/selectableItemBackground">
 
         <!-- Device Icon -->
         <ImageView
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/baseline_linked_camera_24"
+            android:src="@drawable/baseline_watch_24"
             android:contentDescription="Device icon"
             android:tint="@color/primary_color"
             android:layout_marginEnd="16dp" />
@@ -84,4 +86,4 @@
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView> 
+</com.google.android.material.card.MaterialCardView>

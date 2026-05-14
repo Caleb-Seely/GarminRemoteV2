@@ -58,7 +58,7 @@
     <string name="compatibility_section_system_info">System Information</string>
     <string name="compatibility_copy_diagnostics">Copy Diagnostics</string>
     <string name="compatibility_diagnostics_copied">Diagnostic report copied to clipboard</string>
-    <string name="compatibility_continue">Continue</string>
+    <string name="compatibility_continue">Back Home</string>
     <string name="compatibility_run_check">Run Compatibility Check</string>
     <string name="compatibility_system_status_section">System Status</string>
     <string name="compatibility_system_status_description">View your device compatibility and system information</string>
@@ -80,4 +80,16 @@
     <string name="check_notification_description">Required for background control</string>
     <string name="check_garmin_connect_description">Required to connect your Garmin watch to this app</string>
     <string name="check_switch_access_description">Advanced accessibility feature for camera control (optional for most users)</string>
+
+    <!-- Manual Shutter Selection -->
+    <string name="save_selection">Save Selection</string>
+    <string name="configure_button_empty_hint">No camera buttons detected yet.\n\nTry taking a photo from your watch first, then come back here — the app will learn which button to use.</string>
+
+    <!-- Device Status -->
+    <string name="status_connected">CONNECTED</string>
+
+    <!-- Main Screen Empty State -->
+    <string name="no_watches_found">No watches found</string>
+    <string name="open_garmin_connect_hint">Open Garmin Connect to pair your watch</string>
+    <string name="open_garmin_connect">Open Garmin Connect</string>
 </resources>

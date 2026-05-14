@@ -8,7 +8,7 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.TextView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -253,6 +253,12 @@ class MainActivity : AppCompatActivity() {
 
         // Setup developer note button
         setupDeveloperNoteButton()
+
+        // Setup empty state Garmin Connect button
+        findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_open_garmin_connect)?.setOnClickListener {
+            val intent = packageManager.getLaunchIntentForPackage("com.garmin.android.apps.connectmobile")
+            if (intent != null) startActivity(intent)
+        }
     }
 
     /**
@@ -334,14 +340,11 @@ class MainActivity : AppCompatActivity() {
 
 
     /**
-     * Updates the empty state text when no devices are available or an error occurs.
-     * @param text The text to display in the empty state
+     * Shows the empty state layout when no devices are available.
+     * @param text Unused — message is shown via layout strings
      */
     private fun setEmptyState(text: String) {
-        findViewById<TextView>(android.R.id.empty)?.apply {
-            this.text = text
-            visibility = View.VISIBLE
-        }
+        findViewById<LinearLayout>(android.R.id.empty)?.visibility = View.VISIBLE
         findViewById<RecyclerView>(android.R.id.list)?.visibility = View.GONE
     }
 
@@ -349,7 +352,7 @@ class MainActivity : AppCompatActivity() {
      * Hides the empty state and shows the device list.
      */
     private fun hideEmptyState() {
-        findViewById<TextView>(android.R.id.empty)?.visibility = View.GONE
+        findViewById<LinearLayout>(android.R.id.empty)?.visibility = View.GONE
         findViewById<RecyclerView>(android.R.id.list)?.visibility = View.VISIBLE
     }
     

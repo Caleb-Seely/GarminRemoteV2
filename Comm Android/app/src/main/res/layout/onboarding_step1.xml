@@ -7,23 +7,16 @@
     android:layout_marginTop="8dp"
     app:cardCornerRadius="24dp"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#33374151"
+    app:cardBackgroundColor="@color/card_glass"
     app:strokeWidth="1dp"
-    app:strokeColor="#22FFFFFF">
+    app:strokeColor="@color/card_glass_stroke">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="32dp"
-        android:gravity="center">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📷"
-            android:textSize="64sp"
-            android:layout_marginBottom="24dp" />
+        android:padding="24dp"
+        android:gravity="start">
 
         <TextView
             android:layout_width="wrap_content"
@@ -32,7 +25,7 @@
             android:textColor="@color/text_primary"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:gravity="center"
+            android:gravity="start"
             android:layout_marginBottom="16dp" />
 
         <TextView
@@ -41,7 +34,7 @@
             android:text="Turn your Garmin watch into a remote camera shutter. Let&#8217;s get you set up in a few quick steps."
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
-            android:gravity="center"
+            android:gravity="start"
             android:lineSpacingMultiplier="1.4"
             android:layout_marginBottom="32dp" />
 

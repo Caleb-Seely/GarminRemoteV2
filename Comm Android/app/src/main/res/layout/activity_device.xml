@@ -15,7 +15,7 @@ Individual device information and tests screen - Premium Material Design 3
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="?attr/actionBarSize"
         android:background="@color/background_surface"
         android:elevation="0dp"
         android:paddingStart="20dp"
@@ -89,9 +89,9 @@ Individual device information and tests screen - Premium Material Design 3
             android:layout_height="wrap_content"
             app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#33374151"
+            app:cardBackgroundColor="@color/card_glass"
             app:strokeWidth="1dp"
-            app:strokeColor="#22FFFFFF"
+            app:strokeColor="@color/card_glass_stroke"
             app:layout_constraintTop_toBottomOf="@id/setup_incomplete_banner">
 
             <LinearLayout
@@ -125,6 +125,15 @@ Individual device information and tests screen - Premium Material Design 3
                             android:textColor="@color/white"
                             tools:text="Forerunner 255" />
 
+                        <TextView
+                            android:id="@+id/device_model"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            style="@style/PremiumDeviceSubtitle"
+                            android:visibility="gone"
+                            tools:text="Forerunner 265"
+                            tools:visibility="visible" />
+
 
                     </LinearLayout>
 
@@ -133,21 +142,20 @@ Individual device information and tests screen - Premium Material Design 3
                         android:layout_height="wrap_content"
                         app:cardCornerRadius="20dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="#14B8A6">
+                        app:cardBackgroundColor="@color/chip_teal">
 
                         <TextView
                             android:id="@+id/devicestatus"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="CONNECTED"
+                            android:text="@string/status_connected"
                             android:textSize="12sp"
                             android:textStyle="bold"
                             android:textColor="@color/white"
                             android:paddingStart="14dp"
                             android:paddingEnd="14dp"
                             android:paddingTop="6dp"
-                            android:paddingBottom="6dp"
-                            tools:text="CONNECTED" />
+                            android:paddingBottom="6dp" />
 
                     </com.google.android.material.card.MaterialCardView>
 
@@ -178,7 +186,7 @@ Individual device information and tests screen - Premium Material Design 3
                             android:layout_height="48dp"
                             app:cardCornerRadius="12dp"
                             app:cardElevation="0dp"
-                            app:cardBackgroundColor="#14B8A6">
+                            app:cardBackgroundColor="@color/chip_teal">
 
                             <ImageView
                                 android:layout_width="24dp"
@@ -230,7 +238,7 @@ Individual device information and tests screen - Premium Material Design 3
                             android:layout_height="48dp"
                             app:cardCornerRadius="12dp"
                             app:cardElevation="0dp"
-                            app:cardBackgroundColor="#8B5CF6">
+                            app:cardBackgroundColor="@color/chip_violet">
 
                             <ImageView
                                 android:layout_width="24dp"
@@ -281,7 +289,7 @@ Individual device information and tests screen - Premium Material Design 3
                             android:layout_height="48dp"
                             app:cardCornerRadius="12dp"
                             app:cardElevation="0dp"
-                            app:cardBackgroundColor="#F59E0B">
+                            app:cardBackgroundColor="@color/chip_amber">
 
                             <ImageView
                                 android:layout_width="24dp"
@@ -318,8 +326,7 @@ Individual device information and tests screen - Premium Material Design 3
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="@color/text_tertiary"
-                    android:alpha="0.2"
+                    android:background="@color/divider_dark"
                     android:layout_marginBottom="20dp" />
 
                 <!-- Auto Launch Switch (No Card) -->
@@ -337,7 +344,7 @@ Individual device information and tests screen - Premium Material Design 3
                         android:layout_height="48dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="#4B5563">
+                        app:cardBackgroundColor="@color/surface_2">
 
                         <ImageView
                             android:layout_width="24dp"

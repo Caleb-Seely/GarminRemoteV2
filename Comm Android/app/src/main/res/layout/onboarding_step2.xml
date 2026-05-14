@@ -7,22 +7,15 @@
     android:layout_marginTop="8dp"
     app:cardCornerRadius="24dp"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#33374151"
+    app:cardBackgroundColor="@color/card_glass"
     app:strokeWidth="1dp"
-    app:strokeColor="#22FFFFFF">
+    app:strokeColor="@color/card_glass_stroke">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="24dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="⌚"
-            android:textSize="48sp"
-            android:layout_marginBottom="16dp" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -38,7 +31,7 @@
             android:layout_height="wrap_content"
             android:text="Make sure Garmin Connect is open and your watch is nearby."
             android:textColor="@color/text_secondary"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:lineSpacingMultiplier="1.4"
             android:layout_marginBottom="20dp" />
 
@@ -68,7 +61,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:background="#1A10B981"
+            android:background="@color/success_surface"
             android:padding="12dp"
             android:layout_marginTop="12dp"
             android:visibility="gone">

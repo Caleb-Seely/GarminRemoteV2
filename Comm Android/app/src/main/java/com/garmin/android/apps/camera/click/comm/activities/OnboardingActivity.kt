@@ -13,6 +13,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -106,7 +107,7 @@ class OnboardingActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         when (currentStep) {
-            3 -> checkAccessibilityAndAdvance()
+            4 -> checkAccessibilityAndAdvance()
             5 -> onResumeStep5()
         }
     }
@@ -165,6 +166,7 @@ class OnboardingActivity : AppCompatActivity() {
         dots.forEachIndexed { i, dot ->
             dot.setBackgroundResource(if (i < currentStep) activeDrawable else inactiveDrawable)
         }
+        findViewById<TextView>(R.id.step_counter)?.text = "$currentStep / $TOTAL_STEPS"
     }
 
     // ── Step 1 — Welcome ─────────────────────────────────────────────────────
@@ -256,59 +258,15 @@ class OnboardingActivity : AppCompatActivity() {
             selectedDevice = connected.first()
             connectedBadge?.visibility = View.VISIBLE
             connectedName?.text = "Connected: ${connected.first().friendlyName}"
+            Handler(Looper.getMainLooper()).post { advanceStep() }
         }
 
         noDevicesText.visibility = if (devices.isEmpty()) View.VISIBLE else View.GONE
     }
 
-    // ── Step 3 — Accessibility ────────────────────────────────────────────────
+    // ── Step 3 — Test Phone → Watch ───────────────────────────────────────────
 
     private fun showStep3() {
-        val view = layoutInflater.inflate(R.layout.onboarding_step3, stepContainer, false)
-        stepContainer.addView(view)
-        stepView = view
-
-        btnNext.text = "Continue"
-        btnSkip.visibility = View.VISIBLE
-        btnSkip.text = "Skip"
-        btnSkip.setOnClickListener { advanceStep() }
-
-        view.findViewById<Button>(R.id.btn_open_accessibility)?.setOnClickListener {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
-
-        updateAccessibilityStatus(view)
-        btnNext.setOnClickListener {
-            if (compatibilityRepo.isAccessibilityServiceEnabled()) {
-                advanceStep()
-            } else {
-                Toast.makeText(this, "Enable CameraClick in Accessibility Settings first", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            }
-        }
-    }
-
-    private fun checkAccessibilityAndAdvance() {
-        val view = stepView ?: return
-        if (currentStep != 3) return
-        updateAccessibilityStatus(view)
-        if (compatibilityRepo.isAccessibilityServiceEnabled()) {
-            Handler(Looper.getMainLooper()).postDelayed({ advanceStep() }, 600)
-        }
-    }
-
-    private fun updateAccessibilityStatus(view: View) {
-        val enabled = compatibilityRepo.isAccessibilityServiceEnabled()
-        val icon = view.findViewById<TextView>(R.id.status_icon)
-        val text = view.findViewById<TextView>(R.id.status_text)
-        icon?.text = if (enabled) "✓" else "✕"
-        icon?.setTextColor(getColor(if (enabled) R.color.success else R.color.error))
-        text?.text = if (enabled) "Enabled" else "Not enabled — tap below to set up"
-    }
-
-    // ── Step 4 — Test Phone → Watch ────────────────────────────────────────────
-
-    private fun showStep4() {
         val view = layoutInflater.inflate(R.layout.onboarding_step4, stepContainer, false)
         stepContainer.addView(view)
         stepView = view
@@ -337,6 +295,47 @@ class OnboardingActivity : AppCompatActivity() {
         }
     }
 
+    // ── Step 4 — Accessibility ────────────────────────────────────────────────
+
+    private fun showStep4() {
+        val view = layoutInflater.inflate(R.layout.onboarding_step3, stepContainer, false)
+        stepContainer.addView(view)
+        stepView = view
+
+        btnNext.visibility = View.VISIBLE
+        btnNext.text = "Open Accessibility Settings"
+        btnNext.setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        btnSkip.visibility = View.GONE
+
+        updateAccessibilityStatus(view)
+        if (compatibilityRepo.isAccessibilityServiceEnabled()) {
+            Handler(Looper.getMainLooper()).post { advanceStep() }
+        }
+    }
+
+    private fun checkAccessibilityAndAdvance() {
+        val view = stepView ?: return
+        if (currentStep != 4) return
+        updateAccessibilityStatus(view)
+        if (compatibilityRepo.isAccessibilityServiceEnabled()) {
+            Handler(Looper.getMainLooper()).postDelayed({ advanceStep() }, 600)
+        }
+    }
+
+    private fun updateAccessibilityStatus(view: View) {
+        val enabled = compatibilityRepo.isAccessibilityServiceEnabled()
+        val icon = view.findViewById<ImageView>(R.id.status_icon)
+        val text = view.findViewById<TextView>(R.id.status_text)
+        if (enabled) {
+            icon?.setImageResource(R.drawable.baseline_check_24)
+            icon?.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.success))
+        } else {
+            icon?.setImageResource(R.drawable.baseline_close_24)
+            icon?.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.error))
+        }
+        text?.text = if (enabled) "Enabled" else "Not enabled — tap below to set up"
+    }
+
     private fun sendTestMessage(view: View) {
         val device = selectedDevice ?: run {
             Toast.makeText(this, "No watch connected — go back to Step 2", Toast.LENGTH_SHORT).show()
@@ -357,7 +356,7 @@ class OnboardingActivity : AppCompatActivity() {
                     resultIcon?.setTextColor(getColor(if (success) R.color.success else R.color.warning))
                     resultText?.text = if (success) "Signal sent! Check your watch." else "Sent — status: ${status.name}"
                 }
-                AnalyticsUtils.logOnboardingStep(4, if (status == com.garmin.android.connectiq.ConnectIQ.IQMessageStatus.SUCCESS) "test_sent" else "test_failed")
+                AnalyticsUtils.logOnboardingStep(3, if (status == com.garmin.android.connectiq.ConnectIQ.IQMessageStatus.SUCCESS) "test_sent" else "test_failed")
             }
         } catch (e: Exception) {
             FirebaseCrashlytics.getInstance().recordException(e)
@@ -383,13 +382,15 @@ class OnboardingActivity : AppCompatActivity() {
     private fun showStep5() {
         if (!compatibilityRepo.isAccessibilityServiceEnabled()) {
             Toast.makeText(this, "Accessibility permission is required before testing the camera trigger", Toast.LENGTH_LONG).show()
-            showStep(3)
+            showStep(4)
             return
         }
 
         val view = layoutInflater.inflate(R.layout.onboarding_step5, stepContainer, false)
         stepContainer.addView(view)
         stepView = view
+
+        btnNext.visibility = View.VISIBLE
 
         cameraTestStartTime = System.currentTimeMillis()
         waitingForTrigger = true

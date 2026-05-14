@@ -29,7 +29,7 @@
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Main Content Container (No CardView for clear background) -->
+        <!-- Main Content Container -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -45,14 +45,52 @@
                 android:padding="8dp"
                 android:background="@android:color/transparent" />
 
-            <TextView
+            <!-- Empty State -->
+            <LinearLayout
                 android:id="@android:id/empty"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="@string/no_devices"
-                android:textColor="@color/text_secondary"
-                android:textSize="16sp" />
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="32dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⌚"
+                    android:textSize="64sp"
+                    android:layout_marginBottom="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_watches_found"
+                    android:textColor="@color/text_primary"
+                    android:textSize="24sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="12dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/open_garmin_connect_hint"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="15sp"
+                    android:gravity="center"
+                    android:lineSpacingMultiplier="1.4"
+                    android:layout_marginBottom="24dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_open_garmin_connect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/open_garmin_connect"
+                    android:backgroundTint="@color/primary_color"
+                    android:textColor="@color/white" />
+
+            </LinearLayout>
 
         </LinearLayout>
     </FrameLayout>
@@ -66,8 +104,6 @@
         android:layout_marginBottom="24dp"
         android:src="@drawable/baseline_info_24"
         android:contentDescription="@string/developer_note_button_description"
-        android:scaleX=".8"
-        android:scaleY=".8"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:backgroundTint="@color/primary_color"
@@ -75,6 +111,6 @@
         app:elevation="8dp"
         app:pressedTranslationZ="12dp"
         app:borderWidth="0dp"
-        app:fabSize="normal" />
+        app:fabSize="mini" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

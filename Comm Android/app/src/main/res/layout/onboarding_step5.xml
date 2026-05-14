@@ -7,22 +7,15 @@
     android:layout_marginTop="8dp"
     app:cardCornerRadius="24dp"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#33374151"
+    app:cardBackgroundColor="@color/card_glass"
     app:strokeWidth="1dp"
-    app:strokeColor="#22FFFFFF">
+    app:strokeColor="@color/card_glass_stroke">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="24dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🎯"
-            android:textSize="48sp"
-            android:layout_marginBottom="16dp" />
 
         <TextView
             android:id="@+id/step5_title"
@@ -46,7 +39,7 @@
                 android:layout_height="wrap_content"
                 android:text="Open your camera app, then press the button on your Garmin watch. When you&#8217;re done, come back here."
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:lineSpacingMultiplier="1.5"
                 android:layout_marginBottom="24dp" />
 

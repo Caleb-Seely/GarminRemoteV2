@@ -1,5 +1,6 @@
 package com.garmin.android.apps.camera.click.comm.activities
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,8 +26,10 @@ class ShutterButtonCandidateAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        Log.d("CandidateAdapter", "onCreateViewHolder called — parent h=${parent.height} w=${parent.width}")
         val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_shutter_candidate, parent, false)
+        Log.d("CandidateAdapter", "item inflated — h=${view.layoutParams?.height} w=${view.layoutParams?.width}")
         return ViewHolder(view)
     }
 

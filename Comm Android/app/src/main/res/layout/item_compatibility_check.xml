@@ -129,7 +129,7 @@
         android:id="@+id/check_divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/divider"
+        android:background="@color/divider_dark"
         android:layout_marginStart="56dp" />
 
 </LinearLayout>

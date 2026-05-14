@@ -150,7 +150,7 @@
     </style>
 
     <!-- Developer Note Dialog Styles -->
-    <style name="DeveloperNoteDialog" parent="Theme.MaterialComponents.Light.Dialog">
+    <style name="DeveloperNoteDialog" parent="Theme.MaterialComponents.Dialog">
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowIsFloating">true</item>
         <item name="android:windowContentOverlay">@null</item>

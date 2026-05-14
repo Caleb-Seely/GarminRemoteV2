@@ -29,8 +29,11 @@ class ManualShutterButtonSelectionActivity : AppCompatActivity() {
     @Inject
     lateinit var buttonLocationRepository: ButtonLocationRepository
 
-    private lateinit var candidateList: List<ShutterButtonInfo>
+    private var candidateList: List<ShutterButtonInfo> = emptyList()
     private lateinit var overlay: ButtonLocationOverlay
+    private lateinit var recycler: RecyclerView
+    private lateinit var emptyStateHint: TextView
+    private lateinit var spinnerContainer: View
     private var selectedIndex: Int = 0
     private lateinit var appSpinner: AutoCompleteTextView
     private lateinit var appInfoList: List<AppInfo>
@@ -83,67 +86,19 @@ class ManualShutterButtonSelectionActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowHomeEnabled(true)
 
         val title = findViewById<TextView>(R.id.manual_selection_title)
-        val recycler = findViewById<RecyclerView>(R.id.candidate_recycler)
+        recycler = findViewById(R.id.candidate_recycler)
         recycler.layoutManager = LinearLayoutManager(this)
         val confirmBtn = findViewById<TextView>(R.id.confirm_button)
         overlay = findViewById(R.id.button_location_overlay)
 
         title.text = getString(R.string.manual_selection_title)
 
+        emptyStateHint = findViewById(R.id.empty_state_hint)
+        spinnerContainer = findViewById(R.id.spinner_container)
         appSpinner = findViewById(R.id.camera_app_spinner)
 
-        // Convert package names to app names using PackageManager
-        appInfoList = CameraAppCandidateStore.candidatesByApp.keys.map { packageName ->
-            val appName = try {
-                packageManager.getApplicationLabel(
-                    packageManager.getApplicationInfo(packageName, 0)
-                ).toString()
-            } catch (e: Exception) {
-                // Fallback to simplified package name if app is uninstalled
-                packageName.substringAfterLast('.')
-            }
-            AppInfo(appName, packageName)
-        }.sortedBy { it.appName } // Sort alphabetically by app name for better UX
-
-        val spinnerAdapter = AppInfoAdapter(this, appInfoList)
-        appSpinner.setAdapter(spinnerAdapter)
-
-        appSpinner.setOnItemClickListener { parent, view, position, id ->
-            val selectedAppInfo = appInfoList[position]
-            val selectedPackageName = selectedAppInfo.packageName
-            candidateList = CameraAppCandidateStore.candidatesByApp[selectedPackageName] ?: emptyList()
-
-            // Check if there's a saved preference for this app
-            val savedButton = buttonLocationRepository.getUserPreferredButton(selectedPackageName)
-            selectedIndex = if (savedButton != null) {
-                // Find the index of the saved button in the candidate list
-                candidateList.indexOfFirst { candidate ->
-                    candidate.resourceId == savedButton.resourceId &&
-                    candidate.contentDescription == savedButton.contentDescription &&
-                    candidate.className == savedButton.className
-                }.takeIf { it >= 0 } ?: 0
-            } else {
-                0 // Default to first button if no saved preference
-            }
-            
-            val adapter = ShutterButtonCandidateAdapter(candidateList, selectedIndex) { index ->
-                selectedIndex = index
-                overlay.setButtonInfo(candidateList[index])
-            }
-            recycler.adapter = adapter
-            if (candidateList.isNotEmpty()) {
-                overlay.setButtonInfo(candidateList[selectedIndex])
-            } else {
-                overlay.setButtonInfo(null)
-                Toast.makeText(this@ManualShutterButtonSelectionActivity, "No shutter button candidates found for this app. Try opening the camera app and returning here.", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        // Default to first app if available
-        if (appInfoList.isNotEmpty()) {
-            appSpinner.setText(appInfoList[0].appName, false)
-            // Manually trigger the listener
-            appSpinner.onItemClickListener?.onItemClick(null, null, 0, 0)
+        appSpinner.setOnItemClickListener { _, _, position, _ ->
+            loadCandidatesForPosition(position)
         }
 
         confirmBtn.setOnClickListener {
@@ -164,6 +119,82 @@ class ManualShutterButtonSelectionActivity : AppCompatActivity() {
                     finish()
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Only load from prefs if the in-memory store is empty (e.g., after a process restart).
+        // If the accessibility service already populated the store in this session, trust it —
+        // calling loadAllFromPrefs() unconditionally would clear those fresh candidates and
+        // replace them with potentially stale or empty persisted data.
+        if (CameraAppCandidateStore.candidatesByApp.isEmpty()) {
+            CameraAppCandidateStore.loadAllFromPrefs(this)
+        }
+        refreshAppList()
+    }
+
+    private fun refreshAppList() {
+        val previousSelection = appSpinner.text?.toString()
+
+        appInfoList = CameraAppCandidateStore.candidatesByApp.keys.map { packageName ->
+            val appName = try {
+                packageManager.getApplicationLabel(
+                    packageManager.getApplicationInfo(packageName, 0)
+                ).toString()
+            } catch (e: Exception) {
+                packageName.substringAfterLast('.')
+            }
+            AppInfo(appName, packageName)
+        }.sortedBy { it.appName }
+
+        val spinnerAdapter = AppInfoAdapter(this, appInfoList)
+        appSpinner.setAdapter(spinnerAdapter)
+
+        val hasApps = appInfoList.isNotEmpty()
+        emptyStateHint.visibility = if (hasApps) View.GONE else View.VISIBLE
+        recycler.visibility = if (hasApps) View.VISIBLE else View.GONE
+        spinnerContainer.visibility = if (hasApps) View.VISIBLE else View.GONE
+
+        if (hasApps) {
+            val restoredIndex = appInfoList.indexOfFirst { it.appName == previousSelection }
+                .takeIf { it >= 0 } ?: 0
+            appSpinner.setText(appInfoList[restoredIndex].appName, false)
+            loadCandidatesForPosition(restoredIndex)
+        }
+    }
+
+    private fun loadCandidatesForPosition(position: Int) {
+        val selectedAppInfo = appInfoList[position]
+        val selectedPackageName = selectedAppInfo.packageName
+        candidateList = CameraAppCandidateStore.candidatesByApp[selectedPackageName] ?: emptyList()
+        Log.d("ManualSelection", "Package: $selectedPackageName | Store keys: ${CameraAppCandidateStore.candidatesByApp.keys} | Candidates: ${candidateList.size}")
+
+        val savedButton = buttonLocationRepository.getUserPreferredButton(selectedPackageName)
+        selectedIndex = if (savedButton != null) {
+            candidateList.indexOfFirst { candidate ->
+                candidate.resourceId == savedButton.resourceId &&
+                candidate.contentDescription == savedButton.contentDescription &&
+                candidate.className == savedButton.className
+            }.takeIf { it >= 0 } ?: 0
+        } else {
+            0
+        }
+
+        val adapter = ShutterButtonCandidateAdapter(candidateList, selectedIndex) { index ->
+            selectedIndex = index
+            overlay.setButtonInfo(candidateList[index])
+        }
+        recycler.adapter = adapter
+        if (candidateList.isNotEmpty()) {
+            overlay.setButtonInfo(candidateList[selectedIndex])
+        } else {
+            overlay.setButtonInfo(null)
+            Toast.makeText(
+                this,
+                "No shutter button candidates found for this app. Try opening the camera app and returning here.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 

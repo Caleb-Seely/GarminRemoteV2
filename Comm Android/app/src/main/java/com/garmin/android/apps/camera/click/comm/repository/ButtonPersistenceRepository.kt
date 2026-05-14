@@ -7,6 +7,7 @@ import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -16,7 +17,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class ButtonPersistenceRepository @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
     private companion object {
         const val TAG = "ButtonPersistenceRepo"
@@ -117,7 +118,7 @@ class ButtonPersistenceRepository @Inject constructor(
     /**
      * Load all user-preferred buttons
      */
-    private fun loadAllUserPreferredButtons(): Map<String, ShutterButtonInfo> {
+    fun loadAllUserPreferredButtons(): Map<String, ShutterButtonInfo> {
         val json = prefs.getString(KEY_USER_PREFERRED_BUTTONS, null)
         return if (json != null) {
             try {

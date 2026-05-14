@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black"
+    android:background="@drawable/premium_background_gradient"
     android:fitsSystemWindows="true"
     tools:context="com.garmin.android.apps.camera.click.comm.activities.ManualShutterButtonSelectionActivity">
 
@@ -18,102 +18,136 @@
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:layout_constraintTop_toTopOf="parent"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-        app:title="Select Shutter Button"
+        app:title="@string/manual_selection_title"
         app:titleTextColor="@color/white" />
 
-    <!-- Main Content Background Container -->
-    <FrameLayout
+    <!-- Main Content Card -->
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/main_content_bg"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="@color/background_light"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@color/card_glass"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/card_glass_stroke"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Main Content CardView -->
-        <androidx.cardview.widget.CardView
+        <!-- Inner ConstraintLayout — no layout_weight needed -->
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="16dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="4dp">
+            android:padding="16dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:padding="16dp">
+            <!-- Title -->
+            <TextView
+                android:id="@+id/manual_selection_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/manual_selection_title"
+                android:textAppearance="@style/TextAppearance.AppCompat.Large"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="8dp"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                <!-- Title Section -->
-                <TextView
-                    android:id="@+id/manual_selection_title"
+            <!-- Camera App Spinner -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/spinner_container"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:hint="@string/select_camera_app"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:startIconDrawable="@drawable/baseline_apps_24"
+                android:layout_marginBottom="4dp"
+                app:layout_constraintTop_toBottomOf="@id/manual_selection_title"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <AutoCompleteTextView
+                    android:id="@+id/camera_app_spinner"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/manual_selection_title"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Large"
-                    android:textColor="@color/text_primary"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:layout_marginBottom="8dp"/>
+                    android:inputType="none"/>
 
-                <!-- Camera App Spinner Section - Optimized -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                    android:hint="@string/select_camera_app"
-                    app:boxCornerRadiusTopStart="12dp"
-                    app:boxCornerRadiusTopEnd="12dp"
-                    app:boxCornerRadiusBottomStart="12dp"
-                    app:boxCornerRadiusBottomEnd="12dp"
-                    app:startIconDrawable="@drawable/baseline_apps_24"
-                    android:layout_marginBottom="4dp">
+            </com.google.android.material.textfield.TextInputLayout>
 
-                    <AutoCompleteTextView
-                        android:id="@+id/camera_app_spinner"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="none"/>
+            <!-- Divider -->
+            <View
+                android:id="@+id/divider"
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:background="@color/divider_dark"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                app:layout_constraintTop_toBottomOf="@id/spinner_container"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                </com.google.android.material.textfield.TextInputLayout>
+            <!-- Confirm Button pinned to bottom -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/confirm_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:text="@string/save_selection"
+                android:backgroundTint="@color/primary_color"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="4dp"
-                    android:background="@color/divider_color" />
+            <!-- Hidden overlay (onDraw is commented out — kept for future use) -->
+            <com.garmin.android.apps.camera.click.comm.views.ButtonLocationOverlay
+                android:id="@+id/button_location_overlay"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                <!-- Button Location Overlay -->
-                <com.garmin.android.apps.camera.click.comm.views.ButtonLocationOverlay
-                    android:id="@+id/button_location_overlay"
-                    android:layout_width="match_parent"
-                    android:layout_height="4dp" />
+            <!-- Empty state: shown when no candidates have been detected yet -->
+            <TextView
+                android:id="@+id/empty_state_hint"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:text="@string/configure_button_empty_hint"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp"
+                android:gravity="center"
+                android:padding="24dp"
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@id/divider"
+                app:layout_constraintBottom_toTopOf="@id/confirm_button"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                <!-- RecyclerView for Candidates -->
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/candidate_recycler"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:layout_marginBottom="16dp"/>
+            <!-- RecyclerView fills all space between divider and confirm button -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/candidate_recycler"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_marginBottom="8dp"
+                app:layout_constraintTop_toBottomOf="@id/divider"
+                app:layout_constraintBottom_toTopOf="@id/confirm_button"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
 
-                <!-- Confirm Button -->
-                <TextView
-                    android:id="@+id/confirm_button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Save Selection"
-                    android:background="@drawable/camera_button_background"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:padding="16dp"
-                    android:textColor="@color/white"
-                    android:textStyle="bold"
-                    android:elevation="4dp" />
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </FrameLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.card.MaterialCardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

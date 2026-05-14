@@ -25,7 +25,8 @@ import javax.inject.Singleton
 @Singleton
 class CompatibilityCheckRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val preferencesRepository: DevicePreferencesRepository
+    private val preferencesRepository: DevicePreferencesRepository,
+    private val buttonPersistenceRepository: ButtonPersistenceRepository
 ) {
     private var cachedResult: CompatibilityCheckResult? = null
     private var cacheTimestamp: Long = 0
@@ -336,6 +337,64 @@ class CompatibilityCheckRepository @Inject constructor(
         builder.appendLine("=== SCREEN INFORMATION ===")
         builder.appendLine("Resolution: ${result.systemDiagnostics.screenResolution}")
         builder.appendLine("Density: ${result.systemDiagnostics.screenDensity}")
+        builder.appendLine()
+
+        val lastKnownButton = buttonPersistenceRepository.loadLastKnownButton()
+        val userPreferredButtons = buttonPersistenceRepository.loadAllUserPreferredButtons()
+        val candidateLists = buttonPersistenceRepository.loadCandidateLists()
+        val allApps = (userPreferredButtons.keys + candidateLists.keys).toSortedSet()
+
+        builder.appendLine("=== BUTTON CONFIGURATION ===")
+        builder.appendLine("Last Used: ${lastKnownButton?.packageName ?: "None"}")
+        if (lastKnownButton != null) {
+            builder.appendLine("  Method: ${lastKnownButton.getDetectionMethodDescription()}")
+            builder.appendLine("  Confidence: ${lastKnownButton.confidenceScore}%")
+            builder.appendLine("  Position: ${lastKnownButton.positionOnScreen ?: "unknown"}")
+            builder.appendLine("  Bounds: ${lastKnownButton.bounds}")
+            if (!lastKnownButton.resourceId.isNullOrEmpty()) builder.appendLine("  Resource ID: ${lastKnownButton.resourceId}")
+            if (!lastKnownButton.contentDescription.isNullOrEmpty()) builder.appendLine("  Content Desc: ${lastKnownButton.contentDescription}")
+            val ageMinutes = (System.currentTimeMillis() - lastKnownButton.timestamp) / 60000
+            builder.appendLine("  Age: ${if (ageMinutes < 60) "${ageMinutes}min" else "${ageMinutes / 60}hr ${ageMinutes % 60}min"}")
+        }
+        builder.appendLine()
+
+        if (allApps.isEmpty()) {
+            builder.appendLine("Per-App Config: No saved button data")
+        } else {
+            builder.appendLine("Per-App Config (${allApps.size} apps):")
+            allApps.forEach { pkg ->
+                builder.appendLine()
+                builder.appendLine("  [$pkg]")
+
+                val manual = userPreferredButtons[pkg]
+                if (manual != null) {
+                    val setDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(manual.timestamp))
+                    builder.appendLine("  Manual Override: YES (set $setDate)")
+                    builder.appendLine("    Position: ${manual.positionOnScreen ?: "unknown"}")
+                    builder.appendLine("    Bounds: ${manual.bounds}")
+                    if (!manual.resourceId.isNullOrEmpty()) builder.appendLine("    Resource ID: ${manual.resourceId}")
+                    if (!manual.contentDescription.isNullOrEmpty()) builder.appendLine("    Content Desc: ${manual.contentDescription}")
+                } else {
+                    builder.appendLine("  Manual Override: NO")
+                }
+
+                val candidates = candidateLists[pkg]
+                if (!candidates.isNullOrEmpty()) {
+                    builder.appendLine("  Candidates (${candidates.size}):")
+                    candidates.forEachIndexed { i, btn ->
+                        val line = buildString {
+                            append("    ${i + 1}. ${btn.getDetectionMethodDescription()} | ${btn.confidenceScore}%")
+                            if (btn.positionOnScreen != null) append(" | ${btn.positionOnScreen}")
+                            if (!btn.resourceId.isNullOrEmpty()) append(" | ${btn.resourceId}")
+                            if (!btn.contentDescription.isNullOrEmpty()) append(" | \"${btn.contentDescription}\"")
+                        }
+                        builder.appendLine(line)
+                    }
+                } else {
+                    builder.appendLine("  Candidates: None")
+                }
+            }
+        }
         builder.appendLine()
 
         if (result.checks.any { it.status != CheckStatus.PASS }) {

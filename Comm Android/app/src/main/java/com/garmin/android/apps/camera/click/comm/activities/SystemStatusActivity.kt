@@ -280,6 +280,11 @@ class SystemStatusActivity : AppCompatActivity() {
         findViewById<MaterialButton>(R.id.btn_copy_diagnostics).setOnClickListener {
             copyDiagnosticsToClipboard()
         }
+
+        // Close Button
+        findViewById<MaterialButton>(R.id.btn_close).setOnClickListener {
+            finish()
+        }
     }
 
     private fun copyDiagnosticsToClipboard() {

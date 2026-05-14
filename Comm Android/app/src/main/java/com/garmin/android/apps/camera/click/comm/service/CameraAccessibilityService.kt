@@ -117,7 +117,7 @@ class CameraAccessibilityService : AccessibilityService() {
         messageReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 Log.d(TAG, "Broadcast received with action: ${intent?.action}")
-                Toast.makeText(context, "Camera broadcast received", Toast.LENGTH_SHORT).show()
+                showToastSafely("Camera broadcast received")
                 if (intent?.action == ACTION_MESSAGE_RECEIVED) {
                     val message = intent.getStringExtra(EXTRA_MESSAGE)
                     messageReceivedTime = intent.getLongExtra(EXTRA_MESSAGE_TIME, System.currentTimeMillis())
@@ -160,7 +160,7 @@ class CameraAccessibilityService : AccessibilityService() {
                 Log.e(TAG, "Camera trigger timed out after 7 seconds")
                 FirebaseCrashlytics.getInstance().log("Camera trigger timeout")
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Timeout")
-                Toast.makeText(this@CameraAccessibilityService, "Camera trigger timed out", Toast.LENGTH_SHORT).show()
+                showToastSafely("Camera trigger timed out")
             } catch (e: CancellationException) {
                 Log.d(TAG, "Camera trigger cancelled")
                 throw e // Re-throw to propagate cancellation
@@ -168,7 +168,7 @@ class CameraAccessibilityService : AccessibilityService() {
                 Log.e(TAG, "Unexpected error in handleCameraTrigger", e)
                 FirebaseCrashlytics.getInstance().recordException(e)
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
-                Toast.makeText(this@CameraAccessibilityService, "Unexpected error - please try again", Toast.LENGTH_SHORT).show()
+                showToastSafely("Unexpected error - please try again")
             }
         }
     }
@@ -224,7 +224,7 @@ class CameraAccessibilityService : AccessibilityService() {
             Log.e(TAG, "No package name found")
             FirebaseCrashlytics.getInstance().log("No package name found in active window")
             watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
-            Toast.makeText(this@CameraAccessibilityService, "No camera app detected", Toast.LENGTH_SHORT).show()
+            showToastSafely("No camera app detected")
             return
         }
 
@@ -265,21 +265,21 @@ class CameraAccessibilityService : AccessibilityService() {
                 persistTriggerResult(photoConfirmed)
                 if (photoConfirmed) {
                     watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
-                    Toast.makeText(this@CameraAccessibilityService, "✓ Photo captured", Toast.LENGTH_SHORT).show()
+                    showToastSafely("✓ Photo captured")
                 } else {
                     FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName")
                     watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "no_photo_detected")
-                    Toast.makeText(this@CameraAccessibilityService, "✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG).show()
+                    showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
                     showFailureRecoveryNotification()
                 }
             } else {
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
-                Toast.makeText(this@CameraAccessibilityService, "✗ Button click failed in $appName", Toast.LENGTH_LONG).show()
+                showToastSafely("✗ Button click failed in $appName", Toast.LENGTH_LONG)
                 showFailureRecoveryNotification()
             }
         } else {
             Log.d(TAG, "Could not find button in active app")
-            Toast.makeText(this@CameraAccessibilityService, "No button found in $appName\nTry selecting manually", Toast.LENGTH_LONG).show()
+            showToastSafely("No button found in $appName\nTry selecting manually", Toast.LENGTH_LONG)
             FirebaseCrashlytics.getInstance().log("No button found in package: $packageName")
             persistTriggerResult(false)
             watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
@@ -385,6 +385,14 @@ class CameraAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun showToastSafely(message: String, duration: Int = Toast.LENGTH_SHORT) {
+        try {
+            Toast.makeText(this, message, duration).show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Toast failed", e)
+        }
+    }
+
     private fun showFailureRecoveryNotification() {
         try {
             val intent = Intent(this, com.garmin.android.apps.camera.click.comm.activities.ManualShutterButtonSelectionActivity::class.java)
@@ -396,7 +404,7 @@ class CameraAccessibilityService : AccessibilityService() {
             val notification = NotificationCompat.Builder(this, AppConfig.Notifications.CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_alert)
                 .setContentTitle("Camera didn't capture")
-                .setContentText("Tap to configure your camera button")
+                .setContentText("Open the app to configure your camera button")
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .build()
