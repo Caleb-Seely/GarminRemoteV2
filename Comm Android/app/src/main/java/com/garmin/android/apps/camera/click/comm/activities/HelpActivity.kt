@@ -103,7 +103,7 @@ class HelpActivity : AppCompatActivity() {
                     "• <b>Watch App:</b> Install CameraClick on your Garmin via the <b>Garmin Connect IQ Store</b> <br><br>" +
 
                     "<b>Grant Permissions</b><br>" +
-                    "• <b><font color='#FF0000'>⚠️ Accessibility Permission</font></b> – <b>REQUIRED!</b> This allows the app to tap the shutter button on screen.<br>" +
+                    "<b>⚠️ Accessibility Permission – REQUIRED!</b> This allows the app to tap the shutter button on screen.<br>" +
                     "• <b>Notification Access</b> – Keeps CameraClick running in the background.<br>" +
                     "• <b>Camera</b> – Required by your camera app, not CameraClick.<br><br>" +
 
@@ -185,6 +185,7 @@ class HelpActivity : AppCompatActivity() {
             "📎 Quick Links",
             "📝 <font color='#3fe9a3'><a href='https://forms.gle/3JXQ9fDrTEBAuroG7'>Send Feedback</a></font>" +
                     "<br><br>⌚ <font color='#3fe9a3'><a href='https://apps.garmin.com/apps/789012f0-dcb2-46c2-b5b8-ef00a75968fa'>CameraClick Garmin App</a></font>" +
+                    "<br><br>🔒 <font color='#3fe9a3'><a href='https://caleb-seely.github.io/GarminRemoteV2/'>Privacy Policy</a></font>" +
                     "<br><br>🌐 <font color='#3fe9a3'><a href='https://calebseely.com'>About the developer</a></font>"
 
         )

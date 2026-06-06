@@ -9,6 +9,7 @@ import android.util.Log
 import android.widget.Toast
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
+import com.garmin.android.apps.camera.click.comm.R
 
 /**
  * CameraUtils.kt
@@ -126,7 +127,7 @@ class CameraUtils {
                 // All methods failed
                 Log.e(TAG, "Unable to launch any camera app")
                 FirebaseCrashlytics.getInstance().log("Unable to launch any camera app")
-                Toast.makeText(context, "No camera app found on device", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.error_no_camera_app, Toast.LENGTH_SHORT).show()
                 AnalyticsUtils.logCameraLaunch(false)
                 return false
                 
@@ -134,7 +135,7 @@ class CameraUtils {
                 Log.e(TAG, "Error launching camera", e)
                 FirebaseCrashlytics.getInstance().recordException(e)
                 AnalyticsUtils.logCameraLaunch(false)
-                Toast.makeText(context, "Error launching camera: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.error_launching_camera, e.message), Toast.LENGTH_SHORT).show()
                 return false
             }
         }

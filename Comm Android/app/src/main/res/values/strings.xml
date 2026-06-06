@@ -92,4 +92,134 @@
     <string name="no_watches_found">No watches found</string>
     <string name="open_garmin_connect_hint">Open Garmin Connect to pair your watch</string>
     <string name="open_garmin_connect">Open Garmin Connect</string>
+
+    <!-- Toolbar Titles -->
+    <string name="device_control_title">Device Control</string>
+
+    <!-- Common Buttons -->
+    <string name="btn_skip">Skip</string>
+    <string name="btn_get_started">Get Started</string>
+    <string name="btn_continue">Continue</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_open_accessibility_settings">Open Accessibility Settings</string>
+    <string name="btn_open_camera">Open Camera</string>
+    <string name="btn_open_camera_again">Open Camera Again</string>
+    <string name="btn_finish_setup">Finish Setup</string>
+    <string name="btn_try_again">Try Again</string>
+    <string name="btn_continue_anyway">Continue Anyway</string>
+
+    <!-- Step Counter -->
+    <string name="step_counter_format">%1$d / %2$d</string>
+
+    <!-- Onboarding Step 1 -->
+    <string name="onboarding_step1_title">Welcome to CameraClick</string>
+    <string name="onboarding_step1_body">Turn your Garmin watch into a remote camera shutter. Let’s get you set up in a few quick steps.</string>
+    <string name="onboarding_hint1">Connect your Garmin watch</string>
+    <string name="onboarding_hint2">Enable accessibility (needed to click shutter)</string>
+    <string name="onboarding_hint3">Do a test trigger — you\'re good to go</string>
+
+    <!-- Onboarding Step 2 -->
+    <string name="onboarding_step2_title">Connect Your Watch</string>
+    <string name="onboarding_step2_body">Make sure Garmin Connect is open and your watch is nearby.</string>
+    <string name="onboarding_step2_no_devices">No watches found. Open Garmin Connect and wait a moment.</string>
+    <string name="onboarding_step2_hold_hint">Hold a watch name to set it as your default.</string>
+    <string name="onboarding_connected_device">Connected: %s</string>
+
+    <!-- Onboarding Step 3 (Accessibility) -->
+    <string name="onboarding_step3_title">Enable Accessibility Permission</string>
+    <string name="onboarding_step3_body">CameraClick needs Accessibility access to tap your camera’s shutter button when your watch triggers it. It reads only the camera screen — no personal data is ever accessed or stored.</string>
+    <string name="accessibility_status_not_enabled">Not enabled</string>
+    <string name="accessibility_status_enabled">Enabled</string>
+    <string name="accessibility_status_not_enabled_tap">Not enabled — tap below to set up</string>
+    <string name="cd_permission_status">Permission status</string>
+
+    <!-- Onboarding Step 4 (Phone → Watch Test) -->
+    <string name="onboarding_step4_title">Test: Phone → Watch</string>
+    <string name="onboarding_step4_body">Let’s confirm your phone can reach your watch. Tap the button below, then check your watch for a notification.</string>
+    <string name="onboarding_step4_send_test">Send Test Signal</string>
+    <string name="onboarding_step4_hint">Your watch needs to have the CameraClick app installed and open.</string>
+    <string name="onboarding_test_signal_sent">Signal sent! Check your watch.</string>
+    <string name="onboarding_test_sent_status">Sent — status: %s</string>
+    <string name="onboarding_test_could_not_send">Could not send — make sure Garmin Connect is open</string>
+
+    <!-- Onboarding Step 5 (Camera Test) -->
+    <string name="onboarding_step5_title">Test the Full Flow</string>
+    <string name="onboarding_step5_body">Open your camera app, then press the button on your Garmin watch. When you’re done, come back here.</string>
+    <string name="onboarding_step5_waiting">Waiting for watch signal…</string>
+    <string name="onboarding_step5_success">Everything is working!</string>
+    <string name="onboarding_step5_success_body">Your Garmin watch can now trigger your camera shutter.</string>
+    <string name="onboarding_step5_failure">Almost there — the watch signal was received but the camera button wasn\'t found. Let\'s configure it.</string>
+
+    <!-- Onboarding Toasts -->
+    <string name="onboarding_no_watch_connected">No watch connected yet — open Garmin Connect and wait a moment</string>
+    <string name="onboarding_no_watch_go_back">No watch connected — go back to Step 2</string>
+    <string name="onboarding_accessibility_required">Accessibility permission is required before testing the camera trigger</string>
+
+    <!-- Accessibility Dialog -->
+    <string name="accessibility_dialog_body_short">CameraClick requires Accessibility permission to enable remote shutter control. The permission is used solely to simulate a shutter button press in the camera app.</string>
+    <string name="accessibility_privacy_badge">Never accesses, collects, or stores personal data</string>
+
+    <!-- System Status Sections -->
+    <string name="section_permissions_setup">Permissions &amp; Setup</string>
+    <string name="section_device_info">Device Info</string>
+    <string name="section_detected_camera_apps">Detected Camera Apps</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_watch_icon">Watch icon</string>
+    <string name="cd_send_icon">Send icon</string>
+    <string name="cd_settings_icon">Settings icon</string>
+    <string name="cd_arrow">Arrow</string>
+    <string name="cd_auto_launch_icon">Auto launch icon</string>
+    <string name="cd_camera_icon">Camera icon</string>
+    <string name="cd_device_icon">Device icon</string>
+    <string name="cd_default_device">Default device</string>
+
+    <!-- Device -->
+    <string name="unknown_device">Unknown Device</string>
+
+    <!-- Error Messages -->
+    <string name="error_start_service">Failed to start message service: %s</string>
+    <string name="error_sdk_init">Error initializing Garmin SDK: %s</string>
+    <string name="error_developer_info_unavailable">Developer information temporarily unavailable</string>
+    <string name="error_developer_info_show">Unable to show developer information</string>
+    <string name="error_no_browser">No browser app found to open website</string>
+    <string name="error_open_website">Unable to open website. Please try again later.</string>
+    <string name="error_open_play_store">Unable to open Play Store. Please try again later.</string>
+    <string name="error_open_review">Unable to open review page. Please try again later.</string>
+    <string name="error_open_app_store">Unable to open app store</string>
+    <string name="error_no_camera_app">No camera app found on device</string>
+    <string name="error_launching_camera">Error launching camera: %s</string>
+    <string name="error_review_api">Review API error: %s</string>
+    <string name="error_review_system">Review system error: %s</string>
+    <string name="error_play_store_not_available">Play Store not available</string>
+
+    <!-- Compatibility Check Names -->
+    <string name="check_accessibility_name">Accessibility Service</string>
+    <string name="check_accessibility_disabled_msg">Required for camera control</string>
+    <string name="check_accessibility_unknown_msg">Unable to verify accessibility status</string>
+    <string name="check_notifications_name">Notifications</string>
+    <string name="check_notifications_granted">Granted</string>
+    <string name="check_notifications_hint">Helps keep service running</string>
+    <string name="check_notifications_action">Grant Permission</string>
+    <string name="check_notification_permission_name">Notification Permission</string>
+    <string name="check_notification_permission_old_android">Notification permission not required on this Android version</string>
+    <string name="check_garmin_connect_name">Garmin Connect</string>
+    <string name="check_garmin_connect_installed">Installed</string>
+    <string name="check_garmin_connect_required">Required for watch communication</string>
+    <string name="check_garmin_connect_action">Install App</string>
+    <string name="check_switch_access_name">Switch Access</string>
+    <string name="check_switch_access_hint">May be needed for video</string>
+    <string name="check_switch_access_action">Enable</string>
+    <string name="check_battery_name">Battery Optimization</string>
+    <string name="check_battery_disabled">Disabled</string>
+    <string name="check_battery_hint">Improves reliability</string>
+    <string name="check_battery_action">Disable</string>
+
+    <!-- Rating / Review -->
+    <string name="preference_saved_for">Preference saved for %s</string>
+    <string name="thanks_for_rating">Thanks for taking the time to rate CameraClick!</string>
+    <string name="dialog_rate_title">Rate CameraClick</string>
+    <string name="dialog_rate_message">Thanks for using my app! Have a couple seconds to review it?</string>
+    <string name="dialog_rate_positive">Review App</string>
+    <string name="dialog_rate_negative">Not Now</string>
 </resources>

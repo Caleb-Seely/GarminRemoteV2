@@ -265,7 +265,7 @@ class DeviceActivity : AppCompatActivity() {
      * Setup UI views and initial states
      */
     private fun setupViews() {
-        views.deviceNameView.text = device?.friendlyName ?: "Unknown Device"
+        views.deviceNameView.text = device?.friendlyName ?: getString(R.string.unknown_device)
     }
 
     /**
@@ -495,7 +495,7 @@ class DeviceActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start MessageService", e)
             FirebaseCrashlytics.getInstance().recordException(e)
-            Toast.makeText(this, "Failed to start message service: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, getString(R.string.error_start_service, e.message), Toast.LENGTH_LONG).show()
         }
     }
 

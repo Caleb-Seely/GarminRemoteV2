@@ -21,7 +21,7 @@
             android:id="@+id/step5_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Test the Full Flow"
+            android:text="@string/onboarding_step5_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:textStyle="bold"
@@ -37,7 +37,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Open your camera app, then press the button on your Garmin watch. When you&#8217;re done, come back here."
+                android:text="@string/onboarding_step5_body"
                 android:textColor="@color/text_secondary"
                 android:textSize="16sp"
                 android:lineSpacingMultiplier="1.5"
@@ -63,7 +63,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Waiting for watch signal…"
+                android:text="@string/onboarding_step5_waiting"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:gravity="center" />
@@ -89,7 +89,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Everything is working!"
+                android:text="@string/onboarding_step5_success"
                 android:textColor="@color/success"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -98,7 +98,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Your Garmin watch can now trigger your camera shutter."
+                android:text="@string/onboarding_step5_success_body"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:gravity="center"
@@ -127,7 +127,7 @@
                 android:id="@+id/btn_configure_button"
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
-                android:text="Configure Camera Button"
+                android:text="@string/manual_selection_title"
                 android:backgroundTint="@color/primary_color"
                 android:textColor="@color/white"
                 app:cornerRadius="12dp"

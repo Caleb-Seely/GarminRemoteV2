@@ -25,8 +25,8 @@
         <ImageView
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/baseline_watch_24"
-            android:contentDescription="Device icon"
+            android:src="@drawable/watch_screentime_35dp"
+            android:contentDescription="@string/cd_device_icon"
             android:tint="@color/primary_color"
             android:layout_marginEnd="16dp" />
 
@@ -70,7 +70,7 @@
                 android:layout_width="16dp"
                 android:layout_height="16dp"
                 android:src="@drawable/baseline_star_24"
-                android:contentDescription="Default device"
+                android:contentDescription="@string/cd_default_device"
                 android:tint="@color/primary_color"
                 android:layout_marginEnd="8dp"
                 android:visibility="gone" />

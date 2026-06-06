@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 is MainActivityViewModel.SdkStatus.Error -> {
                     Log.e(TAG, "SDK Error: ${status.errorStatus}")
-                    Toast.makeText(this, "Error initializing Garmin SDK: ${status.errorStatus}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, getString(R.string.error_sdk_init, status.errorStatus), Toast.LENGTH_LONG).show()
                 }
                 is MainActivityViewModel.SdkStatus.ShutDown -> {
                     Log.d(TAG, "SDK Shut Down")
@@ -404,13 +404,13 @@ class MainActivity : AppCompatActivity() {
 
             } else {
                 Log.w(TAG, "No content found for developer note version $version")
-                Toast.makeText(this, "Developer information temporarily unavailable", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.error_developer_info_unavailable, Toast.LENGTH_SHORT).show()
             }
 
         } catch (e: Exception) {
             Log.e(TAG, "Error showing developer note dialog", e)
             FirebaseCrashlytics.getInstance().recordException(e)
-            Toast.makeText(this, "Unable to show developer information", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.error_developer_info_show, Toast.LENGTH_SHORT).show()
         }
     }
 

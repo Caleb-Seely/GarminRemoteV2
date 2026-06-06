@@ -174,7 +174,7 @@ class DeviceActivityDialogManager(private val activity: Activity) {
             AnalyticsUtils.logFeatureUsage("rate_app", "play_store_opened", true)
 
             // Show appreciation message
-            Toast.makeText(activity, "Thanks for taking the time to rate CameraClick! 📸⭐", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, R.string.thanks_for_rating, Toast.LENGTH_SHORT).show()
 
         } catch (e: ActivityNotFoundException) {
             // Fallback to web browser
@@ -186,12 +186,12 @@ class DeviceActivityDialogManager(private val activity: Activity) {
                 AnalyticsUtils.logFeatureUsage("rate_app", "web_store_opened", true)
 
                 // Show appreciation message
-                Toast.makeText(activity, "Thanks for taking the time to rate CameraClick! 📸⭐", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, R.string.thanks_for_rating, Toast.LENGTH_SHORT).show()
 
             } catch (e2: Exception) {
                 Log.e(TAG, "Failed to open app store for rating", e2)
                 AnalyticsUtils.logError("rate_app", "store_open_failed", e2.message ?: "unknown")
-                Toast.makeText(activity, "Unable to open app store", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, R.string.error_open_app_store, Toast.LENGTH_SHORT).show()
             }
         }
     }

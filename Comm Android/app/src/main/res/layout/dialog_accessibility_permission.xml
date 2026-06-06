@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginStart="12dp"
-                android:text="Enable Accessibility Service"
+                android:text="@string/accessibility_dialog_title"
                 android:textColor="#FFFFFF"
                 android:textSize="17sp"
                 android:textStyle="bold"
@@ -65,7 +65,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="CameraClick requires Accessibility permission to enable remote shutter control. The permission is used solely to simulate a shutter button press in the camera app."
+                android:text="@string/accessibility_dialog_body_short"
                 android:textColor="#B8BCC8"
                 android:textSize="14sp"
                 android:lineSpacingMultiplier="1.65" />
@@ -93,7 +93,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="6dp"
-                    android:text="Never accesses, collects, or stores personal data"
+                    android:text="@string/accessibility_privacy_badge"
                     android:textColor="#4ECDB8"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -125,7 +125,7 @@
                 android:layout_height="48dp"
                 android:layout_weight="1"
                 android:layout_marginEnd="10dp"
-                android:text="Cancel"
+                android:text="@string/btn_cancel"
                 android:backgroundTint="#12FFFFFF"
                 android:textColor="#9AA0B2"
                 app:cornerRadius="12dp" />
@@ -135,7 +135,7 @@
                 android:layout_width="0dp"
                 android:layout_height="48dp"
                 android:layout_weight="1"
-                android:text="Open Settings"
+                android:text="@string/open_settings"
                 android:backgroundTint="#1E9E8A"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold"

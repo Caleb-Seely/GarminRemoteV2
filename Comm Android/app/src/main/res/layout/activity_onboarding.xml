@@ -46,7 +46,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
-            android:text="1 / 5"
+            android:text=""
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
     </LinearLayout>
@@ -84,7 +84,7 @@
             android:layout_width="wrap_content"
             android:layout_height="48dp"
             android:layout_marginEnd="12dp"
-            android:text="Skip"
+            android:text="@string/btn_skip"
             android:textColor="@color/text_secondary"
             style="?attr/borderlessButtonStyle"
             android:visibility="gone" />
@@ -94,7 +94,7 @@
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="Get Started"
+            android:text="@string/btn_get_started"
             android:backgroundTint="@color/primary_color"
             android:textColor="@color/white"
             app:cornerRadius="12dp" />

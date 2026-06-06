@@ -11,6 +11,7 @@ import android.content.pm.ApplicationInfo
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.google.android.play.core.review.model.ReviewErrorCode
 import com.garmin.android.apps.camera.click.comm.utils.AnalyticsUtils
+import com.garmin.android.apps.camera.click.comm.R
 
 /**
  * Simple utility for handling Google Play In-App Reviews
@@ -253,7 +254,7 @@ object InAppReviewUtils {
                             }
                         }
 
-                        android.widget.Toast.makeText(activity, "Review API error: $errorCode", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(activity, activity.getString(R.string.error_review_api, errorCode.toString()), android.widget.Toast.LENGTH_SHORT).show()
                         onComplete?.invoke(false)
                     }
                 }
@@ -282,7 +283,7 @@ object InAppReviewUtils {
                 }
                 AnalyticsUtils.logEvent("in_app_review_fallback", fallbackExceptionParams)
             } else {
-                android.widget.Toast.makeText(activity, "Review system error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(activity, activity.getString(R.string.error_review_system, e.message), android.widget.Toast.LENGTH_SHORT).show()
                 onComplete?.invoke(false)
             }
         }
@@ -293,9 +294,9 @@ object InAppReviewUtils {
             android.util.Log.d("InAppReviewUtils", "Showing fallback review dialog (markAsCompleted: $markAsCompleted)")
             
             val builder = AlertDialog.Builder(activity)
-                .setTitle("Rate CameraClick")
-                .setMessage("Thanks for using my app! Have a couple seconds to review it?")
-                .setPositiveButton("Review App") { _, _ ->
+                .setTitle(R.string.dialog_rate_title)
+                .setMessage(R.string.dialog_rate_message)
+                .setPositiveButton(R.string.dialog_rate_positive) { _, _ ->
                     // Try to open Play Store
                     try {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${activity.packageName}"))
@@ -306,7 +307,7 @@ object InAppReviewUtils {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${activity.packageName}"))
                             activity.startActivity(intent)
                         } catch (e2: Exception) {
-                            android.widget.Toast.makeText(activity, "Play Store not available", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(activity, R.string.error_play_store_not_available, android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
 
@@ -322,7 +323,7 @@ object InAppReviewUtils {
                     AnalyticsUtils.logEvent("in_app_review_fallback_action", actParams)
                     onComplete?.invoke(true)
                 }
-                .setNegativeButton("Not Now") { dialog, _ ->
+                .setNegativeButton(R.string.dialog_rate_negative) { dialog, _ ->
                     // Only mark as completed if specified
                     if (markAsCompleted) {
                         markReviewCompleted(activity)

@@ -20,7 +20,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Test: Phone → Watch"
+            android:text="@string/onboarding_step4_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:textStyle="bold"
@@ -29,7 +29,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Let&#8217;s confirm your phone can reach your watch. Tap the button below, then check your watch for a notification."
+            android:text="@string/onboarding_step4_body"
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
             android:lineSpacingMultiplier="1.5"
@@ -39,7 +39,7 @@
             android:id="@+id/btn_send_test"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:text="Send Test Signal"
+            android:text="@string/onboarding_step4_send_test"
             android:backgroundTint="@color/primary_color"
             android:textColor="@color/white"
             app:cornerRadius="12dp"
@@ -75,7 +75,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Your watch needs to have the CameraClick app installed and open."
+            android:text="@string/onboarding_step4_hint"
             android:textColor="@color/text_tertiary"
             android:textSize="12sp"
             android:gravity="center"

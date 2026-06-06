@@ -11,7 +11,7 @@
         android:id="@+id/info_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Label"
+        android:text=""
         android:textColor="@color/text_secondary"
         android:textSize="12sp"
         android:textAllCaps="true"
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Value"
+        android:text=""
         android:textColor="@color/text_primary"
         android:textSize="14sp"
         android:lineSpacingMultiplier="1.3" />

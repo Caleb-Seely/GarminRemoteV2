@@ -166,7 +166,7 @@ class OnboardingActivity : AppCompatActivity() {
         dots.forEachIndexed { i, dot ->
             dot.setBackgroundResource(if (i < currentStep) activeDrawable else inactiveDrawable)
         }
-        findViewById<TextView>(R.id.step_counter)?.text = "$currentStep / $TOTAL_STEPS"
+        findViewById<TextView>(R.id.step_counter)?.text = getString(R.string.step_counter_format, currentStep, TOTAL_STEPS)
     }
 
     // ── Step 1 — Welcome ─────────────────────────────────────────────────────
@@ -175,14 +175,14 @@ class OnboardingActivity : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.onboarding_step1, stepContainer, false)
 
         // Set hint texts
-        setHint(view, R.id.hint1, "Connect your Garmin watch")
-        setHint(view, R.id.hint2, "Enable accessibility (needed to click shutter)")
-        setHint(view, R.id.hint3, "Do a test trigger — you're good to go")
+        setHint(view, R.id.hint1, getString(R.string.onboarding_hint1))
+        setHint(view, R.id.hint2, getString(R.string.onboarding_hint2))
+        setHint(view, R.id.hint3, getString(R.string.onboarding_hint3))
 
         stepContainer.addView(view)
         stepView = view
 
-        btnNext.text = "Get Started"
+        btnNext.setText(R.string.btn_get_started)
         btnSkip.visibility = View.GONE
         btnNext.setOnClickListener { advanceStep() }
     }
@@ -199,16 +199,16 @@ class OnboardingActivity : AppCompatActivity() {
         stepContainer.addView(view)
         stepView = view
 
-        btnNext.text = "Continue"
+        btnNext.setText(R.string.btn_continue)
         btnSkip.visibility = View.VISIBLE
-        btnSkip.text = "Skip"
+        btnSkip.setText(R.string.btn_skip)
 
         btnSkip.setOnClickListener { advanceStep() }
         btnNext.setOnClickListener {
             if (selectedDevice != null) {
                 advanceStep()
             } else {
-                Toast.makeText(this, "No watch connected yet — open Garmin Connect and wait a moment", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.onboarding_no_watch_connected, Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -231,7 +231,7 @@ class OnboardingActivity : AppCompatActivity() {
                 selectedDevice = device
                 preferencesRepository.preferredDeviceId = device.deviceIdentifier.toString()
                 connectedBadge?.visibility = View.VISIBLE
-                connectedName?.text = "Connected: ${device.friendlyName}"
+                connectedName?.text = getString(R.string.onboarding_connected_device, device.friendlyName)
                 // Auto-advance if only one device
                 if (devices.size == 1) {
                     Handler(Looper.getMainLooper()).postDelayed({ advanceStep() }, 800)
@@ -271,9 +271,9 @@ class OnboardingActivity : AppCompatActivity() {
         stepContainer.addView(view)
         stepView = view
 
-        btnNext.text = "Continue"
+        btnNext.setText(R.string.btn_continue)
         btnSkip.visibility = View.VISIBLE
-        btnSkip.text = "Skip"
+        btnSkip.setText(R.string.btn_skip)
         btnSkip.setOnClickListener { advanceStep() }
 
         view.findViewById<Button>(R.id.btn_send_test)?.setOnClickListener {
@@ -303,7 +303,7 @@ class OnboardingActivity : AppCompatActivity() {
         stepView = view
 
         btnNext.visibility = View.VISIBLE
-        btnNext.text = "Open Accessibility Settings"
+        btnNext.setText(R.string.btn_open_accessibility_settings)
         btnNext.setOnClickListener { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
         btnSkip.visibility = View.GONE
 
@@ -333,12 +333,12 @@ class OnboardingActivity : AppCompatActivity() {
             icon?.setImageResource(R.drawable.baseline_close_24)
             icon?.imageTintList = android.content.res.ColorStateList.valueOf(getColor(R.color.error))
         }
-        text?.text = if (enabled) "Enabled" else "Not enabled — tap below to set up"
+        text?.text = if (enabled) getString(R.string.accessibility_status_enabled) else getString(R.string.accessibility_status_not_enabled_tap)
     }
 
     private fun sendTestMessage(view: View) {
         val device = selectedDevice ?: run {
-            Toast.makeText(this, "No watch connected — go back to Step 2", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, R.string.onboarding_no_watch_go_back, Toast.LENGTH_SHORT).show()
             return
         }
         val resultArea = view.findViewById<LinearLayout>(R.id.test_result)
@@ -354,14 +354,14 @@ class OnboardingActivity : AppCompatActivity() {
                     val success = status == com.garmin.android.connectiq.ConnectIQ.IQMessageStatus.SUCCESS
                     resultIcon?.text = if (success) "✓" else "!"
                     resultIcon?.setTextColor(getColor(if (success) R.color.success else R.color.warning))
-                    resultText?.text = if (success) "Signal sent! Check your watch." else "Sent — status: ${status.name}"
+                    resultText?.text = if (success) getString(R.string.onboarding_test_signal_sent) else getString(R.string.onboarding_test_sent_status, status.name)
                 }
                 AnalyticsUtils.logOnboardingStep(3, if (status == com.garmin.android.connectiq.ConnectIQ.IQMessageStatus.SUCCESS) "test_sent" else "test_failed")
             }
         } catch (e: Exception) {
             FirebaseCrashlytics.getInstance().recordException(e)
             resultArea?.visibility = View.VISIBLE
-            resultText?.text = "Could not send — make sure Garmin Connect is open"
+            resultText?.text = getString(R.string.onboarding_test_could_not_send)
         }
     }
 
@@ -381,7 +381,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun showStep5() {
         if (!compatibilityRepo.isAccessibilityServiceEnabled()) {
-            Toast.makeText(this, "Accessibility permission is required before testing the camera trigger", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, R.string.onboarding_accessibility_required, Toast.LENGTH_LONG).show()
             showStep(4)
             return
         }
@@ -459,10 +459,10 @@ class OnboardingActivity : AppCompatActivity() {
         view.findViewById<LinearLayout>(R.id.waiting_state)?.visibility = View.GONE
         view.findViewById<LinearLayout>(R.id.success_state)?.visibility = View.GONE
         view.findViewById<LinearLayout>(R.id.failure_state)?.visibility = View.GONE
-        btnNext.text = "Open Camera"
+        btnNext.setText(R.string.btn_open_camera)
         btnNext.setOnClickListener { launchCameraTest(view) }
         btnSkip.visibility = View.VISIBLE
-        btnSkip.text = "Skip"
+        btnSkip.setText(R.string.btn_skip)
         btnSkip.setOnClickListener { completeOnboarding() }
     }
 
@@ -471,10 +471,10 @@ class OnboardingActivity : AppCompatActivity() {
         view.findViewById<LinearLayout>(R.id.waiting_state)?.visibility = View.VISIBLE
         view.findViewById<LinearLayout>(R.id.success_state)?.visibility = View.GONE
         view.findViewById<LinearLayout>(R.id.failure_state)?.visibility = View.GONE
-        btnNext.text = "Open Camera Again"
+        btnNext.setText(R.string.btn_open_camera_again)
         btnNext.setOnClickListener { launchCameraTest(view) }
         btnSkip.visibility = View.VISIBLE
-        btnSkip.text = "Skip"
+        btnSkip.setText(R.string.btn_skip)
         btnSkip.setOnClickListener { completeOnboarding() }
     }
 
@@ -483,7 +483,7 @@ class OnboardingActivity : AppCompatActivity() {
         view.findViewById<LinearLayout>(R.id.waiting_state)?.visibility = View.GONE
         view.findViewById<LinearLayout>(R.id.success_state)?.visibility = View.VISIBLE
         view.findViewById<LinearLayout>(R.id.failure_state)?.visibility = View.GONE
-        btnNext.text = "Finish Setup"
+        btnNext.setText(R.string.btn_finish_setup)
         btnNext.setOnClickListener { completeOnboarding() }
         btnSkip.visibility = View.GONE
         AnalyticsUtils.logOnboardingStep(5, "test_success")
@@ -495,17 +495,16 @@ class OnboardingActivity : AppCompatActivity() {
         view.findViewById<LinearLayout>(R.id.success_state)?.visibility = View.GONE
         view.findViewById<LinearLayout>(R.id.failure_state)?.visibility = View.VISIBLE
 
-        view.findViewById<TextView>(R.id.failure_message)?.text =
-            "Almost there — the watch signal was received but the camera button wasn't found. Let's configure it."
+        view.findViewById<TextView>(R.id.failure_message)?.text = getString(R.string.onboarding_step5_failure)
 
         view.findViewById<Button>(R.id.btn_configure_button)?.setOnClickListener {
             startActivity(Intent(this, ManualShutterButtonSelectionActivity::class.java))
         }
 
-        btnNext.text = "Try Again"
+        btnNext.setText(R.string.btn_try_again)
         btnNext.setOnClickListener { launchCameraTest(view) }
         btnSkip.visibility = View.VISIBLE
-        btnSkip.text = "Continue Anyway"
+        btnSkip.setText(R.string.btn_continue_anyway)
         btnSkip.setOnClickListener { completeOnboarding() }
         AnalyticsUtils.logOnboardingStep(5, "test_failed")
     }

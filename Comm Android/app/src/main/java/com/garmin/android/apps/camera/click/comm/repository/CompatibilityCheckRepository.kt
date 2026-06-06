@@ -8,6 +8,7 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import android.accessibilityservice.AccessibilityServiceInfo
 import androidx.core.content.ContextCompat
+import com.garmin.android.apps.camera.click.comm.R
 import com.garmin.android.apps.camera.click.comm.model.*
 import com.garmin.android.apps.camera.click.comm.utils.CompatibilityCheckUtils
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -93,24 +94,24 @@ class CompatibilityCheckRepository @Inject constructor(
 
             CompatibilityCheck(
                 id = "accessibility_service",
-                name = "Accessibility Service",
+                name = context.getString(R.string.check_accessibility_name),
                 status = if (isEnabled) CheckStatus.PASS else CheckStatus.WARNING,
                 severity = CheckSeverity.CRITICAL,
                 message = if (isEnabled) {
-                    "Enabled"
+                    context.getString(R.string.accessibility_status_enabled)
                 } else {
-                    "Required for camera control"
+                    context.getString(R.string.check_accessibility_disabled_msg)
                 },
-                actionText = if (!isEnabled) "Open Settings" else null,
+                actionText = if (!isEnabled) context.getString(R.string.open_settings) else null,
                 actionIntent = if (!isEnabled) Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS) else null
             )
         } catch (e: Exception) {
             CompatibilityCheck(
                 id = "accessibility_service",
-                name = "Accessibility Service",
+                name = context.getString(R.string.check_accessibility_name),
                 status = CheckStatus.INFO,
                 severity = CheckSeverity.CRITICAL,
-                message = "Unable to verify accessibility status",
+                message = context.getString(R.string.check_accessibility_unknown_msg),
                 actionText = null,
                 actionIntent = null
             )
@@ -129,15 +130,15 @@ class CompatibilityCheckRepository @Inject constructor(
 
             CompatibilityCheck(
                 id = "notification_permission",
-                name = "Notifications",
+                name = context.getString(R.string.check_notifications_name),
                 status = if (isGranted) CheckStatus.PASS else CheckStatus.WARNING,
                 severity = CheckSeverity.IMPORTANT,
                 message = if (isGranted) {
-                    "Granted"
+                    context.getString(R.string.check_notifications_granted)
                 } else {
-                    "Helps keep service running"
+                    context.getString(R.string.check_notifications_hint)
                 },
-                actionText = if (!isGranted) "Grant Permission" else null,
+                actionText = if (!isGranted) context.getString(R.string.check_notifications_action) else null,
                 actionIntent = if (!isGranted) {
                     Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                         putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
@@ -148,10 +149,10 @@ class CompatibilityCheckRepository @Inject constructor(
             // Notifications don't require permission on Android < 13
             CompatibilityCheck(
                 id = "notification_permission",
-                name = "Notification Permission",
+                name = context.getString(R.string.check_notification_permission_name),
                 status = CheckStatus.PASS,
                 severity = CheckSeverity.IMPORTANT,
-                message = "Notification permission not required on this Android version",
+                message = context.getString(R.string.check_notification_permission_old_android),
                 actionText = null,
                 actionIntent = null
             )
@@ -166,15 +167,15 @@ class CompatibilityCheckRepository @Inject constructor(
 
         return CompatibilityCheck(
             id = "garmin_connect",
-            name = "Garmin Connect",
+            name = context.getString(R.string.check_garmin_connect_name),
             status = if (isInstalled) CheckStatus.PASS else CheckStatus.WARNING,
             severity = CheckSeverity.IMPORTANT,
             message = if (isInstalled) {
-                "Installed"
+                context.getString(R.string.check_garmin_connect_installed)
             } else {
-                "Required for watch communication"
+                context.getString(R.string.check_garmin_connect_required)
             },
-            actionText = if (!isInstalled) "Install App" else null,
+            actionText = if (!isInstalled) context.getString(R.string.check_garmin_connect_action) else null,
             actionIntent = if (!isInstalled) {
                 Intent(Intent.ACTION_VIEW, android.net.Uri.parse("market://details?id=com.garmin.android.apps.connectmobile"))
             } else null
@@ -189,15 +190,15 @@ class CompatibilityCheckRepository @Inject constructor(
 
         return CompatibilityCheck(
             id = "switch_access",
-            name = "Switch Access",
+            name = context.getString(R.string.check_switch_access_name),
             status = if (isEnabled) CheckStatus.PASS else CheckStatus.INFO,
             severity = CheckSeverity.OPTIONAL,
             message = if (isEnabled) {
-                "Enabled"
+                context.getString(R.string.accessibility_status_enabled)
             } else {
-                "May be needed for video"
+                context.getString(R.string.check_switch_access_hint)
             },
-            actionText = if (!isEnabled) "Enable" else null,
+            actionText = if (!isEnabled) context.getString(R.string.check_switch_access_action) else null,
             actionIntent = if (!isEnabled) {
                 // Try to deep link directly to Switch Access settings
                 Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
@@ -220,15 +221,15 @@ class CompatibilityCheckRepository @Inject constructor(
 
         return CompatibilityCheck(
             id = "battery_optimization",
-            name = "Battery Optimization",
+            name = context.getString(R.string.check_battery_name),
             status = if (isDisabled) CheckStatus.PASS else CheckStatus.WARNING,
             severity = CheckSeverity.CRITICAL,
             message = if (isDisabled) {
-                "Disabled"
+                context.getString(R.string.check_battery_disabled)
             } else {
-                "Improves reliability"
+                context.getString(R.string.check_battery_hint)
             },
-            actionText = if (!isDisabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) "Disable" else null,
+            actionText = if (!isDisabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) context.getString(R.string.check_battery_action) else null,
             actionIntent = if (!isDisabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
             } else null

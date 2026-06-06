@@ -115,7 +115,7 @@ class ManualShutterButtonSelectionActivity : AppCompatActivity() {
                     Log.d("ManualSelection", "Button bounds: ${selectedButtonInfo.bounds}")
                     Log.d("ManualSelection", "Button contentDesc: ${selectedButtonInfo.contentDescription}")
                     buttonLocationRepository.saveUserPreferredButton(selectedPackageName, selectedButtonInfo)
-                    Toast.makeText(this, "Preference saved for ${selectedAppInfo.appName}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.preference_saved_for, selectedAppInfo.appName), Toast.LENGTH_SHORT).show()
                     finish()
                 }
             }

@@ -20,7 +20,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Enable Accessibility Permission"
+            android:text="@string/onboarding_step3_title"
             android:textColor="@color/text_primary"
             android:textSize="22sp"
             android:textStyle="bold"
@@ -29,7 +29,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="CameraClick needs Accessibility access to tap your camera&#8217;s shutter button when your watch triggers it. It reads only the camera screen — no personal data is ever accessed or stored."
+            android:text="@string/onboarding_step3_body"
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
             android:lineSpacingMultiplier="1.5"
@@ -51,7 +51,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/baseline_close_24"
-                android:contentDescription="Permission status"
+                android:contentDescription="@string/cd_permission_status"
                 app:tint="@color/error"
                 android:layout_marginEnd="12dp" />
 
@@ -60,7 +60,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Not enabled"
+                android:text="@string/accessibility_status_not_enabled"
                 android:textColor="@color/text_secondary"
                 android:textSize="14sp" />
         </LinearLayout>

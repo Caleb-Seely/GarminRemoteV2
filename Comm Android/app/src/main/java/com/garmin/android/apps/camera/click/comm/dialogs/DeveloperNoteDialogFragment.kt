@@ -228,7 +228,7 @@ class DeveloperNoteDialogFragment : DialogFragment() {
             AnalyticsUtils.logError("developer_note", "no_browser_app", WEBSITE_URL)
             
             // Show user-friendly message
-            Toast.makeText(context, "No browser app found to open website", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.error_no_browser, Toast.LENGTH_SHORT).show()
             
         } catch (e: Exception) {
             Log.e(TAG, "Error opening website", e)
@@ -245,7 +245,7 @@ class DeveloperNoteDialogFragment : DialogFragment() {
             AnalyticsUtils.logEvent("developer_note_website_open", params)
             
             // Show user-friendly error message
-            Toast.makeText(context, "Unable to open website. Please try again later.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.error_open_website, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -309,7 +309,7 @@ class DeveloperNoteDialogFragment : DialogFragment() {
                     }
                     AnalyticsUtils.logEvent("developer_note_review_open", params)
                     
-                    Toast.makeText(context, "Unable to open Play Store. Please try again later.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, R.string.error_open_play_store, Toast.LENGTH_SHORT).show()
                     return
                 }
             }
@@ -329,7 +329,7 @@ class DeveloperNoteDialogFragment : DialogFragment() {
             AnalyticsUtils.logEvent("developer_note_review_open", params)
             
             // Show user-friendly error message
-            Toast.makeText(context, "Unable to open review page. Please try again later.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, R.string.error_open_review, Toast.LENGTH_SHORT).show()
         }
     }
 

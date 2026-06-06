@@ -21,7 +21,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Welcome to CameraClick"
+            android:text="@string/onboarding_step1_title"
             android:textColor="@color/text_primary"
             android:textSize="24sp"
             android:textStyle="bold"
@@ -31,7 +31,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Turn your Garmin watch into a remote camera shutter. Let&#8217;s get you set up in a few quick steps."
+            android:text="@string/onboarding_step1_body"
             android:textColor="@color/text_secondary"
             android:textSize="16sp"
             android:gravity="start"
