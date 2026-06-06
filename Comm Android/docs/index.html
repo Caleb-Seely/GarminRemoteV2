@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Garmin Camera Click Companion</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #f9f9f9;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 2.5rem 3rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: #111;
+    }
+
+    .meta {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 2rem 0 0.6rem;
+      color: #111;
+      padding-top: 1.5rem;
+      border-top: 1px solid #eee;
+    }
+
+    h2:first-of-type { border-top: none; padding-top: 0; }
+
+    p { margin-bottom: 1rem; }
+
+    ul {
+      margin: 0.5rem 0 1rem 1.4rem;
+    }
+
+    ul li { margin-bottom: 0.3rem; }
+
+    strong { font-weight: 600; }
+
+    .callout {
+      background: #eef7ff;
+      border-left: 4px solid #2d8cf0;
+      border-radius: 4px;
+      padding: 0.9rem 1.1rem;
+      margin: 1rem 0;
+      font-size: 0.97rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      margin: 1rem 0;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      background: #f4f4f4;
+      font-weight: 600;
+      border-bottom: 2px solid #ddd;
+    }
+
+    td {
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    a { color: #2d8cf0; }
+
+    @media (max-width: 600px) {
+      .container { padding: 1.5rem 1.25rem; }
+      h1 { font-size: 1.4rem; }
+      table { font-size: 0.82rem; }
+      th, td { padding: 0.4rem 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <h1>Privacy Policy</h1>
+    <p class="meta">Garmin Camera Click Companion &nbsp;·&nbsp; Last updated: May 14, 2026</p>
+
+    <h2>Overview</h2>
+    <p>
+      Garmin Camera Click Companion ("the app") is a simple utility that lets your
+      paired Garmin smartwatch trigger your phone's camera shutter. We do not collect,
+      store, or sell your personal data. Period.
+    </p>
+
+    <h2>What the App Does</h2>
+    <p>
+      The app listens for a shutter signal from your Garmin watch and clicks the
+      capture button in your phone's camera app on your behalf. That's it.
+    </p>
+
+    <h2>Data We Collect</h2>
+    <p><strong>None of your personal data.</strong></p>
+    <p>The app does <strong>NOT</strong> access or collect:</p>
+    <ul>
+      <li>Your name, email address, or account information</li>
+      <li>Your location</li>
+      <li>Your contacts or calendar</li>
+      <li>Your photos or media library</li>
+      <li>Your microphone or audio</li>
+      <li>Your call history, SMS messages, or notifications from other apps</li>
+      <li>Any other personally identifiable information</li>
+    </ul>
+
+    <h2>What Happens on Your Device (Stays on Your Device)</h2>
+    <p>
+      <strong>Camera accessibility control</strong> — The app uses Android's Accessibility Service
+      to locate and click the shutter button inside your open camera app. It reads only
+      the on-screen button positions needed to perform the click. This information is
+      never stored or transmitted.
+    </p>
+    <p>
+      <strong>Watch communication</strong> — When your Garmin watch sends a shutter command, the
+      app receives it over your local Bluetooth or Wi-Fi connection and replies with a
+      simple "Success" or "Failed" message. No personal data is part of this exchange.
+    </p>
+    <p>
+      <strong>Photo detection</strong> — For certain camera apps, the app briefly monitors whether a
+      new photo file was created (so it can confirm the shutter worked). It detects
+      only the <em>existence</em> of a new file — it never reads the photo, its metadata, or
+      its location.
+    </p>
+    <p>
+      <strong>Preferences</strong> — Your in-app settings (e.g., preferred button-detection method)
+      are saved locally on your device using Android's SharedPreferences. They are
+      never transmitted anywhere.
+    </p>
+
+    <h2>About the "Send/Receive Data to and from the Internet" Permission</h2>
+    <p>
+      Garmin shows this notice because the app includes the standard <code>INTERNET</code>
+      permission. This is nothing to worry about, and — importantly:
+    </p>
+    <div class="callout">
+      <strong>You do not need an active internet connection for this app to work.</strong>
+      The watch-to-phone shutter trigger runs entirely over Bluetooth, the same way
+      your watch syncs steps and notifications. If your phone has no signal and no
+      Wi-Fi, the shutter still fires.
+    </div>
+    <p>
+      The <code>INTERNET</code> permission is declared for two background reasons unrelated to
+      the core feature:
+    </p>
+    <p>
+      <strong>Garmin ConnectIQ communication</strong> — The Garmin ConnectIQ SDK (the library that
+      lets this app talk to your watch) requires network access to relay messages
+      between the phone and your Garmin device through Garmin's services. The only
+      data exchanged is the shutter trigger command from your watch and a "Success" or
+      "Failed" reply from the app. No personal data of any kind is part of this exchange.
+    </p>
+    <p>
+      <strong>Crash reporting</strong> — If the app crashes, a small anonymous report is sent to
+      Google Firebase Crashlytics. This report contains:
+    </p>
+    <ul>
+      <li>Your device model and manufacturer (e.g., "Google Pixel 9")</li>
+      <li>Android version</li>
+      <li>App version number</li>
+      <li>The stack trace of the crash (code location, not user data)</li>
+    </ul>
+    <p>It does <strong>not</strong> contain your name, photos, location, or anything personal.</p>
+    <p>
+      <strong>Basic analytics</strong> — Firebase Analytics receives anonymous signals about which
+      app features are used (e.g., "shutter triggered successfully"). No personally
+      identifiable information is included.
+    </p>
+    <p>
+      The app has no backend server of its own. <strong>Your personal data is never
+      collected or uploaded anywhere.</strong>
+    </p>
+    <p>
+      If you prefer to opt out of Firebase analytics entirely, you can do so in your
+      Android device settings under <strong>Privacy → Ads → Delete advertising ID</strong> or by
+      using a network-level blocker.
+    </p>
+
+    <h2>Third-Party Services</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Purpose</th>
+          <th>Data Shared</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Garmin ConnectIQ SDK</td>
+          <td>Watch communication via Garmin's relay</td>
+          <td>Shutter trigger + "Success"/"Failed" reply — no PII</td>
+        </tr>
+        <tr>
+          <td>Google Firebase Crashlytics</td>
+          <td>Crash reporting</td>
+          <td>Device model, OS version, app version, crash trace — no PII</td>
+        </tr>
+        <tr>
+          <td>Google Firebase Analytics</td>
+          <td>Anonymous usage statistics</td>
+          <td>Anonymous event counts — no PII</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>No other third-party services, SDKs, or APIs are used.</p>
+
+    <h2>Children's Privacy</h2>
+    <p>The app does not collect any data from anyone, including children under 13.</p>
+
+    <h2>Changes to This Policy</h2>
+    <p>
+      If we ever change what data the app collects (we don't plan to), we will update
+      this document and the "Last updated" date above.
+    </p>
+
+    <h2>Contact</h2>
+    <p>Questions? Reach out at <a href="mailto:csdev971@gmail.com">csdev971@gmail.com</a>.</p>
+
+  </div>
+</body>
+</html>

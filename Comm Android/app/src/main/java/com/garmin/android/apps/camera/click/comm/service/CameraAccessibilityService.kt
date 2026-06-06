@@ -11,6 +11,7 @@ import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Toast
 import com.garmin.android.connectiq.ConnectIQ
 import com.garmin.android.connectiq.IQDevice
@@ -153,11 +154,11 @@ class CameraAccessibilityService : AccessibilityService() {
     private fun handleCameraTrigger() {
         serviceScope.launch {
             try {
-                withTimeout(7000L) {
+                withTimeout(12000L) {
                     handleCameraTriggerAsync()
                 }
             } catch (e: TimeoutCancellationException) {
-                Log.e(TAG, "Camera trigger timed out after 7 seconds")
+                Log.e(TAG, "Camera trigger timed out after 12 seconds")
                 FirebaseCrashlytics.getInstance().log("Camera trigger timeout")
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Timeout")
                 showToastSafely("Camera trigger timed out")
@@ -257,20 +258,26 @@ class CameraAccessibilityService : AccessibilityService() {
 
             // Wait for photo to actually be saved before reporting success to watch
             if (result.success) {
-                val clickTime = System.currentTimeMillis()
-                val photoConfirmed = waitForPhotoCapture(packageName)
-                val latencyMs = System.currentTimeMillis() - clickTime
-                AnalyticsUtils.logPhotoConfirmation(photoConfirmed, latencyMs, packageName)
-
-                persistTriggerResult(photoConfirmed)
-                if (photoConfirmed) {
+                if (isVideoActionButton(shutterButton)) {
+                    persistTriggerResult(true)
                     watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
-                    showToastSafely("✓ Photo captured")
+                    showToastSafely("✓ Video action")
                 } else {
-                    FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName")
-                    watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "no_photo_detected")
-                    showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
-                    showFailureRecoveryNotification()
+                    val clickTime = System.currentTimeMillis()
+                    val photoConfirmed = waitForPhotoCapture(packageName)
+                    val latencyMs = System.currentTimeMillis() - clickTime
+                    AnalyticsUtils.logPhotoConfirmation(photoConfirmed, latencyMs, packageName)
+
+                    persistTriggerResult(photoConfirmed)
+                    if (photoConfirmed) {
+                        watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
+                        showToastSafely("✓ Photo captured")
+                    } else {
+                        FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName")
+                        watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "no_photo_detected")
+                        showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
+                        showFailureRecoveryNotification()
+                    }
                 }
             } else {
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
@@ -387,12 +394,24 @@ class CameraAccessibilityService : AccessibilityService() {
                 observer
             )
             withTimeoutOrNull(timeoutMs) { photoSaved.await() } ?: false
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error observing MediaStore for $packageName", e)
             false
         } finally {
             contentResolver.unregisterContentObserver(observer)
         }
+    }
+
+    private fun isVideoActionButton(button: AccessibilityNodeInfo): Boolean {
+        val desc = button.contentDescription?.toString()?.lowercase() ?: ""
+        val resId = button.viewIdResourceName?.lowercase() ?: ""
+        val videoTerms = listOf("record video", "start recording", "stop recording",
+                                "start video", "stop video", "video record")
+        return videoTerms.any { desc.contains(it) } ||
+               resId.contains("record_button") || resId.contains("stop_button") ||
+               resId.contains("video_record")
     }
 
     private fun showToastSafely(message: String, duration: Int = Toast.LENGTH_SHORT) {
