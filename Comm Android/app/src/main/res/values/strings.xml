@@ -215,6 +215,23 @@
     <string name="check_battery_hint">Improves reliability</string>
     <string name="check_battery_action">Disable</string>
 
+    <!-- Help Activity -->
+    <string name="help_section_system_status_title">📊 System Status</string>
+    <string name="help_section_getting_started_title">Getting Started</string>
+    <string name="help_section_common_issues_title">⚠️ Common Issues &amp; Fixes</string>
+    <string name="help_section_how_it_works_title">How It Works</string>
+    <string name="help_section_what_you_can_use_title">What You Can Use</string>
+    <string name="help_section_test_feature_title">🧪 Test Feature</string>
+    <string name="help_section_quick_links_title">📎 Quick Links</string>
+    <string name="help_intro_description"><![CDATA[<font color="#3fe9a3"><b>CameraClick</b></font> lets you use your <b>Garmin watch as a remote shutter</b> for your phone\'s camera. Whether you\'re snapping solo trail shots or setting up for hands-free filming, CameraClick makes it simple.]]></string>
+    <string name="help_section_system_status_content"><![CDATA[Check your device compatibility and system information. This diagnostic tool helps identify setup issues.<br><br><b><font color="#3fe9a3"><a href="#run_check">→ Check System Status</a></font></b>]]></string>
+    <string name="help_section_getting_started_content"><![CDATA[<ol><b>Install Both Apps</b><br>• <b>Phone App:</b> You\'re here — already installed!<br>• <b>Watch App:</b> Install CameraClick on your Garmin via the <b>Garmin Connect IQ Store</b> <br><br><b>Grant Permissions</b><br><b>⚠️ Accessibility Permission – REQUIRED!</b> This allows the app to tap the shutter button on screen.<br>• <b>Notification Access</b> – Keeps CameraClick running in the background.<br>• <b>Camera</b> – Required by your camera app, not CameraClick.<br><br><b>Enable Accessibility Service:</b><br>   - Go to <code>Settings > Accessibility</code><br>   - Find <b>CameraClick</b><br>   - Toggle it <b>ON</b></li><br><br><b>Enable Switch Access</b><br>Optional but required for video on some devices (no need to configure any switches).<br><b>To enable:</b><br>   - Go to <code>Settings > Accessibility > Switch Access</code><br>   - Toggle it <b>ON</b></li></ol>]]></string>
+    <string name="help_section_common_issues_content"><![CDATA[<b>Watch doesn\'t trigger shutter</b><br>→ Check Bluetooth & ensure Garmin app is connected<br><br><b>Nothing happens</b><br>→ Ensure the <b>camera app is open and visible</b><br><br><b>Shutter not responding</b><br>→ Make sure <b>Accessibility is enabled</b><br><br><b>Video capture doesn\'t work</b><br>→ Try turning <b>Switch Access ON</b> (no configuration needed)<br><br><b>App stops working in background</b><br>→ Exempt CameraClick from <b>Battery Optimization</b><br><br><b>Clicking the wrong button</b><br>→ Choose a different button from the settings menu<br><br><b>Change default Garmin device</b><br>→ Long hold the device you want to default<br><br><b>It was working but stopped</b><br>→ Restart the watch and restart the phone]]></string>
+    <string name="help_section_how_it_works_content"><![CDATA[<ul><li> Open <b>CameraClick</b> on your phone.</li><li> Open your camera app.</li><li> When your Garmin sends the command, CameraClick uses Accessibility to tap a button on screen.</li><br>That\'s it!]]></string>
+    <string name="help_section_what_you_can_use_content"><![CDATA[Because CameraClick taps your native camera app:<br><ul><li> All settings (flash, timer, filters) are controlled in your camera app</li><li> Works with <b>front and back cameras</b></li><li> Supports <b>photo and video mode</b> <br></li></ul><br>Set buttons to control other apps from your watch]]></string>
+    <string name="help_section_test_feature_content">You can use the <b>"Send Test"</b> button in the app to verify communication with your watch.</string>
+    <string name="help_section_quick_links_content"><![CDATA[📝 <font color="#3fe9a3"><a href="https://forms.gle/3JXQ9fDrTEBAuroG7">Send Feedback</a></font><br><br>⌚ <font color="#3fe9a3"><a href="https://apps.garmin.com/apps/789012f0-dcb2-46c2-b5b8-ef00a75968fa">CameraClick Garmin App</a></font><br><br>🔒 <font color="#3fe9a3"><a href="https://caleb-seely.github.io/GarminRemoteV2/">Privacy Policy</a></font><br><br>🌐 <font color="#3fe9a3"><a href="https://calebseely.com">About the developer</a></font>]]></string>
+
     <!-- Rating / Review -->
     <string name="preference_saved_for">Preference saved for %s</string>
     <string name="thanks_for_rating">Thanks for taking the time to rate CameraClick!</string>

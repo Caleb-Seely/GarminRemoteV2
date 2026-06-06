@@ -136,22 +136,27 @@ class MessageService : Service() {
 
                         startForeground(NotificationUtils.NOTIFICATION_ID, notification)
                         Log.d(TAG, "Started foreground service with notification")
-
-                        registerForMessages()
-                        isServiceRunning = true
                     } catch (e: Exception) {
                         Log.e(TAG, "Error showing notification", e)
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
                         return START_NOT_STICKY
                     }
+
+                    if (!registerForMessages()) {
+                        Log.e(TAG, "ConnectIQ SDK not initialized — stopping service so user can re-open app")
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                        stopSelf()
+                        return START_NOT_STICKY
+                    }
+                    isServiceRunning = true
                 } else {
                     Log.d(TAG, "Service already running for device: ${device.friendlyName}")
-                    // Even if service is running, ensure we're registered for messages
-                    // This handles cases where registration may have failed or been lost
                     Log.d(TAG, "Re-registering for app events to ensure we're listening")
                     app = IQApp(appId)
-                    registerForMessages()
+                    if (!registerForMessages()) {
+                        Log.e(TAG, "Re-registration failed — ConnectIQ SDK not initialized")
+                    }
                 }
 
                 return START_REDELIVER_INTENT
@@ -176,7 +181,6 @@ class MessageService : Service() {
         Log.d(TAG, "Service onDestroy")
         isServiceRunning = false
 
-        // CRITICAL: Stop foreground service before cleanup to prevent ForegroundServiceDidNotStopInTimeException
         try {
             stopForeground(STOP_FOREGROUND_REMOVE)
             Log.d(TAG, "Stopped foreground service")
@@ -185,40 +189,43 @@ class MessageService : Service() {
             FirebaseCrashlytics.getInstance().recordException(e)
         }
 
-        // Log service destruction to Firebase
-        val bundle = Bundle().apply {
-            putString("device_name", device.friendlyName)
-            putString("device_id", device.deviceIdentifier.toString())
-            putLong("service_duration_ms", System.currentTimeMillis() - serviceStartTime)
-        }
-        firebaseAnalytics.logEvent("message_service_destroyed", bundle)
-        
-        try {
-            // Check if ConnectIQ is initialized by checking if we have a valid instance
-            if (::connectIQ.isInitialized && connectIQ.connectedDevices?.isNotEmpty() == true) {
-                connectIQ.unregisterForApplicationEvents(device, app)
-                Log.d(TAG, "Successfully unregistered for app events")
-            } else {
-                Log.w(TAG, "ConnectIQ SDK not properly initialized or no devices connected, skipping unregistration")
-                FirebaseCrashlytics.getInstance().log("ConnectIQ SDK not properly initialized during service destruction")
-            }
-        } catch (e: InvalidStateException) {
-            Log.e(TAG, "Error unregistering for app events: SDK not initialized", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
-            
-            // Log the error to Firebase Analytics
-            val errorBundle = Bundle().apply {
-                putString("error_type", "InvalidStateException")
-                putString("error_message", e.message ?: "Unknown error")
+        // device/app may not be initialized if the service was stopped before onStartCommand succeeded
+        if (::device.isInitialized) {
+            val bundle = Bundle().apply {
                 putString("device_name", device.friendlyName)
                 putString("device_id", device.deviceIdentifier.toString())
+                putLong("service_duration_ms", System.currentTimeMillis() - serviceStartTime)
             }
-            firebaseAnalytics.logEvent("connectiq_sdk_error", errorBundle)
-        } catch (e: Exception) {
-            Log.e(TAG, "Unexpected error during service cleanup", e)
-            FirebaseCrashlytics.getInstance().recordException(e)
+            firebaseAnalytics.logEvent("message_service_destroyed", bundle)
+
+            try {
+                if (::connectIQ.isInitialized && ::app.isInitialized &&
+                    connectIQ.connectedDevices?.isNotEmpty() == true
+                ) {
+                    connectIQ.unregisterForApplicationEvents(device, app)
+                    Log.d(TAG, "Successfully unregistered for app events")
+                } else {
+                    Log.w(TAG, "ConnectIQ SDK not properly initialized or no devices connected, skipping unregistration")
+                    FirebaseCrashlytics.getInstance().log("ConnectIQ SDK not properly initialized during service destruction")
+                }
+            } catch (e: InvalidStateException) {
+                Log.e(TAG, "Error unregistering for app events: SDK not initialized", e)
+                FirebaseCrashlytics.getInstance().recordException(e)
+                val errorBundle = Bundle().apply {
+                    putString("error_type", "InvalidStateException")
+                    putString("error_message", e.message ?: "Unknown error")
+                    putString("device_name", device.friendlyName)
+                    putString("device_id", device.deviceIdentifier.toString())
+                }
+                firebaseAnalytics.logEvent("connectiq_sdk_error", errorBundle)
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error during service cleanup", e)
+                FirebaseCrashlytics.getInstance().recordException(e)
+            }
+        } else {
+            Log.w(TAG, "Service destroyed before device was initialized — skipping cleanup")
         }
-        
+
         super.onDestroy()
     }
 
@@ -230,7 +237,7 @@ class MessageService : Service() {
      *
      * Forwards received messages to the CameraAccessibilityService for processing.
      */
-    private fun registerForMessages() {
+    private fun registerForMessages(): Boolean {
         try {
             Log.d(TAG, "====== REGISTERING FOR MESSAGES ======")
             Log.d(TAG, "Device: ${device.friendlyName}")
@@ -278,13 +285,16 @@ class MessageService : Service() {
             Log.d(TAG, "✓ Successfully registered for app events")
             Log.d(TAG, "✓ Now listening for BOTH mailbox and direct messages")
             FirebaseCrashlytics.getInstance().log("Successfully registered for messages from ${device.friendlyName}")
+            return true
 
         } catch (e: InvalidStateException) {
             Log.e(TAG, "✗ Failed to register - ConnectIQ not initialized", e)
             FirebaseCrashlytics.getInstance().recordException(e)
+            return false
         } catch (e: Exception) {
             Log.e(TAG, "✗ Unexpected error during registration", e)
             FirebaseCrashlytics.getInstance().recordException(e)
+            return false
         }
     }
 
