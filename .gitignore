@@ -53,10 +53,17 @@ Thumbs.db
 .project
 .settings/
 
-# Keystore files
+# Keystore files / signing keys — NEVER commit these.
+# The .der key signs the published Connect IQ app; leaking it means anyone can
+# publish updates as you, and it cannot be rotated without orphaning the
+# existing store listing.
 *.jks
 *.keystore
 developer_key
+developer_key*
+*.der
+*.pem
+*.key
 
 # Google Services
 google-services.json
@@ -78,4 +85,5 @@ temp/
 .api
 *.ciq
 /AddNewGarmin/connectiq-sdk-manager-windows
+/AddNewGarmin/connectiq-sdk-manager-linux
 *.hprof
