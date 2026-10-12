@@ -36,6 +36,16 @@
             android:layout_marginBottom="24dp" />
 
         <Button
+            android:id="@+id/btn_open_watch_app"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="@string/onboarding_step4_open_watch_app"
+            android:backgroundTint="@color/primary_color"
+            android:textColor="@color/white"
+            app:cornerRadius="12dp"
+            android:layout_marginBottom="12dp" />
+
+        <Button
             android:id="@+id/btn_send_test"
             android:layout_width="match_parent"
             android:layout_height="48dp"
