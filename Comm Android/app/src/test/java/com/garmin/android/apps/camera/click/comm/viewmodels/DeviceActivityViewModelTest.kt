@@ -17,10 +17,16 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
+import org.robolectric.RuntimeEnvironment
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
@@ -38,6 +44,8 @@ import org.mockito.kotlin.*
  * - Review and developer note timing
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class DeviceActivityViewModelTest {
 
     @get:Rule
@@ -76,10 +84,25 @@ class DeviceActivityViewModelTest {
         Dispatchers.setMain(testDispatcher)
         MockitoAnnotations.openMocks(this)
 
+        // Robolectric gives us a real Application; Firebase must be initialized for analytics/crashlytics calls
+        val appContext = RuntimeEnvironment.getApplication()
+        if (FirebaseApp.getApps(appContext).isEmpty()) {
+            FirebaseApp.initializeApp(
+                appContext,
+                FirebaseOptions.Builder()
+                    .setApplicationId("1:1234567890:android:0000000000000000")
+                    .setProjectId("test-project")
+                    .setApiKey("test-api-key")
+                    .build()
+            )
+        }
+
         // Mock application context
         whenever(mockApplication.getSharedPreferences(any(), any())).thenReturn(mockSharedPreferences)
         whenever(mockSharedPreferences.edit()).thenReturn(mockEditor)
         whenever(mockEditor.putBoolean(any(), any())).thenReturn(mockEditor)
+        whenever(mockEditor.putLong(any(), any())).thenReturn(mockEditor)
+        whenever(mockEditor.putString(any(), any())).thenReturn(mockEditor)
         whenever(mockEditor.apply()).then { }
 
         // Mock device
@@ -161,7 +184,7 @@ class DeviceActivityViewModelTest {
 
         // Then: Should save to preferences
         verify(mockEditor).putBoolean("auto_launch_camera", true)
-        verify(mockEditor).apply()
+        verify(mockEditor, atLeastOnce()).apply()
 
         // And: Should update LiveData
         assert(viewModel.autoLaunchEnabled.value == true)
@@ -177,7 +200,7 @@ class DeviceActivityViewModelTest {
 
         // Then: Should save to preferences
         verify(mockEditor).putBoolean("auto_launch_camera", false)
-        verify(mockEditor).apply()
+        verify(mockEditor, atLeastOnce()).apply()
 
         // And: Should update LiveData
         assert(viewModel.autoLaunchEnabled.value == false)
@@ -332,7 +355,7 @@ class DeviceActivityViewModelTest {
         // This test verifies the method exists and doesn't crash
 
         // When: Tracking app launch
-        viewModel.trackAppLaunch(mockContext)
+        viewModel.trackAppLaunch(RuntimeEnvironment.getApplication())
 
         // Then: Should complete without error
         // Full testing would require mocking InAppReviewUtils

@@ -18,6 +18,12 @@ import javax.inject.Singleton
 class DevicePreferencesRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    companion object {
+        const val WATCH_RESULT_ALL = "all"
+        const val WATCH_RESULT_FAILURES_ONLY = "failures_only"
+        const val WATCH_RESULT_OFF = "off"
+    }
+
     private val prefs: SharedPreferences by lazy {
         context.getSharedPreferences(
             PreferencesKeys.Files.CAMERA_CLICK_PREFS,
@@ -80,6 +86,14 @@ class DevicePreferencesRepository @Inject constructor(
     var isSetupComplete: Boolean
         get() = prefs.getBoolean(PreferencesKeys.App.SETUP_COMPLETE, false)
         set(value) = prefs.edit().putBoolean(PreferencesKeys.App.SETUP_COMPLETE, value).apply()
+
+    /**
+     * Which shutter results are sent back to the watch: [WATCH_RESULT_ALL],
+     * [WATCH_RESULT_FAILURES_ONLY] or [WATCH_RESULT_OFF]. Defaults to all (previous behaviour).
+     */
+    var watchResultMode: String
+        get() = prefs.getString(PreferencesKeys.App.WATCH_RESULT_MODE, WATCH_RESULT_ALL) ?: WATCH_RESULT_ALL
+        set(value) = prefs.edit().putString(PreferencesKeys.App.WATCH_RESULT_MODE, value).apply()
 
     /**
      * Clear all preferences

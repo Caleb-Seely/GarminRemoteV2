@@ -277,6 +277,12 @@ class DeviceActivity : AppCompatActivity() {
             startActivity(Intent(this, ManualShutterButtonSelectionActivity::class.java))
         }
 
+        // Watch result setting
+        updateWatchResultValue()
+        findViewById<LinearLayout>(R.id.watch_result_section)?.setOnClickListener {
+            showWatchResultDialog()
+        }
+
         // Open app button with animation
         views.openAppButtonView.setOnClickListener {
             animationHelper.animateOpenAppButton(it) {
@@ -432,6 +438,35 @@ class DeviceActivity : AppCompatActivity() {
         // Update button visibility in case candidates were added while activity was paused
         updateManualSelectionButtonVisibility()
         updateSetupIncompleteBanner()
+    }
+
+    private val watchResultModes = listOf(
+        DevicePreferencesRepository.WATCH_RESULT_ALL to R.string.watch_result_all,
+        DevicePreferencesRepository.WATCH_RESULT_FAILURES_ONLY to R.string.watch_result_failures_only,
+        DevicePreferencesRepository.WATCH_RESULT_OFF to R.string.watch_result_off
+    )
+
+    private fun updateWatchResultValue() {
+        val mode = preferencesRepository.watchResultMode
+        val labelRes = watchResultModes.firstOrNull { it.first == mode }?.second ?: R.string.watch_result_all
+        findViewById<TextView>(R.id.watch_result_value)?.setText(labelRes)
+    }
+
+    private fun showWatchResultDialog() {
+        val current = watchResultModes.indexOfFirst { it.first == preferencesRepository.watchResultMode }
+            .coerceAtLeast(0)
+        val labels = watchResultModes.map { getString(it.second) }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(R.string.watch_result_title)
+            .setSingleChoiceItems(labels, current) { dialog, which ->
+                val mode = watchResultModes[which].first
+                preferencesRepository.watchResultMode = mode
+                AnalyticsUtils.logFeatureUsage("watch_result_mode", mode, true)
+                updateWatchResultValue()
+                dialog.dismiss()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun updateSetupIncompleteBanner() {

@@ -3,12 +3,17 @@ package com.garmin.android.apps.camera.click.comm.utils
 import android.graphics.Rect
 import com.garmin.android.apps.camera.click.comm.model.ShutterButtonInfo
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.junit.Assert.*
 
 /**
  * Unit tests for AccessibilityUtils functionality
  * Note: These are simplified tests that focus on the data model logic
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class AccessibilityUtilsTest {
 
     @Test
