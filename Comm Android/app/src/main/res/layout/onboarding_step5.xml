@@ -133,6 +133,26 @@
                 app:cornerRadius="12dp"
                 android:layout_marginBottom="8dp" />
 
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/onboarding_step5_failure_hint"
+                android:textColor="@color/white"
+                android:alpha="0.7"
+                android:textSize="13sp"
+                android:lineSpacingMultiplier="1.3"
+                android:gravity="center"
+                android:layout_marginTop="8dp" />
+
+            <Button
+                android:id="@+id/btn_troubleshooting"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:text="@string/onboarding_step5_troubleshooting"
+                android:textColor="@color/primary_color" />
+
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

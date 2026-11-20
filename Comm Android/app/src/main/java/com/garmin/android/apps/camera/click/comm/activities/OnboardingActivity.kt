@@ -276,6 +276,10 @@ class OnboardingActivity : AppCompatActivity() {
         btnSkip.setText(R.string.btn_skip)
         btnSkip.setOnClickListener { advanceStep() }
 
+        view.findViewById<Button>(R.id.btn_open_watch_app)?.setOnClickListener {
+            openWatchApp(view)
+        }
+
         view.findViewById<Button>(R.id.btn_send_test)?.setOnClickListener {
             sendTestMessage(view)
         }
@@ -361,6 +365,45 @@ class OnboardingActivity : AppCompatActivity() {
         } catch (e: Exception) {
             FirebaseCrashlytics.getInstance().recordException(e)
             resultArea?.visibility = View.VISIBLE
+            resultText?.text = getString(R.string.onboarding_test_could_not_send)
+        }
+    }
+
+    private fun openWatchApp(view: View) {
+        val device = selectedDevice ?: run {
+            Toast.makeText(this, R.string.onboarding_no_watch_go_back, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val resultArea = view.findViewById<LinearLayout>(R.id.test_result)
+        val resultIcon = view.findViewById<TextView>(R.id.result_icon)
+        val resultText = view.findViewById<TextView>(R.id.result_text)
+
+        try {
+            ConnectIQ.getInstance().openApplication(device, IQApp(CommConstants.COMM_WATCH_ID)) { _, _, status ->
+                runOnUiThread {
+                    resultArea?.visibility = View.VISIBLE
+                    val ok = status == ConnectIQ.IQOpenApplicationStatus.PROMPT_SHOWN_ON_DEVICE ||
+                        status == ConnectIQ.IQOpenApplicationStatus.APP_IS_ALREADY_RUNNING
+                    resultIcon?.text = if (ok) "✓" else "!"
+                    resultIcon?.setTextColor(getColor(if (ok) R.color.success else R.color.warning))
+                    resultText?.text = when (status) {
+                        ConnectIQ.IQOpenApplicationStatus.PROMPT_SHOWN_ON_DEVICE -> getString(R.string.onboarding_watch_app_prompt_shown)
+                        ConnectIQ.IQOpenApplicationStatus.APP_IS_ALREADY_RUNNING -> getString(R.string.onboarding_watch_app_already_open)
+                        ConnectIQ.IQOpenApplicationStatus.APP_IS_NOT_INSTALLED -> getString(R.string.onboarding_watch_app_not_installed)
+                        else -> getString(R.string.onboarding_watch_app_open_failed, status.name)
+                    }
+                }
+                AnalyticsUtils.logWatchAppOpen(
+                    deviceName = device.friendlyName,
+                    deviceId = device.deviceIdentifier.toString(),
+                    status = status.name
+                )
+            }
+        } catch (e: Exception) {
+            FirebaseCrashlytics.getInstance().recordException(e)
+            resultArea?.visibility = View.VISIBLE
+            resultIcon?.text = "!"
+            resultIcon?.setTextColor(getColor(R.color.warning))
             resultText?.text = getString(R.string.onboarding_test_could_not_send)
         }
     }
@@ -499,6 +542,9 @@ class OnboardingActivity : AppCompatActivity() {
 
         view.findViewById<Button>(R.id.btn_configure_button)?.setOnClickListener {
             startActivity(Intent(this, ManualShutterButtonSelectionActivity::class.java))
+        }
+        view.findViewById<Button>(R.id.btn_troubleshooting)?.setOnClickListener {
+            startActivity(Intent(this, HelpActivity::class.java))
         }
 
         btnNext.setText(R.string.btn_try_again)
