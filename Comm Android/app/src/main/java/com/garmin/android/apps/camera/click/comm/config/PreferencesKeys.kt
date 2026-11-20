@@ -23,6 +23,7 @@ object PreferencesKeys {
         const val AUTO_LAUNCH_CAMERA = "auto_launch_camera"
         const val PREFERRED_DEVICE_ID = "preferred_device_id"
         const val SETUP_COMPLETE = "setup_complete"
+        const val WATCH_RESULT_MODE = "watch_result_mode"
     }
 
     /**

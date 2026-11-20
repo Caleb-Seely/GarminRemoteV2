@@ -3,6 +3,7 @@ package com.garmin.android.apps.camera.click.comm.service.handlers
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.garmin.android.apps.camera.click.comm.repository.DevicePreferencesRepository
 import com.garmin.android.apps.camera.click.comm.service.MessageService
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import kotlinx.coroutines.*
@@ -18,8 +19,17 @@ private const val TAG = "WatchCommunicationHandler"
  */
 @Singleton
 class WatchCommunicationHandler @Inject constructor(
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val preferencesRepository: DevicePreferencesRepository
 ) {
+
+    /** Whether shutter success results should be shown on the watch (user setting). */
+    private fun shouldSendSuccess(): Boolean =
+        preferencesRepository.watchResultMode == DevicePreferencesRepository.WATCH_RESULT_ALL
+
+    /** Whether shutter failure results should be shown on the watch (user setting). */
+    private fun shouldSendFailure(): Boolean =
+        preferencesRepository.watchResultMode != DevicePreferencesRepository.WATCH_RESULT_OFF
 
     /**
      * Sends a message to the watch (blocking version for backward compatibility).
@@ -128,6 +138,7 @@ class WatchCommunicationHandler @Inject constructor(
      * @param details Optional success details
      */
     fun sendSuccessMessage(context: Context, details: String = "Success!") {
+        if (!shouldSendSuccess()) return
         sendMessageToWatch(context, MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, details)
     }
 
@@ -138,6 +149,7 @@ class WatchCommunicationHandler @Inject constructor(
      * @param reason The reason for failure
      */
     fun sendFailureMessage(context: Context, reason: String) {
+        if (!shouldSendFailure()) return
         sendMessageToWatch(context, MessageService.MESSAGE_TYPE_SHUTTER_FAILED, reason)
     }
 
@@ -148,6 +160,10 @@ class WatchCommunicationHandler @Inject constructor(
      * @param details Optional success details
      */
     suspend fun sendSuccessMessageAsync(context: Context, details: String = "Success!") {
+        if (!shouldSendSuccess()) {
+            Log.d(TAG, "Skipping success message to watch (user setting)")
+            return
+        }
         sendMessageToWatchAsync(context, MessageService.MESSAGE_TYPE_SHUTTER_SUCCESS, details)
     }
 
@@ -158,6 +174,10 @@ class WatchCommunicationHandler @Inject constructor(
      * @param reason The reason for failure
      */
     suspend fun sendFailureMessageAsync(context: Context, reason: String) {
+        if (!shouldSendFailure()) {
+            Log.d(TAG, "Skipping failure message to watch (user setting): $reason")
+            return
+        }
         sendMessageToWatchAsync(context, MessageService.MESSAGE_TYPE_SHUTTER_FAILED, reason)
     }
 }

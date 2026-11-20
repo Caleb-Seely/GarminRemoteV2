@@ -289,7 +289,7 @@ class CameraAccessibilityService : AccessibilityService() {
                         showToastSafely("✓ Photo captured")
                     } else {
                         FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName (setupAlreadyConfirmed=$setupAlreadyConfirmed)")
-                        watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "no_photo_detected")
+                        watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Not confirmed")
                         // Once setup is confirmed, stay quiet on the phone; the watch already shows the failure.
                         if (!setupAlreadyConfirmed) {
                             showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
