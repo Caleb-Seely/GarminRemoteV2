@@ -16,24 +16,24 @@ plugins {
     kotlin("kapt")
 }
 
-// Project version information
-val compileSdkVersion: String by project
-val minSdkVersion: String by project
-val targetSdkVersion: String by project
-val packageName = "com.garmin.android.apps.camera.click.comm"
-val versionCode: String by project
-val versionName: String by project
+// Project version information (values come from gradle.properties)
+val appPackageName = "com.garmin.android.apps.camera.click.comm"
+val appCompileSdk = property("compileSdkVersion").toString().toInt()
+val appMinSdk = property("minSdkVersion").toString().toInt()
+val appTargetSdk = property("targetSdkVersion").toString().toInt()
+val appVersionCode = property("versionCode").toString().toInt()
+val appVersionName = property("versionName").toString()
 
 android {
-    namespace = this@Build_gradle.packageName
-    compileSdk = this@Build_gradle.compileSdkVersion.toInt()
+    namespace = appPackageName
+    compileSdk = appCompileSdk
 
     defaultConfig {
-        applicationId = this@Build_gradle.packageName
-        minSdk = minSdkVersion.toInt()
-        targetSdk = targetSdkVersion.toInt()
-        versionCode = this@Build_gradle.versionCode.toInt()
-        versionName = this@Build_gradle.versionName
+        applicationId = appPackageName
+        minSdk = appMinSdk
+        targetSdk = appTargetSdk
+        versionCode = appVersionCode
+        versionName = appVersionName
     }
 
     buildTypes {
@@ -52,8 +52,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    testOptions {
+        // Lets Robolectric load real Android resources in unit tests
+        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -74,8 +81,8 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.5")
 
     // Hilt Dependency Injection
-    implementation("com.google.dagger:hilt-android:2.55")
-    kapt("com.google.dagger:hilt-android-compiler:2.55")
+    implementation("com.google.dagger:hilt-android:2.57.2")
+    kapt("com.google.dagger:hilt-android-compiler:2.57.2")
 
     // Garmin ConnectIQ SDK
     implementation("com.garmin.connectiq:ciq-companion-app-sdk:2.2.0@aar")
@@ -99,11 +106,11 @@ dependencies {
 
     // Testing dependencies
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.7.0")
-    testImplementation("org.mockito:mockito-inline:5.2.0")
+    testImplementation("org.mockito:mockito-core:5.24.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.1.0")
+    testImplementation("org.robolectric:robolectric:4.18.1")
     testImplementation("androidx.arch.core:core-testing:2.2.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
-    testImplementation("com.google.dagger:hilt-android-testing:2.55")
-    kaptTest("com.google.dagger:hilt-android-compiler:2.55")
+    testImplementation("com.google.dagger:hilt-android-testing:2.57.2")
+    kaptTest("com.google.dagger:hilt-android-compiler:2.57.2")
 }
