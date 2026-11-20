@@ -464,9 +464,9 @@ class CameraAccessibilityService : AccessibilityService() {
             if (changedAt != null) {
                 return true
             }
-            // Diagnostic only: keep listening a while longer to learn whether the photo
-            // was merely slow to reach MediaStore (e.g. heavy on-device processing) or never
-            // arrived at all. Does not change what the watch or user is told.
+            // Keep listening a while longer to learn whether the photo was merely slow to
+            // reach MediaStore (e.g. heavy on-device processing) or never arrived at all.
+            // The watch has already been answered; a late photo can only complete setup.
             handedOff = true
             logLatePhotoArrival(watcher, packageName, clickTime)
             return false
@@ -486,6 +486,20 @@ class CameraAccessibilityService : AccessibilityService() {
                         (latencyMs?.let { "arrived after ${it}ms" } ?: "nothing within ${LATE_PHOTO_WINDOW_MS}ms")
                 )
                 AnalyticsUtils.logLatePhotoCheck(latencyMs, packageName)
+                if (changedAt != null && !preferencesRepository.isSetupComplete) {
+                    // Slow-saving devices can miss the 8s window on every attempt and never
+                    // finish setup. A photo that lands late still proves the button works, so
+                    // count it: clears the setup banner, lets onboarding show success, and
+                    // removes the "configure" notification we just showed.
+                    Log.d(TAG, "Late photo confirmed setup for $packageName")
+                    persistTriggerResult(true)
+                    try {
+                        (getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager)
+                            .cancel(FAILURE_RECOVERY_NOTIFICATION_ID)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to cancel failure recovery notification", e)
+                    }
+                }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
