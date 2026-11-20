@@ -51,6 +51,7 @@ class CameraAccessibilityService : AccessibilityService() {
         const val PREF_LAST_TRIGGER_TIME = "last_trigger_time"
         const val PREF_LAST_TRIGGER_SUCCESS = "last_trigger_success"
         private const val PREFS_NAME = PreferencesKeys.Files.CAMERA_CLICK_PREFS
+        private const val LATE_PHOTO_WINDOW_MS = 20_000L
     }
 
     private fun persistTriggerResult(success: Boolean) {
@@ -247,39 +248,57 @@ class CameraAccessibilityService : AccessibilityService() {
             Log.d(TAG, "Found button, attempting to trigger")
             FirebaseCrashlytics.getInstance().log("Found shutter button in package: $packageName")
 
+            // Start watching MediaStore BEFORE the click so a fast save (e.g. Samsung
+            // zero-shutter-lag capture) can't land in the gap between click and registration.
+            val photoWatcher = startPhotoWatcher(packageName)
+
             // Use ShutterActionHandler to trigger the shutter
-            val result = shutterActionHandler.triggerShutterAsync(
-                button = shutterButton,
-                packageName = packageName,
-                deviceName = device?.friendlyName,
-                context = this@CameraAccessibilityService,
-                messageReceivedTime = messageReceivedTime
-            )
+            val result = try {
+                shutterActionHandler.triggerShutterAsync(
+                    button = shutterButton,
+                    packageName = packageName,
+                    deviceName = device?.friendlyName,
+                    context = this@CameraAccessibilityService,
+                    messageReceivedTime = messageReceivedTime
+                )
+            } catch (e: Throwable) {
+                photoWatcher?.stop()
+                throw e
+            }
 
             // Wait for photo to actually be saved before reporting success to watch
             if (result.success) {
                 if (isVideoActionButton(shutterButton)) {
+                    photoWatcher?.stop()
                     persistTriggerResult(true)
                     watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
                     showToastSafely("✓ Video action")
                 } else {
                     val clickTime = System.currentTimeMillis()
-                    val photoConfirmed = waitForPhotoCapture(packageName)
+                    val photoConfirmed = waitForPhotoCapture(packageName, photoWatcher, clickTime)
                     val latencyMs = System.currentTimeMillis() - clickTime
                     AnalyticsUtils.logPhotoConfirmation(photoConfirmed, latencyMs, packageName)
 
+                    // Read before persisting: once a photo has been confirmed for this user, the
+                    // button setup is known to work, so an unconfirmed photo is far more likely a
+                    // slow MediaStore save than a misconfigured button.
+                    val setupAlreadyConfirmed = preferencesRepository.isSetupComplete
                     persistTriggerResult(photoConfirmed)
                     if (photoConfirmed) {
                         watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
                         showToastSafely("✓ Photo captured")
                     } else {
-                        FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName")
-                        watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "no_photo_detected")
-                        showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
-                        showFailureRecoveryNotification()
+                        FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName (setupAlreadyConfirmed=$setupAlreadyConfirmed)")
+                        watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Not confirmed")
+                        // Once setup is confirmed, stay quiet on the phone; the watch already shows the failure.
+                        if (!setupAlreadyConfirmed) {
+                            showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
+                            showFailureRecoveryNotification()
+                        }
                     }
                 }
             } else {
+                photoWatcher?.stop()
                 watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "Failed")
                 showToastSafely("✗ Button click failed in $appName", Toast.LENGTH_LONG)
                 showFailureRecoveryNotification()
@@ -377,30 +396,117 @@ class CameraAccessibilityService : AccessibilityService() {
         "com.instagram.android"
     )
 
-    private suspend fun waitForPhotoCapture(packageName: String, timeoutMs: Long = 8000L): Boolean {
+    /**
+     * Watches MediaStore image changes from the moment it is started.
+     * Records the first change so a save that happens before [await] is called still counts.
+     */
+    private inner class PhotoWatcher {
+        private val firstChange = CompletableDeferred<Long>()
+        private val observer = object : ContentObserver(mainHandler) {
+            override fun onChange(selfChange: Boolean) {
+                firstChange.complete(System.currentTimeMillis())
+            }
+        }
+        private var registered = false
+
+        fun start(): Boolean {
+            registered = try {
+                contentResolver.registerContentObserver(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    true,
+                    observer
+                )
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Error registering MediaStore observer", e)
+                false
+            }
+            return registered
+        }
+
+        /** Returns the time of the first MediaStore change, or null if none within [timeoutMs]. */
+        suspend fun await(timeoutMs: Long): Long? =
+            withTimeoutOrNull(timeoutMs) { firstChange.await() }
+
+        fun stop() {
+            if (!registered) return
+            registered = false
+            try {
+                contentResolver.unregisterContentObserver(observer)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error unregistering MediaStore observer", e)
+            }
+        }
+    }
+
+    /** Starts a [PhotoWatcher] unless the app doesn't write to MediaStore. Returns null if skipped or failed. */
+    private fun startPhotoWatcher(packageName: String): PhotoWatcher? {
+        if (packageName in scopedStorageApps) return null
+        val watcher = PhotoWatcher()
+        return if (watcher.start()) watcher else null
+    }
+
+    private suspend fun waitForPhotoCapture(
+        packageName: String,
+        watcher: PhotoWatcher?,
+        clickTime: Long,
+        timeoutMs: Long = 8000L
+    ): Boolean {
         if (packageName in scopedStorageApps) {
             return true
         }
-        val photoSaved = CompletableDeferred<Boolean>()
-        val observer = object : ContentObserver(mainHandler) {
-            override fun onChange(selfChange: Boolean) {
-                photoSaved.complete(true)
-            }
+        if (watcher == null) {
+            return false
         }
-        return try {
-            contentResolver.registerContentObserver(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                true,
-                observer
-            )
-            withTimeoutOrNull(timeoutMs) { photoSaved.await() } ?: false
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.e(TAG, "Error observing MediaStore for $packageName", e)
-            false
+        var handedOff = false
+        try {
+            val changedAt = watcher.await(timeoutMs)
+            if (changedAt != null) {
+                return true
+            }
+            // Keep listening a while longer to learn whether the photo was merely slow to
+            // reach MediaStore (e.g. heavy on-device processing) or never arrived at all.
+            // The watch has already been answered; a late photo can only complete setup.
+            handedOff = true
+            logLatePhotoArrival(watcher, packageName, clickTime)
+            return false
         } finally {
-            contentResolver.unregisterContentObserver(observer)
+            if (!handedOff) watcher.stop()
+        }
+    }
+
+    private fun logLatePhotoArrival(watcher: PhotoWatcher, packageName: String, clickTime: Long) {
+        serviceScope.launch {
+            try {
+                val changedAt = watcher.await(LATE_PHOTO_WINDOW_MS)
+                val latencyMs = changedAt?.let { it - clickTime }
+                Log.d(TAG, "Late photo check for $packageName: latencyMs=$latencyMs")
+                FirebaseCrashlytics.getInstance().log(
+                    "Late photo check for $packageName: " +
+                        (latencyMs?.let { "arrived after ${it}ms" } ?: "nothing within ${LATE_PHOTO_WINDOW_MS}ms")
+                )
+                AnalyticsUtils.logLatePhotoCheck(latencyMs, packageName)
+                if (changedAt != null && !preferencesRepository.isSetupComplete) {
+                    // Slow-saving devices can miss the 8s window on every attempt and never
+                    // finish setup. A photo that lands late still proves the button works, so
+                    // count it: clears the setup banner, lets onboarding show success, and
+                    // removes the "configure" notification we just showed.
+                    Log.d(TAG, "Late photo confirmed setup for $packageName")
+                    persistTriggerResult(true)
+                    try {
+                        (getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager)
+                            .cancel(FAILURE_RECOVERY_NOTIFICATION_ID)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to cancel failure recovery notification", e)
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Late photo check failed", e)
+            } finally {
+                watcher.stop()
+            }
         }
     }
 

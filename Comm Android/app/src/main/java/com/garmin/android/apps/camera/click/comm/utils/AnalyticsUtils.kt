@@ -558,6 +558,20 @@ object AnalyticsUtils {
         logEvent("shutter_photo_confirmed", params)
     }
 
+    /**
+     * Diagnostic for clicks where no photo reached MediaStore within the confirmation window.
+     * [latencyMs] is the time from click to the first MediaStore change if one arrived late,
+     * or null if nothing arrived during the extra listening window.
+     */
+    fun logLatePhotoCheck(latencyMs: Long?, packageName: String? = null) {
+        val params = Bundle().apply {
+            putBoolean("arrived_late", latencyMs != null)
+            latencyMs?.let { putLong("latency_ms", it) }
+            packageName?.let { putString("camera_package", it) }
+        }
+        logEvent("shutter_photo_late_check", params)
+    }
+
     fun logOnboardingStep(step: Int, action: String) {
         val params = Bundle().apply {
             putInt("step", step)
