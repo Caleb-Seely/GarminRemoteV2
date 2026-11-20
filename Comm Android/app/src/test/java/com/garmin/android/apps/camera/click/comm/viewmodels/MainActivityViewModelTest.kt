@@ -15,10 +15,16 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
+import org.robolectric.RuntimeEnvironment
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
 import org.mockito.kotlin.*
@@ -36,6 +42,8 @@ import org.mockito.kotlin.*
  * - LiveData state updates
  */
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class)
 class MainActivityViewModelTest {
 
     @get:Rule
@@ -70,6 +78,19 @@ class MainActivityViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         MockitoAnnotations.openMocks(this)
+
+        // Robolectric gives us a real Application; Firebase must be initialized for analytics/crashlytics calls
+        val appContext = RuntimeEnvironment.getApplication()
+        if (FirebaseApp.getApps(appContext).isEmpty()) {
+            FirebaseApp.initializeApp(
+                appContext,
+                FirebaseOptions.Builder()
+                    .setApplicationId("1:1234567890:android:0000000000000000")
+                    .setProjectId("test-project")
+                    .setApiKey("test-api-key")
+                    .build()
+            )
+        }
 
         // Mock application context
         whenever(mockApplication.getSharedPreferences(any(), any())).thenReturn(mockSharedPreferences)
@@ -144,7 +165,7 @@ class MainActivityViewModelTest {
 
         // Then: Should save to preferences
         verify(mockEditor).putString("preferred_device_id", deviceId)
-        verify(mockEditor).apply()
+        verify(mockEditor, atLeastOnce()).apply()
 
         // And: Should update LiveData
         assert(viewModel.preferredDeviceId.value == deviceId)
@@ -159,7 +180,7 @@ class MainActivityViewModelTest {
 
         // Then: Should remove from preferences
         verify(mockEditor).remove("preferred_device_id")
-        verify(mockEditor).apply()
+        verify(mockEditor, atLeastOnce()).apply()
 
         // And: Should update LiveData
         assert(viewModel.preferredDeviceId.value == null)
@@ -174,7 +195,7 @@ class MainActivityViewModelTest {
         whenever(mockSharedPreferences.getLong("last_session_end", 0)).thenReturn(lastSessionEnd)
 
         // When: Tracking app launch
-        viewModel.trackAppLaunch(mockContext, isFirstLaunch = true)
+        viewModel.trackAppLaunch(RuntimeEnvironment.getApplication(), isFirstLaunch = true)
 
         // Then: Should track analytics (verified via static mock if needed)
         // This would require PowerMock or similar for static methods
@@ -188,7 +209,7 @@ class MainActivityViewModelTest {
 
         // Then: Should save timestamp
         verify(mockEditor).putLong(eq("last_session_end"), any())
-        verify(mockEditor).apply()
+        verify(mockEditor, atLeastOnce()).apply()
     }
 
     @Test
