@@ -279,15 +279,23 @@ class CameraAccessibilityService : AccessibilityService() {
                     val latencyMs = System.currentTimeMillis() - clickTime
                     AnalyticsUtils.logPhotoConfirmation(photoConfirmed, latencyMs, packageName)
 
+                    // Read before persisting: once a photo has been confirmed for this user, the
+                    // button setup is known to work, so an unconfirmed photo is far more likely a
+                    // slow MediaStore save than a misconfigured button.
+                    val setupAlreadyConfirmed = preferencesRepository.isSetupComplete
                     persistTriggerResult(photoConfirmed)
                     if (photoConfirmed) {
                         watchCommunicationHandler.sendSuccessMessageAsync(this@CameraAccessibilityService, "Success")
                         showToastSafely("✓ Photo captured")
                     } else {
-                        FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName")
+                        FirebaseCrashlytics.getInstance().log("Click succeeded but no photo detected for $packageName (setupAlreadyConfirmed=$setupAlreadyConfirmed)")
                         watchCommunicationHandler.sendFailureMessageAsync(this@CameraAccessibilityService, "no_photo_detected")
-                        showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
-                        showFailureRecoveryNotification()
+                        if (setupAlreadyConfirmed) {
+                            showToastSafely("Couldn't confirm photo was saved", Toast.LENGTH_LONG)
+                        } else {
+                            showToastSafely("✗ Photo not saved — try \"Configure Camera Button\"", Toast.LENGTH_LONG)
+                            showFailureRecoveryNotification()
+                        }
                     }
                 }
             } else {
